@@ -8,6 +8,7 @@ Three chanllenges for replicating executing of any VM running any operating syst
 
 
 ## FT(Fault-Tolerance) Protocol 
+-------------------
 
 ### Output Requirement: 
 If the backup VM ever takes over after a failure of the primary, the backup VM will continue executing in a way that is entirely consistent with all outputs that the primary VM has sent to the external world.
@@ -22,6 +23,7 @@ The primary VM may not send an output to the external world, until the backup VM
 注解：如果backup没有接收到所有关于该操作相关的所有日志entry，而发送了该操作的output给clients。那么如果primary挂掉了，backup则无法恢复到primary挂掉之前的样子。就产生了不一致性
 
 ## Detecting and Responding to Failure 
+-------------------
 
 ### Respond to failure 
 
@@ -49,6 +51,7 @@ If the VM cannot access the shared storage when trying to do the atomic operatio
 Once a failure has occurred and one of the VMs has gone live, VMware FT automatically restores redundancy by starting a new backup VM on another host.
 
 ## Practical implementation of FT 
+-------------------
 
 ### Starting and Restarting FT VMs 
 Using modified form of VMotion functionality of VMware vSphere 
@@ -88,14 +91,15 @@ Therefore, our implementation must be designed to minimize the possibility that 
 2.reduce the delay for transmitted packets(等待backup接收到请求相关的所有entries后，才能向客户端回应该请求)。Our primary optimizations in this area involve ensuring that sending and receiving log entries and acknowledgements can all be done without any thread context switch.(在接收和发送log entries的过程中，避免发生线程context切换)
 
 ## Design Alternatives 
+-------------------
 
-### Shared vs. Non-shared Disk 
+Shared vs. Non-shared Disk 
 
-#### Shared Disk 
+### Shared Disk 
 
 如果主和从使用共享存储空间，只有primary才实际向磁盘中写入，并且写入磁盘必须遵循Output Rule来延迟写入。
 
-#### Non-shared Disk
+### Non-shared Disk
 当无法获取shared存储空间时，使用非共享存储空间是一个非常有用的办法。当不使用共享存储空间时，backup VM同样需要磁盘写入，他需要和primary VM的磁盘写入保持同步。因此向priary磁盘的写入无需延迟写入。
 但是使用Non-shared disk有一个缺点，就是无法通过像shared disk那样通过原子操作来避免脑裂的问题。这是需要引入一些外部的组件来解决，比如通过大多数投票等方式来决定那个是primary。
 
@@ -113,12 +117,14 @@ Therefore, our implementation must be designed to minimize the possibility that 
     所以在logging channel的带宽很有限的时候，使用bakcup读取时一个不错的选择。
 
 ## MIT课程笔记 
+-------------------
 在本文中讲述了，replication分为两个级别，即：application level和machine level
 application level仅仅是保存应用看中的数据，例如GFS中的chunk，但是machine level要关注的数据就多的多，例如：内存，寄存器内容等等，
 显而易见的，application level效率高的多，但是machine level可以互备的东西更完整。在本文中关注的是machine level
 
 另外，本文只关注vm是单核的情况(非底层硬件单核, 底层硬件可以是multi-core，但是vm呈现给其guest os一定要是uni-core)，因为多核情况下，指令的执行顺序等变化太大(例如，对某个资源的锁获取具有一定随机性，如果primary和backup由不同的进程获取到，那执行结果将会大不相同)，目前vm团队还没有很好的适配。
 
+```
 FT's handling of timer interrupts
   Goal: primary and backup should see interrupt at 
         the same point in the instruction stream
@@ -148,6 +154,7 @@ FT's handling of network packet arrival (input)
     FT tells CPU to interrupt (to FT) at instruction X
     FT copies the data to backup memory, simulates NIC interrupt in backup
 FT means the vm monitor(primary + backup)
+```
 
 ```
 +--------------+
@@ -159,7 +166,6 @@ FT means the vm monitor(primary + backup)
 +--------------+
 ```
 为什么要先copy到FT，而不是直接copy到primary呢？因为如果直接copy到primary，则无法知道copy的具体时间、以及是否copy了，所以会导致primary和backpu不一致
-
 
 Output Rule会导致性能问题，因为必须要等待primary发送给backup，并且backup发送回复之后才能向客户端发送output，由于防止地震等灾害，primary和backup一般在不同的城市，所以通信的时间会比较长。这也是分布式系统的通病，所以很多实现都是对于high-level的操作才会遵守Output Rule，low-level的操作例如read-only操作，则直接由primary操作完成发送给客户端output，而不发给secondary
 
