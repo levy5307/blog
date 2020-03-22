@@ -1,7 +1,9 @@
-## 一、Situation
+## Situation
+----------------
 Backup request function can optimize the long tail problem of read delay, suitable for users with low consistency requirements.
 
-## 二、Investigation
+## Investigation
+----------------
 There are two ways to implement backup request.
 
 ### Hedged requests
