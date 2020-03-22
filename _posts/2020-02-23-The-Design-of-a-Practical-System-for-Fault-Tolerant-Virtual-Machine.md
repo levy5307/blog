@@ -1,15 +1,11 @@
 Three chanllenges for replicating executing of any VM running any operating system and workload 
 
 - correnctly capturing all the input and non-determinism necessary to ensure deterministic execution of a backup virtual machine 
-
 - correctly applying the inputs and non-determinism to the backup virtual machine
-
 - doing so in a manner that doesn`t degrade performance
-
 
 ## FT(Fault-Tolerance) Protocol 
 -------------------
-
 ### Output Requirement: 
 If the backup VM ever takes over after a failure of the primary, the backup VM will continue executing in a way that is entirely consistent with all outputs that the primary VM has sent to the external world.
 
@@ -26,7 +22,6 @@ The primary VM may not send an output to the external world, until the backup VM
 
 ## Detecting and Responding to Failure 
 -------------------
-
 ### Respond to failure 
 
 #### If the backup VM fails: 
@@ -39,7 +34,6 @@ the backup VM should similarly go live, but the process is a bit more complex. B
 
 ### Ways to detect failure 
 - VMware FT uses UDP heartbeating betweent servers. In addition, 
-
 - VMware FT monitors the logging traffic between primary and backup.
 
 A failure is declared if heartbearting or logging traffic has stopped for longer than a specific timeout. 
@@ -57,7 +51,6 @@ Once a failure has occurred and one of the VMs has gone live, VMware FT automati
 
 ## Practical implementation of FT 
 -------------------
-
 ### Starting and Restarting FT VMs 
 Using modified form of VMotion functionality of VMware vSphere 
 
@@ -76,7 +69,6 @@ Therefore, our implementation must be designed to minimize the possibility that 
 如果backup重放一个execution的速度比primary记录一个execution慢太多的话：
 
 1.会导致上述问题，即产生了full log buffer，然后stop而影响到了客户端
-
 2.会导致bakcup与primary之间的lag太大，如果primary挂了，backup必须执行完这些lag的execution, 导致backup接替成为primary慢了很多
 
 所以VM FT有一个额外的机制来降低primary VM的速度：
@@ -84,7 +76,6 @@ Therefore, our implementation must be designed to minimize the possibility that 
 在primary和backup的sending和acknowledging之间，我们添加了一些额外的信息来表明backup和primary之间的lag。如果lag太大，VMware FT则会降低primary VM的速度(通过分配较少的cpu)。该过程是通过很多个ping-pong来实现的，即：逐渐调节的。如果lag变大，则降低primary VM的速度; 如果lag变小，则提高primary VM的速度。直到达到平衡。
 
 ### Implementation Issues for Disk IOs 
-
 有许多关于磁盘IO的细微问题：
 
 首先，由于磁盘操作是非阻塞的，因此可以并行执行，因此访问统一磁盘位置的同时磁盘操作可能会导致不确定性。同样，由于我们在磁盘操作中，使用DMA来完成内存与磁盘之间的数据传输，因此，访问同一块内存区域也会导致不确定性。VM FT的解决方案是检测此类的IO争用，使其串行化（在primary和backup上以同样的顺序执行）
@@ -94,18 +85,14 @@ Therefore, our implementation must be designed to minimize the possibility that 
 第三，当发生failover时，新选举的primary无法知道此前的primary执行的一些io操作是否开始执行、以及是否执行成功，我们的做法是认为执行失败，然后重新开始执行该io操作，因为io操作是幂等的，重复操作并不会产生影响。
 
 ### Implementation Issues for Network IOs 
-
 1.reduce VM traps and interrupts
-
 2.reduce the delay for transmitted packets(等待backup接收到请求相关的所有entries后，才能向客户端回应该请求)。Our primary optimizations in this area involve ensuring that sending and receiving log entries and acknowledgements can all be done without any thread context switch.(在接收和发送log entries的过程中，避免发生线程context切换)
 
 ## Design Alternatives 
 -------------------
-
 Shared vs. Non-shared Disk 
 
 ### Shared Disk 
-
 如果主和从使用共享存储空间，只有primary才实际向磁盘中写入，并且写入磁盘必须遵循Output Rule来延迟写入。
 
 ### Non-shared Disk
@@ -119,9 +106,7 @@ Shared vs. Non-shared Disk
 可以通过backup来执行读操作，以便于减少logging channel的压力。但是有几个问题：
 
 1.将会减缓backup的运行。因为要读取一些最新的内容时，backup必须等待所有的log entries实际的执行完（这些log entries或许已经在primary执行完了，但是在backup仅仅只是接收，并没有真正的执行）
-
 2.必须有一些额外的工作来处理磁盘的失败读取。例如：如果backup读取失败、而primary读取成功，则backup需要重新读取、直到读取成功。因为backup读取的内容需要和primary读取的内容完全一致
-
 3.在使用shared存储时，如果primary读之后紧跟着写，那么必须有一些额外的操作来延缓写操作，直到backup读取完之后再执行。
 
 注：通过我们的性能测试，在backup执行读操作会减少1-4%的系统吞吐。但是也显著的减少了logging channel的带宽消耗
