@@ -9,6 +9,7 @@ is a class (defined with class, struct or union) that:
   - its base class and non-static data members (if any) are themselves also trivially copyable types.
   - This class inherits from integral_constant as being either true_type or false_type, depending on whether T is a trivially copyable type.
 
+----------------
 
 **A trivially default constructible type** 
 is a type which can be trivially constructed without arguments or initialization values, either cv-qualified or not. This includes scalar types, trivially default constructible classes and arrays of such types.
@@ -20,6 +21,8 @@ is a class (defined with class, struct or union) that:
   - has no virtual members.
   - has no non-static data members with brace- or equal- initializers.
   - its base class and non-static data members (if any) are themselves also trivially default constructible types.
+
+----------------
 
 **A trivial type**
 is a type whose storage is contiguous (trivially copyable) and which only supports static default initialization (trivially default constructible), either cv-qualified or not. It includes scalar types, trivial classes and arrays of any such types.
