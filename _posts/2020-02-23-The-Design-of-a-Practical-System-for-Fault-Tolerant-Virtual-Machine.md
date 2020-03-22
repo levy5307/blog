@@ -14,12 +14,14 @@ Three chanllenges for replicating executing of any VM running any operating syst
 If the backup VM ever takes over after a failure of the primary, the backup VM will continue executing in a way that is entirely consistent with all outputs that the primary VM has sent to the external world.
 
 The Output Requirement can be ensured by delaying any external output(typically a network packet) until the backup VM has received all information that will allow it to replay execution at least to the point of that output operation.
+
 只有backup接收到该操作必须的所有数据时，primary才能向客户端发送该操作的output(将该操作的output给delay了)
 
 Given the above constraints, the easiest way to enforce the Output Requirement is to create a special log entry at each output operation. Then the Output Requirement may be enforced by this specific rule:
 
 ### Output Rule: 
 The primary VM may not send an output to the external world, until the backup VM has received and acknowledged the log entry associated with the operation producing the output.
+
 注解：如果backup没有接收到所有关于该操作相关的所有日志entry，而发送了该操作的output给clients。那么如果primary挂掉了，backup则无法恢复到primary挂掉之前的样子。就产生了不一致性
 
 ## Detecting and Responding to Failure 
@@ -32,6 +34,7 @@ the primary VM will go live -- that is , leave recording mode(and hence stop sen
 
 #### If the primary VM fails: 
 the backup VM should similarly go live, but the process is a bit more complex. Because of its lag in execution, the backup VM will likely have a number of log entries that it has received and acknowledged, but have not yet been consumed(because the backup VM hasn`t reached the appropriate point in its execution yet). The backup VM must continue replaying its execution from the log entries until it has consumed the last log entry. At that point , the backup VM will stop replaying mode and start executing as a normal VM(the backup VM has been promoted to the primary VM)
+
 注解：primary挂掉的情况比较复杂，因为backup有一些日志，只是复制过来了，但是并没有去真正执行。所以需要backup执行完所有的log entries，然后再改变状态变成一个真正的primary
 
 ### Ways to detect failure 
@@ -44,7 +47,9 @@ A failure is declared if heartbearting or logging traffic has stopped for longer
 
 ### Split-brain problem 
 When either a primary or backup VM wats to go live(as primary), it executes an atomic test-and-set operation on the shared storage. If the operation succeeds, the VM is allowed to go live; IF the operation fails, then the other VM must have already gone live, so the current vM actually halts itself(commits suicide).
+
 If the VM cannot access the shared storage when trying to do the atomic operation, then it just waits until it can.
+
 注解：使用共享存储的方式来解决脑裂导致的多主问题，获取到原子锁的则继续当做主。这样不会带来可用性的问题，因为只有共享存储无法访问了，primary和backup才会都无法获取锁，此时的VM ware其实也无论如何都不能对外提供服务了。所以对可用性没影响
 
 ### final aspect 
@@ -58,11 +63,14 @@ Using modified form of VMotion functionality of VMware vSphere
 
 ### Managing the Logging Channel 
 The hypervisors maintain a large buffer for logging entries for the primary and backup VMs.
+
 primary产生一些log entries放入到log buffer中, 同样，backup从它的log buffer中获取log entries. primary的log buffer中的log entries将会尽快的放入到logging channel, 然后backup将该log entries读取出来放入到其自己的log buffer中。每当从logging channel读取出一些log entries，backup发送acknowledgement给primary（该acknowledgement告知primary可以将相应的output发送给client了）
 
 If backup VM encounters an empty log buffer, it will stop execution. this pause will not affect any clients of the VM, because backup VM is not communicating externally.
+
 If primary VM encounters a full log buffer, it will stop execution similary. However, this pause can affect clients of the VM.
 Therefore, our implementation must be designed to minimize the possibility that the primary log buffer fills up
+
 注解：backup的log buffer为空导致的stop不会影响客户端，但是如果primary的log buffer满了，导致其stop了，则会影响到了客户端，应该尽量避免。
 
 如果backup重放一个execution的速度比primary记录一个execution慢太多的话：
@@ -72,6 +80,7 @@ Therefore, our implementation must be designed to minimize the possibility that 
 2.会导致bakcup与primary之间的lag太大，如果primary挂了，backup必须执行完这些lag的execution, 导致backup接替成为primary慢了很多
 
 所以VM FT有一个额外的机制来降低primary VM的速度：
+
 在primary和backup的sending和acknowledging之间，我们添加了一些额外的信息来表明backup和primary之间的lag。如果lag太大，VMware FT则会降低primary VM的速度(通过分配较少的cpu)。该过程是通过很多个ping-pong来实现的，即：逐渐调节的。如果lag变大，则降低primary VM的速度; 如果lag变小，则提高primary VM的速度。直到达到平衡。
 
 ### Implementation Issues for Disk IOs 
@@ -101,10 +110,12 @@ Shared vs. Non-shared Disk
 
 ### Non-shared Disk
 当无法获取shared存储空间时，使用非共享存储空间是一个非常有用的办法。当不使用共享存储空间时，backup VM同样需要磁盘写入，他需要和primary VM的磁盘写入保持同步。因此向priary磁盘的写入无需延迟写入。
+
 但是使用Non-shared disk有一个缺点，就是无法通过像shared disk那样通过原子操作来避免脑裂的问题。这是需要引入一些外部的组件来解决，比如通过大多数投票等方式来决定那个是primary。
 
 ### Executing Disk Reads on the Backup VM
 在之前的设计中，不会从backup去读取。因为读操作被当成一个input，由primary执行，并且通过logging channel传递给backup
+
 可以通过backup来执行读操作，以便于减少logging channel的压力。但是有几个问题：
 
 1.将会减缓backup的运行。因为要读取一些最新的内容时，backup必须等待所有的log entries实际的执行完（这些log entries或许已经在primary执行完了，但是在backup仅仅只是接收，并没有真正的执行）
@@ -114,12 +125,15 @@ Shared vs. Non-shared Disk
 3.在使用shared存储时，如果primary读之后紧跟着写，那么必须有一些额外的操作来延缓写操作，直到backup读取完之后再执行。
 
 注：通过我们的性能测试，在backup执行读操作会减少1-4%的系统吞吐。但是也显著的减少了logging channel的带宽消耗
+
     所以在logging channel的带宽很有限的时候，使用bakcup读取时一个不错的选择。
 
 ## MIT课程笔记 
 -------------------
 在本文中讲述了，replication分为两个级别，即：application level和machine level
+
 application level仅仅是保存应用看中的数据，例如GFS中的chunk，但是machine level要关注的数据就多的多，例如：内存，寄存器内容等等，
+
 显而易见的，application level效率高的多，但是machine level可以互备的东西更完整。在本文中关注的是machine level
 
 另外，本文只关注vm是单核的情况(非底层硬件单核, 底层硬件可以是multi-core，但是vm呈现给其guest os一定要是uni-core)，因为多核情况下，指令的执行顺序等变化太大(例如，对某个资源的锁获取具有一定随机性，如果primary和backup由不同的进程获取到，那执行结果将会大不相同)，目前vm团队还没有很好的适配。
@@ -172,4 +186,5 @@ Output Rule会导致性能问题，因为必须要等待primary发送给backup�
 Q: 如果primary发送output之后挂了，此时相应的请求还在backup的buffer里，并没有执行。然后backup成为primary，又发送了一个多余的output，会不会带来问题？
 
 A: 很幸运有TCP/IP协议，由于backup成为primary主之后，与原先的primary发送的output的TCP sequence相同，TCP协议会将其直接抛弃
+
    我们需要做的是，应该避免没有发送output，对于发送的多余的output，可以通过TCP或者应用层的查重来解决。
