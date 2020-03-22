@@ -94,9 +94,9 @@ main():
 
 This wrapper is not needed for in every use case of thread_local though. This can be revealed from decl2.c. The wrapper is generated only when:
 
-- <1> It is not function-local, and,
+- It is not function-local, and,
 
-- <2> It is extern (the example shown above), or
+- It is extern (the example shown above), or
 
 The type has a non-trivial destructor (which is not allowed for __thread variables), or
 
