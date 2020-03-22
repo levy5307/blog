@@ -1,5 +1,3 @@
-# Question
-
 G++ now implements the C++11 thread_local keyword; this differs from the GNU __thread keyword primarily in that it allows dynamic initialization and destruction semantics. Unfortunately, this support requires a run-time penalty for references to non-function-local thread_local variables even if they don't need dynamic initialization, so users may want to continue to use __thread for TLS variables with static initialization semantics.
 
 What is precisely the nature and origin of this run-time penalty?
