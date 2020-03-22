@@ -1,16 +1,14 @@
-** Three chanllenges for replicating executing of any VM running any operating system and workload **
+## Three chanllenges for replicating executing of any VM running any operating system and workload 
+- correnctly capturing all the input and non-determinism necessary to ensure deterministic execution of a backup virtual machine 
 
-1> correnctly capturing all the input and non-determinism necessary to ensure deterministic execution of a backup virtual machine 
+- correctly applying the inputs and non-determinism to the backup virtual machine
 
-2> correctly applying the inputs and non-determinism to the backup virtual machine
-
-3> doing so in a manner that doesn`t degrade performance
+- doing so in a manner that doesn`t degrade performance
 
 
-** FT(Fault-Tolerance) Protocol **
+## FT(Fault-Tolerance) Protocol 
 
-*** Output Requirement: ***
-
+### Output Requirement: 
 If the backup VM ever takes over after a failure of the primary, the backup VM will continue executing in a way that is entirely consistent with all outputs that the primary VM has sent to the external world.
 
 The Output Requirement can be ensured by delaying any external output(typically a network packet) until the backup VM has received all information that will allow it to replay execution at least to the point of that output operation.
@@ -18,53 +16,43 @@ The Output Requirement can be ensured by delaying any external output(typically 
 
 Given the above constraints, the easiest way to enforce the Output Requirement is to create a special log entry at each output operation. Then the Output Requirement may be enforced by this specific rule:
 
-*** Output Rule: ***
-
+### Output Rule: 
 The primary VM may not send an output to the external world, until the backup VM has received and acknowledged the log entry associated with the operation producing the output.
 注解：如果backup没有接收到所有关于该操作相关的所有日志entry，而发送了该操作的output给clients。那么如果primary挂掉了，backup则无法恢复到primary挂掉之前的样子。就产生了不一致性
 
+## Detecting and Responding to Failure 
 
-** Detecting and Responding to Failure **
+### Respond to failure 
 
-*** Respond to failure ***
-
-**** If the backup VM fails: ****
-
+#### If the backup VM fails: 
 the primary VM will go live -- that is , leave recording mode(and hence stop sending entries on the logging channel) and start executing normally.
 
-**** If the primary VM fails: ****
-
+#### If the primary VM fails: 
 the backup VM should similarly go live, but the process is a bit more complex. Because of its lag in execution, the backup VM will likely have a number of log entries that it has received and acknowledged, but have not yet been consumed(because the backup VM hasn`t reached the appropriate point in its execution yet). The backup VM must continue replaying its execution from the log entries until it has consumed the last log entry. At that point , the backup VM will stop replaying mode and start executing as a normal VM(the backup VM has been promoted to the primary VM)
 注解：primary挂掉的情况比较复杂，因为backup有一些日志，只是复制过来了，但是并没有去真正执行。所以需要backup执行完所有的log entries，然后再改变状态变成一个真正的primary
 
-*** Ways to detect failure ***
+### Ways to detect failure 
+- VMware FT uses UDP heartbeating betweent servers. In addition, 
 
-1.VMware FT uses UDP heartbeating betweent servers. In addition, 
-
-2.VMware FT monitors the logging traffic between primary and backup.
+- VMware FT monitors the logging traffic between primary and backup.
 
 A failure is declared if heartbearting or logging traffic has stopped for longer than a specific timeout. 
 注解：只要有heartbeat停止了，或者监控的数据传输停止了，就认为是发生了故障
 
-*** Split-brain problem ***
-
+### Split-brain problem 
 When either a primary or backup VM wats to go live(as primary), it executes an atomic test-and-set operation on the shared storage. If the operation succeeds, the VM is allowed to go live; IF the operation fails, then the other VM must have already gone live, so the current vM actually halts itself(commits suicide).
 If the VM cannot access the shared storage when trying to do the atomic operation, then it just waits until it can.
 注解：使用共享存储的方式来解决脑裂导致的多主问题，获取到原子锁的则继续当做主。这样不会带来可用性的问题，因为只有共享存储无法访问了，primary和backup才会都无法获取锁，此时的VM ware其实也无论如何都不能对外提供服务了。所以对可用性没影响
 
-*** final aspect ***
-
+### final aspect 
 Once a failure has occurred and one of the VMs has gone live, VMware FT automatically restores redundancy by starting a new backup VM on another host.
 
+## Practical implementation of FT 
 
-** Practical implementation of FT **
-
-*** Starting and Restarting FT VMs ***
-
+### Starting and Restarting FT VMs 
 Using modified form of VMotion functionality of VMware vSphere 
 
-*** Managing the Logging Channel ***
-
+### Managing the Logging Channel 
 The hypervisors maintain a large buffer for logging entries for the primary and backup VMs.
 primary产生一些log entries放入到log buffer中, 同样，backup从它的log buffer中获取log entries. primary的log buffer中的log entries将会尽快的放入到logging channel, 然后backup将该log entries读取出来放入到其自己的log buffer中。每当从logging channel读取出一些log entries，backup发送acknowledgement给primary（该acknowledgement告知primary可以将相应的output发送给client了）
 
@@ -82,7 +70,7 @@ Therefore, our implementation must be designed to minimize the possibility that 
 所以VM FT有一个额外的机制来降低primary VM的速度：
 在primary和backup的sending和acknowledging之间，我们添加了一些额外的信息来表明backup和primary之间的lag。如果lag太大，VMware FT则会降低primary VM的速度(通过分配较少的cpu)。该过程是通过很多个ping-pong来实现的，即：逐渐调节的。如果lag变大，则降低primary VM的速度; 如果lag变小，则提高primary VM的速度。直到达到平衡。
 
-*** Implementation Issues for Disk IOs ***
+### Implementation Issues for Disk IOs 
 
 有许多关于磁盘IO的细微问题：
 
@@ -92,27 +80,25 @@ Therefore, our implementation must be designed to minimize the possibility that 
 
 第三，当发生failover时，新选举的primary无法知道此前的primary执行的一些io操作是否开始执行、以及是否执行成功，我们的做法是认为执行失败，然后重新开始执行该io操作，因为io操作是幂等的，重复操作并不会产生影响。
 
-*** Implementation Issues for Network IOs ***
+### Implementation Issues for Network IOs 
 
 1.reduce VM traps and interrupts
 
 2.reduce the delay for transmitted packets(等待backup接收到请求相关的所有entries后，才能向客户端回应该请求)。Our primary optimizations in this area involve ensuring that sending and receiving log entries and acknowledgements can all be done without any thread context switch.(在接收和发送log entries的过程中，避免发生线程context切换)
 
-** Design Alternatives **
+## Design Alternatives 
 
-*** Shared vs. Non-shared Disk ***
+### Shared vs. Non-shared Disk 
 
-**** Shared Disk ****
+#### Shared Disk 
 
 如果主和从使用共享存储空间，只有primary才实际向磁盘中写入，并且写入磁盘必须遵循Output Rule来延迟写入。
 
-**** Non-shared Disk ****
-
+#### Non-shared Disk
 当无法获取shared存储空间时，使用非共享存储空间是一个非常有用的办法。当不使用共享存储空间时，backup VM同样需要磁盘写入，他需要和primary VM的磁盘写入保持同步。因此向priary磁盘的写入无需延迟写入。
 但是使用Non-shared disk有一个缺点，就是无法通过像shared disk那样通过原子操作来避免脑裂的问题。这是需要引入一些外部的组件来解决，比如通过大多数投票等方式来决定那个是primary。
 
-*** Executing Disk Reads on the Backup VM***
-
+### Executing Disk Reads on the Backup VM
 在之前的设计中，不会从backup去读取。因为读操作被当成一个input，由primary执行，并且通过logging channel传递给backup
 可以通过backup来执行读操作，以便于减少logging channel的压力。但是有几个问题：
 
@@ -125,8 +111,7 @@ Therefore, our implementation must be designed to minimize the possibility that 
 注：通过我们的性能测试，在backup执行读操作会减少1-4%的系统吞吐。但是也显著的减少了logging channel的带宽消耗
     所以在logging channel的带宽很有限的时候，使用bakcup读取时一个不错的选择。
 
-** MIT课程笔记 **
-
+## MIT课程笔记 
 在本文中讲述了，replication分为两个级别，即：application level和machine level
 application level仅仅是保存应用看中的数据，例如GFS中的chunk，但是machine level要关注的数据就多的多，例如：内存，寄存器内容等等，
 显而易见的，application level效率高的多，但是machine level可以互备的东西更完整。在本文中关注的是machine level
