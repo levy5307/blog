@@ -1,5 +1,3 @@
-## Situation
-----------------
 Backup request function can optimize the long tail problem of read delay, suitable for users with low consistency requirements.
 
 ## Investigation
@@ -17,5 +15,4 @@ the client send the request to two different servers, each tagged with the ident
 There is another variation in which the request is sent to one server and forwarded to replicas only if the ini- tial server does not have it in its cache and uses cross-server cancellations.
 
 This approach limits the benefits to not only the tail of the latency, but also median latency distribution. But it result in higher network load.
-
 
