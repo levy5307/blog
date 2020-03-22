@@ -1,4 +1,5 @@
-## Three chanllenges for replicating executing of any VM running any operating system and workload 
+Three chanllenges for replicating executing of any VM running any operating system and workload 
+
 - correnctly capturing all the input and non-determinism necessary to ensure deterministic execution of a backup virtual machine 
 
 - correctly applying the inputs and non-determinism to the backup virtual machine
