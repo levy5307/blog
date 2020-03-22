@@ -6,13 +6,10 @@ is a class (defined with class, struct or union) that:
 
 ***<1>*** 
 uses the implicitly defined copy and move constructors, copy and move assignments, and destructor.
-
 ***<2>*** 
 has no virtual members.
-
 ***<3>*** 
 its base class and non-static data members (if any) are themselves also trivially copyable types.
-
 ***<4>*** 
 This class inherits from integral_constant as being either true_type or false_type, depending on whether T is a trivially copyable type.
 
@@ -25,13 +22,10 @@ is a class (defined with class, struct or union) that:
 
 ***<1>*** 
 uses the implicitly defined default constructor.
-
 ***<2>*** 
 has no virtual members.
-
 ***<3>*** 
 has no non-static data members with brace- or equal- initializers.
-
 ***<4>*** 
 its base class and non-static data members (if any) are themselves also trivially default constructible types.
 
@@ -44,12 +38,9 @@ is a class (defined with class, struct or union) that is both trivially default 
 
 ***<1>*** 
 uses the implicitly defined default, copy and move constructors, copy and move assignments, and destructor.
-
 ***<2>*** 
 has no virtual members.
-
 ***<3>*** 
 has no non-static data members with brace- or equal- initializers.
-
 ***<4>*** 
 its base class and non-static data members (if any) are themselves also trivial types.
