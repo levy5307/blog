@@ -89,3 +89,5 @@ std::unique_ptr<logger_proxy> logger_proxy::_instance =  make_unique<logger_prox
 ***说明这种饿汉式才是真正的线程安全。***
 
 ***TODO：调研为什么懒汉式里的instance会被销毁。***
+
+
