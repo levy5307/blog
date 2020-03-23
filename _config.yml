@@ -50,6 +50,7 @@ excerpt_separator: <!-- more -->
 # 你的社交网络链接，它们会作为图标出现在你的网站页脚中，可选填写
 footer-links: 
   github: levy5307 #https://github.com/<>
+  email: zlw5307@163.com 
 
 # 站点页脚的文字
 footer-text: Copyright (c) 2019 
@@ -59,7 +60,7 @@ footer-text: Copyright (c) 2019
 #
 
 # 输入Disqus shortname，即可添加评论区
-disqus: loffer #shortname
+# disqus: loffer #shortname
 
 # 输入Gitalk相关设定，即可添加评论区，具体请看教程
 gitalk:
