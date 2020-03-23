@@ -3,7 +3,6 @@ G++ now implements the C++11 thread_local keyword; this differs from the GNU __t
 What is precisely the nature and origin of this run-time penalty?
 
 # Answer
-
 The dynamic thread_local initialization is added in commit 462819c. One of the change is:
 
 * semantics.c (finish_id_expression): Replace use of thread_local
@@ -92,14 +91,13 @@ main():
 
 This wrapper is not needed for in every use case of thread_local though. This can be revealed from decl2.c. The wrapper is generated only when:
 
-- It is not function-local, and,
+- It is not function-local, ***and***
 
-- It is extern (the example shown above), or
+- It is extern (the example shown above), ***or***
 
-The type has a non-trivial destructor (which is not allowed for __thread variables), or
+- The type has a non-trivial destructor (which is not allowed for __thread variables), ***or***
 
-The type variable is initialized by a non-constant-expression (which is also not allowed for __thread variables).
+- The type variable is initialized by a non-constant-expression (which is also not allowed for __thread variables).
 
-# conclusion
-
+# Conclusion
 In all other use cases, it behaves the same as __thread. That means, unless you have some extern __thread variables, you could replace all __thread by thread_local without any loss of performance.
