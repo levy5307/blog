@@ -117,9 +117,9 @@ void shortest_path(std::vector<bool> &visit,
 2. 对pri_queue上，id_min从左到右，id_max从右到左移动，如下图所示:
 ```
     +------+------+------+------+------+------+------+------+
-    |																		|
-    V																		V
-id_min -->													<--id_max
+    |							    |
+    V				       			    V
+id_min -->						<--id_max
 ```
 3. 对当前id_max上的所有primary，分别找到其对应的磁盘并获取其磁盘负载，选择负载最大的磁盘及其对应的primary，进行迁移
 4. 依次将id_min和id_max进行移动，重复上述步骤。直到id_min节点上的primary数量 >= N/M
