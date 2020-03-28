@@ -47,7 +47,7 @@ Primary角色切换是Pegasus balancer整体逻辑的核心部分，先看一下
 * 如果某个节点A上primary的数目x >= N/M, 则从source到A添加一条有向边，边的权重为x - N/M，表示可以从该节点向外流出x - N/M个primary；反之，如果节点B上的primary数目y < N/M，则添加一条B到sink的有向边，其权重为N/M - y，表示可以向B流入N/M - y个primary
 * 如果节点A上有一个primary，其对应的secondary在结点B上，则为A->B的有向边的权重+1
 
-![](../images/transfer-ford-fulkerson.jpg)
+![](../images/transfer-ford-fulkerson.png)
 
 上图所示为在3 replica server集群上，一个7分片表的图情况：
 * 由于N=8, M=3，则N/M = 2
