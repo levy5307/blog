@@ -1,4 +1,4 @@
-## 背景介绍
+## 理论背景
 
 在当前pegasus balancer的实现中，meta server会定期对所有replica server节点的replica情况做评估，当其认为replica在节点分布不均衡时，会将相应replica进行迁移。
 
@@ -10,7 +10,7 @@
 * 如果发现**primary**分配不均衡时，首先考虑的策略应该是对primary进行角色切换，而不是直接就进行数据拷贝
 * 不仅要考虑节点间的负载均衡，也要尽量保证节点内各个磁盘的replica个数是均衡的
 
-## 魔改Ford-Fulkerson
+### 优化Ford-Fulkerson
 
 上面讲到，当primary分布不均衡时，首先考虑的策略是对进行角色切换，也就是说，需要寻找到一条从路径，将primary从“多方”迁移到“少方”。将迁移的primary数量作为流量，很自然的我们就想到了Ford-Fulkerson，即：
 1. 寻找一条从source到sink的增广路径
@@ -126,7 +126,7 @@ id_min -->					    <--id_max
 
 ***NOTE：*** 上述构建图、查找增广路径、move  primary和copy primary步骤都是针对一个表进行的操作，对于集群上的多个表，都要执行一次上述步骤。
 
-## secondary负载均衡
+## Secondary负载均衡
 上述讲解了primary负载均衡，当然secondary也同样需要负载均衡，否则的话可能会出现不同节点上primary均衡，但是partition总数不均衡的情况。
 因为在做primary迁移时已经做过角色切换了，secondary迁移就不用像primary这么复杂，不用考虑角色切换的问题了。此时直接进行copy就可以。因此secondary的负载均衡，直接采用copy primary一样的算法实现，这里不再赘述。
 同理，secondary也要对所有表分别进行负载均衡。
