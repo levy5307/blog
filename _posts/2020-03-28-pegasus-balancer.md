@@ -114,15 +114,15 @@ void shortest_path(std::vector<bool> &visit,
 当没有成功获取增广路径时，则说明简单通过角色切换的方式已经无法达到负载均衡了，必须通过迁移primary来实现了。
 迁移primary算法的实现相对简单，其具体执行步骤如下：
 1. 将节点按照primary数量按从小到大排序，得到pri_queue
-2. 对pri_queue上，id_min从左到右，id_max从右到左移动，如下图所示:
+2. 对pri_queue上，id_min始终指向pri_queue的头结点，id_max始终指向pri_queue的尾节点，如下图所示:
 ```
     +------+------+------+------+------+------+------+------+
     |							 |
     V				       			 V
-id_min -->					    <--id_max
+id_min 					              id_max
 ```
 3. 对当前id_max上的所有primary，分别找到其对应的磁盘并获取其磁盘负载，选择负载最大的磁盘及其对应的primary，进行迁移
-4. 依次将id_min和id_max进行移动，重复上述步骤。直到id_min节点上的primary数量 >= N/M
+4. 对当前id_min/id_max指向的primary数量分别+1/-1。重新排序，并循环执行上述步骤，直到id_min节点上的primary数量 >= N/M，此时说明达到了平衡
 
 ***NOTE：*** 上述构建图、查找增广路径、move  primary和copy primary步骤都是针对一个表进行的操作，对于集群上的多个表，都要执行一次上述步骤。
 
