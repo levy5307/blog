@@ -1,3 +1,13 @@
+---
+layout: post
+title: pegasus balancer 
+date: 2020-03-28
+Author: Levy5307
+tags: [pegasus load balance]
+comments: true
+toc: true
+---
+
 ## 理论背景
 
 在当前pegasus balancer的实现中，meta server会定期对所有replica server节点的replica情况做评估，当其认为replica在节点分布不均衡时，会将相应replica进行迁移。
