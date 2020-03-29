@@ -15,5 +15,5 @@ Pegasus的负载均衡由meta server进行全局控制，其最小单元是repli
 
 如下两篇文章分别对这两种情况进行了介绍。
 
-* [cure]()
+* [cure](https://levy5307.github.io/blog/pegasus-cure/)
 * [balancer](https://levy5307.github.io/blog/pegasus-balancer/)
