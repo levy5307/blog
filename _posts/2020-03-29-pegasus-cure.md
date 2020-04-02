@@ -26,14 +26,36 @@ meta server中使用定时任务来定期检查各个replica group的状态信�
 当secondary数量为0时，也有可能是该partition是新创建的，此时只需要在partition中选择一个提升为primary就可以了。具体的选择方法和上述相同。
 
 ### 该partition的所有replica都不可用
-当secondary数量为0，并且该partition并非是新创建的，则表明此时该partition中的所有replica都不可用。
-***待补充***
+当secondary数量为0，并且该partition并非是新创建的，则表明此时该partition中的所有replica都不可用。此时则从inactive中选取一个最新的replica，将其promote为primary
+
+***NOTE：*** inactive的replica是指config_context的dropped成员。当replica发生状态变化时，例如：downgrade to secondary、upgrade to secondary、assign primary时，replica server会将该replica状态同步给meta server，当收到某个replica变为inactive的通知时，meta server会将其保存到config_context::dropped中
+调用链路：
+```
+               通知
+replica server ----> meta server --> simple_load_balancer --> config_context
+```
+另外, partition_context::last_drops与config_context::dropped是相对应的，dropped保存inactive的replica, last_drops保存的是inactive的replica所在的node，
 
 ## 缺少Secondary
 
+对于缺少secondary的情况，也是从inactive中选取一个，将其提升为secondary。但是具体选取哪个inactive replica，却有两种情况。
+- emergency
+
+所谓emergency，就是满足以下四个条件之一：
+	1. 一个partition允许最大的replica数量> 2pc要求的最小数量，并且当前partition的replica数量 < 2pc要求的最小数量。也就是说，挂掉的节点过多，导致不满足2pc要求
+	2. inactive列表为空
+	3. 最后一个inactive replica挂掉的时间过长
+	4. 最后一个inactive replica所在的节点在黑名单中
+ 
+此时，系统中为每个config_context维护了一个prefered_dropped变量，该变量表示上次选取的inactive replica在dropped中的坐标，下次选取的时候从prefer_dropped-1开始选取。此时选取的逻辑如下所示：
+	1. 首先，从prefer_dropped-1开始，选取所在的节点状态为active(即没有挂掉)的第一个inactive replica
+	2. 如果上述选取的inactive replica没有在黑名单中，并且其地址是valid，则选取成功
+	3. 否则，则需要从系统中的所有节点中，则选取出partition所在的节点，从中选取选取replica最少的节点，将该节点上的inactive replica提升为secondary
+	
+- non-emergency
+
+当不满足以上四个条件时，此时就是non-emergency。此时只需要简单的选取最后一个inactive replica，将其提升为secondary就可以了。
+
 ## 多Secondary
 这种情况是由于负载均衡策略导致的，此时只要选择出这些secondary所在的node中partition数量最少的一个node，将其对应的secondary remove就可以了。
-
-
-## 未完待续
 
