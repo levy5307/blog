@@ -39,20 +39,20 @@ replica server ----> meta server --> simple_load_balancer --> config_context
 ## 缺少Secondary
 
 对于缺少secondary的情况，也是从inactive中选取一个，将其提升为secondary。但是具体选取哪个inactive replica，却有两种情况。
-- emergency
+### emergency
 
 所谓emergency，就是满足以下四个条件之一：
-	1. 一个partition允许最大的replica数量> 2pc要求的最小数量，并且当前partition的replica数量 < 2pc要求的最小数量。也就是说，挂掉的节点过多，导致不满足2pc要求
-	2. inactive列表为空
-	3. 最后一个inactive replica挂掉的时间过长
-	4. 最后一个inactive replica所在的节点在黑名单中
+- 一个partition允许最大的replica数量> 2pc要求的最小数量，并且当前partition的replica数量 < 2pc要求的最小数量。也就是说，挂掉的节点过多，导致不满足2pc要求
+- inactive列表为空
+- 最后一个inactive replica挂掉的时间过长
+- 最后一个inactive replica所在的节点在黑名单中
  
 此时，系统中为每个config_context维护了一个prefered_dropped变量，该变量表示上次选取的inactive replica在dropped中的坐标，下次选取的时候从prefer_dropped-1开始选取。此时选取的逻辑如下所示：
-	1. 首先，从prefer_dropped-1开始，选取所在的节点状态为active(即没有挂掉)的第一个inactive replica
-	2. 如果上述选取的inactive replica没有在黑名单中，并且其地址是valid，则选取成功
-	3. 否则，则需要从系统中的所有节点中，则选取出partition所在的节点，从中选取选取replica最少的节点，将该节点上的inactive replica提升为secondary
+- 首先，从prefer_dropped-1开始，选取所在的节点状态为active(即没有挂掉)的第一个inactive replica
+- 如果上述选取的inactive replica没有在黑名单中，并且其地址是valid，则选取成功
+- 否则，则需要从系统中的所有节点中，则选取出partition所在的节点，从中选取选取replica最少的节点，将该节点上的inactive replica提升为secondary
 	
-- non-emergency
+### non-emergency
 
 当不满足以上四个条件时，此时就是non-emergency。此时只需要简单的选取最后一个inactive replica，将其提升为secondary就可以了。
 
