@@ -60,18 +60,18 @@ Primary角色切换是Pegasus balancer整体逻辑的核心部分，先看一下
 
 ![](../images/transfer-ford-fulkerson.png)
 
-上图所示为在3 replica server集群上，一个7分片表的图情况：
+上图所示为在3 replica server集群上，一个8分片表的图情况：
 * 由于N=8, M=3，则N/M = 2
 * 由于只有节点B上的primary数量>2，则源点只指向B，其权重为B节点上的primary数量 - N/M = 6 - 2 = 4；其他节点则指向汇点t，其权重均为1
 * 节点B上有6个primary其相应的secondary在C和D上，所以B->C和B->D上权重等于6。同理可以得出D->B, C->D, D->C的权重均为1
 
 ### 获取增广路径
 
-另外，为了减少primary切换的数量，我们在寻找最大流时，需要寻找到最小费用最大流的增广路径，也就是说：
-1. 获取最大的流
-2. 在保证获取了最大流的前提下，选择费用最小的那条路径
+对于获取增广路径，有很多中不同的方法，这里我们采取的改进dijstra算法。众所周知dijstra算法是一种贪心策略，在这里依然依据贪心算法进行修改。主要改动点有如下两点：
+1. 对于所有未访问过的节点，依据贪心算法，获取源节点到这些节点的容量，最后选取拥有最大容量的点。
+2. 根据获取到的节点，更新源节点到所有节点的流量。由于增广路的流量等于该路径上所有容量的最小值，所以这里更新的时候与dijstra也有所不同。
 
-为了达到这个目的，我们采用了dijstra算法来查找增广路经，以获取费用最小的路径。这里粘贴上代码，并加上必要的注释以帮助理解
+这里粘贴上代码，并加上必要的注释以帮助理解
 ```c++
 void shortest_path(std::vector<bool> &visit,
                              std::vector<int> &flow,
@@ -85,7 +85,7 @@ void shortest_path(std::vector<bool> &visit,
     while (!visit[graph_nodes - 1]) {
         pos = -1, max_value = 0;
         for (int i = 0; i != graph_nodes; ++i) {
-		    // 在这里获取最大的流，用于满足1
+		    // 在这里获取拥有最大流的节点，用于满足1
             if (visit[i] == false && flow[i] > max_value) {
                 pos = i;
                 max_value = flow[i];
@@ -97,7 +97,7 @@ void shortest_path(std::vector<bool> &visit,
 
         visit[pos] = true;
         for (int i = 0; i != graph_nodes; ++i) {
-		    // 这里的条件主要用于满足2，也就是说，已经获取了最大流了，保证当前选择的路径是最小费用的路径
+		    // 这里的条件主要用于满足2，也就是说，已经获取了最大流节点了，根据其去更新其他源节点到其他节点的流
             if (!visit[i] && std::min(flow[pos], network[pos][i]) > flow[i]) {
                 flow[i] = std::min(flow[pos], network[pos][i]);
                 prev[i] = pos;
