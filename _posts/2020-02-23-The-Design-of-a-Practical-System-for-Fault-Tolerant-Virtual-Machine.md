@@ -1,3 +1,11 @@
+
+---
+layout: post
+Author: Levy5307
+tags: [论文笔记]
+comments: true
+---
+
 Three chanllenges for replicating executing of any VM running any operating system and workload 
 
 - correnctly capturing all the input and non-determinism necessary to ensure deterministic execution of a backup virtual machine 
