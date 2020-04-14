@@ -15,7 +15,7 @@ PacificA是微软实现的一款强一致性的分布式共识协议，具有简
 ## Read & Write
 根据PacificA算法，读操作的处理是比较简单的，其只需要primary在本地读取到最新的值就可以了，secondary并不参与其中，这里不再赘述。但是对于写则会复杂很多，因为需要经过主从之间的2PC来实现，这里主要对写做一些讲解。
 
-![Write流程](../images/)
+![Write流程](../images/pegasus-pacifica-write-process.png)
 
 写入流程如上图所示。这里加几点说明：
 
