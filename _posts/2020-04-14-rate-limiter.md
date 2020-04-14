@@ -37,7 +37,11 @@ Because LB does not allow saving tokens to send large bursts. So if we have a la
 So, I recommend choosing the token bucket algorithm.
 
 ### Reference
+
 [how to design a scalable rate limiting algorithm](https://konghq.com/blog/how-to-design-a-scalable-rate-limiting-algorithm/)
+
 [rate limiting strategies techniques](https://cloud.google.com/solutions/rate-limiting-strategies-techniques)
+
 [分布式服务限流实战](https://www.infoq.cn/article/Qg2tX8fyw5Vt-f3HH673)
+
 [leaky bucket tocken buckettraffic shaping](https://www.slideshare.net/vimal25792/leaky-bucket-tocken-buckettraffic-shaping)
