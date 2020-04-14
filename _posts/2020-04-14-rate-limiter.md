@@ -35,3 +35,9 @@ So We mainly consider the following two ways：token bucket and leaky bucket.
 Because LB does not allow saving tokens to send large bursts. So if we have a large request, which is larger than the size of bucket, the request will not be processed.
 
 So, I recommend choosing the token bucket algorithm.
+
+### Reference
+https://konghq.com/blog/how-to-design-a-scalable-rate-limiting-algorithm/
+https://cloud.google.com/solutions/rate-limiting-strategies-techniques
+https://www.infoq.cn/article/Qg2tX8fyw5Vt-f3HH673
+https://www.slideshare.net/vimal25792/leaky-bucket-tocken-buckettraffic-shaping
