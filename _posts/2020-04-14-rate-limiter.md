@@ -1,5 +1,3 @@
-## Rate Limiter
-
 In general, a rate is a simple count of occurrences over time. However, there are several different techniques for measuring and limiting rates.
 
 ### Fixed Window 
