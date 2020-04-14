@@ -1,3 +1,13 @@
+---
+layout: post
+title: PacificA In Pegasus
+date: 2020-04-14
+Author: Levy5307
+tags: [pegasus PacificA]
+comments: true
+toc: true
+---
+
 PacificA是微软实现的一款强一致性的分布式共识协议，具有简单易实现、可用性高的优点。Pegasus就是使用PacificA协议来维护多副本之间的复制。
 
 之前有篇文章讲过PacificA的原理与理论，如有疑惑请移步PacificA(https://levy5307.github.io/blog/PacificA/)
