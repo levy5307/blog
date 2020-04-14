@@ -32,6 +32,6 @@ So We mainly consider the following two ways：token bucket and leaky bucket.
 
 - With LB, when there are a large number of burst requests in a short period of time, each request has to wait in the queue for a while before it can be answered, even if the server is not under any load.
 
-Because LB does not allow saving tokens to send large bursts. So if we have a large request, which is large than the size of bucket, the request will not be processed.
+Because LB does not allow saving tokens to send large bursts. So if we have a large request, which is larger than the size of bucket, the request will not be processed.
 
 So, I recommend choosing the token bucket algorithm.
