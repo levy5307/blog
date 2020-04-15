@@ -3,7 +3,7 @@ layout: post
 title: PacificA In Pegasus
 date: 2020-04-14
 Author: Levy5307
-tags: [pegasus PacificA]
+tags: [pegasus, PacificA]
 comments: true
 toc: true
 ---
