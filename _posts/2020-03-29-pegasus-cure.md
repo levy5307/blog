@@ -34,7 +34,7 @@ meta server中使用定时任务来定期检查各个replica group的状态信�
                通知
 replica server ----> meta server --> simple_load_balancer --> config_context
 ```
-另外, partition_context::last_drops与config_context::dropped是相对应的，dropped保存inactive的replica, last_drops保存的是inactive的replica所在的node，
+另外, partition_context::last_drops与config_context::dropped是相对应的，dropped保存inactive的replica, last_drops保存的是inactive的replica所在的node
 
 ## 缺少Secondary
 
