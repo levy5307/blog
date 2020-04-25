@@ -23,4 +23,22 @@ PacificA是微软实现的一款强一致性的分布式共识协议，具有简
 
 2. 上图中的WAL分为private log和shared log，其中private log保存在内存中，而shared log在磁盘上。在pegasus中，每个replica对应一个RocksDB，由于一个机器上有多个replica，那么如果打开了RocksDB的WAL的话，写入的时候将会在多个文件之间切换，导致随机写。所以在Pegasus中采用了shared log的机制来替代RocksDB的WAL。但是使用shared log也有个问题，就是当recover一个replica的时候需要做log split操作。所以Pegasus采用了shared log + private log的方式，private log保存在内存中，当添加potential secondary时，直接使用private log，对于rivate log缺失的部分通过重放shared log补全。
 
+## failure detector
+
+PacificA中，错误探测是通过primary定期向secondary发送beacon来实现。在pegasus里对于错误探测机制这里做了一些简单的修改。beacon的发送不是在primary和secondary之间，而是修改成了在meta server和primary server之间，由primary server主动向meta server发送beacon，时间间隔默认为3s。具体执行如下图所示：
+
+```
+                             |--- lease period ----|lease IsExpired, commit suicide
+                 |---- lease period ----|
+    replica: ---------------------------------------------------------------->
+                 \      /    \     /       _\
+               beacon ack   beacon ack       x (beacon deliver failed)
+                  _\/         _\/
+     meta : ---------------------------------------------------------------->
+                    |----- grace period -----|
+                                |---- grace period -----| grace IsExpired, declare worker dead
+```
+
+同样，这里令grace period > lease period，所以一定是replica server先发现beacon通信失败、而先于meta server做出响应。这样说明，当meta server达到grace period的时候，一定是因为replica server此时不可用了。
+
 ## 未完成
