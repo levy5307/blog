@@ -39,10 +39,12 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
                                 |---- grace period -----| grace IsExpired, declare worker dead
 ```
 
-为了实现高可用，Pegasus中会有多个meta server存在，其中一个为master。这里的failure detector是在meta server master和replica server之间。当meta server master发生切换时，replica server也会进行切换、将beacon发送至新的master上。
-
 对于lease period和grace period是否expired，pegasus分别在replica server和meta server的failure detector中创建了一个定时任务去定时检查，该定时任务的时间间隔会比较小，便于及时发现expired的情况。
 
-同PacificA算法，Pegasus里令grace period > lease period，所以一定是replica server先发现beacon通信失败、而先于meta server做出响应。这样说明，当meta server达到grace period的时候，一定是因为replica server此时不可用了。
+对于meta server, 当其发现grace period过期时，meta会认为replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive；而当replica server恢复正常后，此时则仅将该replica server标记为active。等待下次进行load balance的时会将一部分primary和secondary迁移过来。
+
+而对于replica server则比较复杂。为了实现高可用，Pegasus中会有多个meta server存在，其中一个为master。当meta server master发生切换时，meta server通过beacon ack来通知replica新的master，replica server则会将beacon发送至新的master上。当其发现lease period过期时，replica则认为meta server已经宕机了。
+
+和PacificA算法一样，Pegasus同样令grace period > lease period，所以一定是replica server先发现beacon通信失败、而先于meta server做出响应。这样说明，当meta server达到grace period的时候，一定是因为replica server此时不可用了。
 
 ## 未完成
