@@ -25,7 +25,7 @@ PacificA是微软实现的一款强一致性的分布式共识协议，具有简
 
 ## failure detector
 
-PacificA中，错误探测是通过primary定期向secondary发送beacon来实现。在pegasus里对于错误探测机制这里做了一些简单的修改。beacon的发送不是在primary和secondary之间，而是修改成了在meta server和primary server之间，由primary server主动向meta server发送beacon，时间间隔默认为3s。具体执行如下图所示：
+PacificA中，错误探测是通过primary定期向secondary发送beacon来实现，这里是假设primary和secondary在不同的机器上，这样发送beacon才有意义。然而在pegasus里却不满足这种条件，即：一台机器上既有primary、也有secondary，所以Pegasus对于错误探测机制这里做了一些简单的修改。beacon的发送不是在primary和secondary之间，而是修改成了在meta server和primary server之间，由primary server主动向meta server发送beacon，时间间隔默认为3s。具体执行如下图所示：
 
 ```
                              |--- lease period ----|lease IsExpired, commit suicide
@@ -41,7 +41,8 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 
 对于lease period和grace period是否expired，pegasus分别在replica server和meta server的failure detector中创建了一个定时任务去定时检查，该定时任务的时间间隔会比较小，便于及时发现expired的情况。
 
-对于meta server, 当其发现grace period过期时，meta会认为replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive；而当replica server恢复正常后，此时则仅将该replica server标记为active。等待下次进行load balance的时会将一部分primary和secondary迁移过来。
+对于meta server, 当其发现grace period过期时，meta会认为replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive，对于primary降为inactive则需要触发cure操作
+而当replica server恢复正常后，此时则仅将该replica server标记为active，等待下次进行load balance的时会将一部分primary和secondary迁移过来。
 
 而对于replica server则比较复杂。为了实现高可用，Pegasus中会有多个meta server存在，其中一个为master。当meta server master发生切换时，meta server通过beacon ack来通知replica新的master，replica server则会将beacon发送至新的master上。当其发现lease period过期时，replica则认为meta server已经宕机了。
 
