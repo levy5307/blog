@@ -41,10 +41,20 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 
 对于lease period和grace period是否expired，pegasus分别在replica server和meta server的failure detector中创建了一个定时任务去定时检查，该定时任务的时间间隔会比较小，便于及时发现expired的情况。
 
-对于meta server, 当其发现grace period过期时，meta会认为replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive，对于primary降为inactive则需要触发cure操作
+### replica server不可用
+
+当meta server发现某replica server的grace period过期时，会认为该replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive。
+
+对于primary降为inactive的情况，首先需要将ballot + 1，并将该partition的最新配置发送至zookeeper去更新。当更新成功后: 
+1. 更新本地配置，即更新node_state，从node_state上移除该primary
+2. 更新load balancer。当前primary移除掉后，需要修改load balancer的信息。该信息是指：每个gpid都有其所在的server列表(三副本则为三台server)，这里修改信息是指将该primary对应的server从上述列表中移除。
+3. 触发cure操作，由于该replica group没有了primary，需要触发cure操作来"治愈"该replica group。NOTE: 发送proposal逻辑需要熟悉一下
+
 而当replica server恢复正常后，此时则仅将该replica server标记为active，等待下次进行load balance的时会将一部分primary和secondary迁移过来。
 
-而对于replica server则比较复杂。为了实现高可用，Pegasus中会有多个meta server存在，其中一个为master。当meta server master发生切换时，meta server通过beacon ack来通知replica新的master，replica server则会将beacon发送至新的master上。当其发现lease period过期时，replica则认为meta server已经宕机了。
+### meta server不可用
+
+为了实现高可用，Pegasus中会有多个meta server存在，其中一个为master。当meta server master发生切换时，meta server通过beacon ack来通知replica新的master，replica server则会将beacon发送至新的master上。当其发现lease period过期时，replica则认为meta server已经宕机了。
 
 和PacificA算法一样，Pegasus同样令grace period > lease period，所以一定是replica server先发现beacon通信失败、而先于meta server做出响应。这样说明，当meta server达到grace period的时候，一定是因为replica server此时不可用了。
 
