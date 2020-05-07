@@ -20,6 +20,7 @@ meta server中使用定时任务来定期检查各个replica group的状态信�
 2. 如果两个相等，则选择该app的partition数量最少的
 3. 还是相等的话，则选择所有app下primary数量最少的
 4. 如果还是相等，则选择所有app下partition数量最少的
+
 因为产生决策时，而真正执行则需要一段时间。因此，这里的数量统计不仅仅要考虑正在服务的replica，也要包括将来要服务的replica。
 
 ### 新创建的partition(last_drop为空)
