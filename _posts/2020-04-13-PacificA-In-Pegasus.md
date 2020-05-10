@@ -46,7 +46,7 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 当meta server发现某replica server的grace period过期时，会认为该replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive。
 
 对于primary降为inactive的情况: 
-1. 首先需要将ballot + 1，由于metaserver使用zookeeper对数据进行持久化, 所以需要将该partition的最新配置发送至zookeeper去更新
+1. 为了防止出现双主，首先meta需要在replica group中将当前primary设置为不可用，同时将ballot + 1。由于metaserver使用zookeeper对数据进行持久化, 所以需要将该partition的最新配置发送至zookeeper去更新
 2. 更新本地配置，即更新node_state，从node_state上移除该primary
 3. 更新load balancer。当前primary移除掉后，需要修改load balancer的信息。该信息是指：每个gpid都有其所在的server列表(三副本则为三台server)，这里修改信息是指将该primary对应的server从上述列表中移除。
 4. 触发cure操作，由于该replica group没有了primary，需要触发cure操作来"治愈"该replica group。
@@ -56,7 +56,7 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 发送proposal的流程：
 1. meta向replica发送proposal
 2. replica根据自身状态以及proposal信息做一些检查
-3. 如果检查通过，replica向meta server发送持久化新配置的请求
+3. 由于replica使用meta server进行持久化，所以如果检查通过，replica向meta server发送持久化新配置的请求
 4. 当第3步的请求成功后，replica更新本地配置
 
 而当replica server恢复正常后，此时则仅将该replica server标记为active，等待下次进行load balance时会将一部分primary和secondary迁移过来。
