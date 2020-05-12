@@ -41,6 +41,12 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 
 对于lease period和grace period是否expired，pegasus分别在replica server和meta server的failure detector中创建了一个定时任务去定时检查，该定时任务的时间间隔会比较小，便于及时发现expired的情况。
 
+### meta server不可用
+
+当超过grace period的时间没有收到meta group的ack时，replica则认为meta group不可用了。
+
+这里需要对meta group作一下解释: replica是与整个meta server group发送beacon的，但是发送不是发给该group中的所有meta，而是在meta group中选择出一个leader，与其通信。当与其通信过程中发生通信错误时，则切换leader，与另外的meta server进行通信。当grace period的时间内没有收到leader的ack信息时，则认为整个meta group不可用。
+
 ### replica server不可用
 
 当meta server发现某replica server的grace period过期时，会认为该replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive。
