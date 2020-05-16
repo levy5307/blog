@@ -3,7 +3,7 @@ layout: post
 title: pegasus cure
 date: 2020-03-29
 Author: Levy5307
-tags: [pegasus load balance]
+tags: [pegasus load balance, pegasus]
 comments: true
 toc: true
 ---
