@@ -43,9 +43,11 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 
 ### meta server不可用
 
-当超过grace period的时间没有收到meta group的ack时，replica server则认为meta group不可用了。此时该replica server会将其之上的所有的replica（不论是primary还是secondary）状态都设置成暂时性不可用（PS_INACTIVE和_inactive_is_transient）, 这里这样做主要是为了维持PacificA中的***Primary Invariant***, 防止出现多主。(NOTE：为什么secondary也要设置为inactive)
+当超过lease period的时间没有收到meta group的ack时，replica server则认为meta group不可用了。此时该replica server会将其之上的所有的replica（不论是primary还是secondary）状态都设置成暂时性不可用（PS_INACTIVE和_inactive_is_transient）, 这里这样做主要是为了维持PacificA中的***Primary Invariant***, 防止出现多主。(NOTE：为什么secondary也要设置为inactive)
 
-这里需要对meta group作一下解释: replica是与整个meta server group发送beacon的，但是发送不是发给该group中的所有meta，而是在meta group中选择出一个leader，与其通信。当与其通信过程中发生通信错误时，则切换leader，与另外的meta server进行通信。当grace period的时间内没有收到leader的ack信息时，则认为整个meta group不可用。
+这里需要对meta group作一下解释: replica是与整个meta server group发送beacon的，但是发送不是发给该group中的所有meta，而是在meta group中选择出一个leader并与其通信。当与其通信过程中发生通信错误时，则切换leader，与另外的meta server进行通信。当grace period的时间内没有收到leader的ack信息时，则认为整个meta group不可用。
+
+当与meta server恢复通信后，则将与meta server同步最新配置，获取replica server上所归属的replica(primary+secondary)
 
 ### replica server不可用
 
@@ -67,10 +69,6 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 
 而当replica server恢复正常后，此时则仅将该replica server标记为active，等待下次进行load balance时会将一部分primary和secondary迁移过来。
 
-### meta server不可用
-
-为了实现高可用，Pegasus中会有多个meta server存在，其中一个为master。当meta server master发生切换时，meta server通过beacon ack来通知replica新的master，replica server则会将beacon发送至新的master上。当其发现lease period过期时，replica则认为meta server已经宕机了。
-
-和PacificA算法一样，Pegasus同样令grace period > lease period，所以一定是replica server先发现beacon通信失败、而先于meta server做出响应。这样说明，当meta server达到grace period的时候，一定是因为replica server此时不可用了。
+和PacificA算法一样，Pegasus同样令grace period > lease period，所以一定是replica server先发现beacon通信失败、而先于meta server做出响应。这样做是为了达到***Primary Invariant***，使replica先设置其为inactive，从而防止出现多primiary的情况发生。
 
 ## 未完成
