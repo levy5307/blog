@@ -43,7 +43,7 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 
 ### meta server不可用
 
-当超过grace period的时间没有收到meta group的ack时，replica则认为meta group不可用了。
+当超过grace period的时间没有收到meta group的ack时，replica server则认为meta group不可用了。此时该replica server会将其之上的所有的replica（不论是primary还是secondary）状态都设置成暂时性不可用（PS_INACTIVE和_inactive_is_transient）, 这里这样做主要是为了维持PacificA中的***Primary Invariant***, 防止出现多主。(NOTE：为什么secondary也要设置为inactive)
 
 这里需要对meta group作一下解释: replica是与整个meta server group发送beacon的，但是发送不是发给该group中的所有meta，而是在meta group中选择出一个leader，与其通信。当与其通信过程中发生通信错误时，则切换leader，与另外的meta server进行通信。当grace period的时间内没有收到leader的ack信息时，则认为整个meta group不可用。
 
@@ -52,7 +52,7 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 当meta server发现某replica server的grace period过期时，会认为该replica server已经宕机了，此时meta会将该replica server上的所有primary和secondary降级为inactive。
 
 对于primary降为inactive的情况: 
-1. 为了防止出现双主，首先meta需要在replica group中将当前primary设置为不可用，同时将ballot + 1。由于metaserver使用zookeeper对数据进行持久化, 所以需要将该partition的最新配置发送至zookeeper去更新
+1. 首先meta需要在replica group中将当前primary设置为不可用，同时将ballot + 1。由于metaserver使用zookeeper对数据进行持久化, 所以需要将该partition的最新配置发送至zookeeper去更新
 2. 更新本地配置，即更新node_state，从node_state上移除该primary
 3. 更新load balancer。当前primary移除掉后，需要修改load balancer的信息。该信息是指：每个gpid都有其所在的server列表(三副本则为三台server)，这里修改信息是指将该primary对应的server从上述列表中移除。
 4. 触发cure操作，由于该replica group没有了primary，需要触发cure操作来"治愈"该replica group。
