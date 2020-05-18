@@ -59,6 +59,11 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 3. 更新load balancer。当前primary移除掉后，需要修改load balancer的信息。该信息是指：每个gpid都有其所在的server列表(三副本则为三台server)，这里修改信息是指将该primary对应的server从上述列表中移除。
 4. 触发cure操作，由于该replica group没有了primary，需要触发cure操作来"治愈"该replica group。
 
+对于secondary降为inactive的情况则较为简单: 
+1. 向该secondary所在的primary发送CT_DOWNGRADE_TO_INACTIVE的proposal
+2. primary接收到该请求时，从secondaries中移除该secondary
+3. 该primary向meta server发送更新配置的请求，更新最新配置。
+
 ***NOTE:*** 这里先通过cure获取“治愈”所需要执行的迁移动作（目标server node、动作类型等等），然后通过向该目标server node发送send_proposal来执行该迁移动作。例如：这里就是选取一个secondary，并向其发送一个CT_UPGRADE_TO_PRIMARY类型的proposal
 
 发送proposal的流程：
@@ -71,4 +76,6 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 
 和PacificA算法一样，Pegasus同样令grace period > lease period，所以一定是replica server先发现beacon通信失败、而先于meta server做出响应。这样做是为了达到***Primary Invariant***，使replica先设置其为inactive，从而防止出现多primiary的情况发生。
 
-## 未完成
+## Reconfiguration, Reconciliation and Recovery
+
+
