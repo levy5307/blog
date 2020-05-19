@@ -57,7 +57,7 @@ PacificA中，错误探测是通过primary定期向secondary发送beacon来实�
 1. 首先meta需要在replica group中将当前primary设置为不可用，同时将ballot + 1。由于metaserver使用zookeeper对数据进行持久化, 所以需要将该partition的最新配置发送至zookeeper去更新
 2. 更新本地配置，即更新node_state，从node_state上移除该primary
 3. 更新load balancer。当前primary移除掉后，需要修改load balancer的信息。该信息是指：每个gpid都有其所在的server列表(三副本则为三台server)，这里修改信息是指将该primary对应的server从上述列表中移除。
-4. 触发cure操作，由于该replica group没有了primary，需要触发cure操作来"治愈"该replica group。
+4. 触发cure操作，由于该replica group没有了primary，需要触发cure操作来选取一个secondary、并向其发送一个CT_UPGRADE_TO_PRIMARY类型的proposal，以"治愈"该replica group。
 
 ***NOTE:*** 这里先通过cure获取“治愈”所需要执行的迁移动作（目标server node、动作类型等等），然后通过向该目标server node发送send_proposal来执行该迁移动作。例如：这里就是选取一个secondary，并向其发送一个CT_UPGRADE_TO_PRIMARY类型的proposal
 
