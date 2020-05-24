@@ -1,3 +1,12 @@
+---
+layout: post
+title: object-storage-on-CRAQ
+Author: Levy5307
+tags: [论文]
+comments: true
+toc: true
+---
+
 ## Strong Consistency
 -------------------
 in our system provides the guarantee that all read and write operations to an object are executed in some sequential order, and that a read to an object always sees the latest written value.

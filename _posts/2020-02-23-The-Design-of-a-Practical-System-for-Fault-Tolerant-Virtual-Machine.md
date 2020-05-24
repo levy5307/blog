@@ -2,7 +2,7 @@
 ---
 layout: post
 Author: Levy5307
-tags: [论文笔记]
+tags: [论文]
 comments: true
 ---
 
