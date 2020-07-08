@@ -21,7 +21,7 @@ PacificA是微软实现的一款强一致性的分布式共识协议，具有简
 
 1. 对于同一个replica的写处理是单线程的，也就是说，对于每一个replica，只有一个线程在处理写请求。
 
-2. 上图中的WAL分为private log和shared log，其中private log保存在内存中，而shared log在磁盘上。在pegasus中，每个replica对应一个RocksDB，由于一个机器上有多个replica，那么如果打开了RocksDB的WAL的话，写入的时候将会在多个文件之间切换，导致随机写。所以在Pegasus中采用了shared log的机制来替代RocksDB的WAL。但是使用shared log也有个问题，就是当recover一个replica的时候需要做log split操作。所以Pegasus采用了shared log + private log的方式，private log保存在内存中，当添加potential secondary时，直接使用private log，对于rivate log缺失的部分通过重放shared log补全。
+2. 上图中的WAL分为private log和shared log，其中private log保存在数据盘中，而shared log在单独的日志上。在pegasus中，每个replica对应一个RocksDB，由于一个机器上有多个replica，那么如果打开了RocksDB的WAL的话，写入的时候将会在多个文件之间切换，导致随机写。所以在Pegasus中采用了shared log的机制来替代RocksDB的WAL。但是使用shared log也有个问题，就是当recover一个replica的时候需要做log split操作。所以Pegasus采用了shared log + private log的方式，private log保存在内存中，当添加potential secondary时，直接使用private log，对于rivate log缺失的部分通过重放shared log补全。
 
 ## failure detector
 
