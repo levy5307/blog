@@ -30,6 +30,7 @@ public PegasusTableInterface openTable(String tableName, int backupRequestDelayM
 # 性能测试
 
 set/get operation:
+
 |  test case   | enable backup request  |  qps | read/write propotion  |  read avg  |  read p95  |  read p99  |  read p999  |  read p9999  |  write avg  |  write p95  |  write p99  |  write p999  |  write p9999  |  
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | --- |
 | 3-clients 15-threads | no | 1 : 3 | 7076 | 880.6512836149132 | 428.0 | 727.0 | 138495.0 | 988671.0 | 2495.0710801540517 | 6319.0 | 9023.0 | 36319.0 | 531455.0|
@@ -40,6 +41,7 @@ set/get operation:
 | 3-clients 30-threads | yes, delay 5ms | 30 : 1 | 88541 | 298.22470022339127 | 493.0 | 711.0 | 4483.0 | 18479.0 | 1467.6130963728997 | 3263.0 | 6411.0 | 17439.0 | 50975.0 |
 
 Multi-get/Batch-Set operation: 
+
 |  test case  | enable backup request  |  qps | read/write porpotion  |  read avg  |  read p95  |  read p99  |  read p999  |  read p9999  |  write avg  |  write p95  |  write p99  |  write p999  |  write p9999  |  
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | --- |
 | 3-clients  7-threads | no | 20 : 1 | 24113 | 200.37956913733476 | 277.0 | 410.0 | 2317.0 | 21647.0 | 2034.1923768463382 | 4283.0 | 6427.0 | 18271.0 | 62687.0 |
