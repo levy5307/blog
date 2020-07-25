@@ -29,6 +29,10 @@ public PegasusTableInterface openTable(String tableName, int backupRequestDelayM
 
 # 性能测试
 
+下面表格里展示了是否打开backup request的性能对比，这里我们选取了未打开backup request时读请求的p999时间作为backup request的delay时间。数据显示，打开backup request之后get请求的p999时延基本没有变化，而p9999时延却有了数倍的降低。
+
+另外，由于delay时间设置的是p999时间，大约1000个请求里只有1个请求会发送backup request，因此额外请求量（也就是开启backup request的额外开销）比例在0.1%左右。依此类推，若想要降低P999时延，则可以将 backupRequestDelayMs 设置为P99延迟，由此会增加1%的额外读流量。
+
 set/get operation:
 
 |  test case   | enable backup request  |  qps | read/write propotion  |  read avg  |  read p95  |  read p99  |  read p999  |  read p9999  |  write avg  |  write p95  |  write p99  |  write p999  |  write p9999  |  
