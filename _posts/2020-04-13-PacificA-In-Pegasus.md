@@ -10,7 +10,7 @@ toc: true
 
 PacificA是微软实现的一款强一致性的分布式共识协议，具有简单易实现、可用性高的优点。Pegasus就是使用PacificA协议来维护多副本之间的复制。
 
-之前有篇文章讲过PacificA的原理与理论，如有疑惑请移步PacificA(https://levy5307.github.io/blog/PacificA/)
+之前有篇文章讲过PacificA的原理与理论，如有疑惑请移步[PacificA](https://levy5307.github.io/blog/PacificA/)
 
 ## Read & Write
 根据PacificA算法，读操作的处理是比较简单的，其只需要primary在本地读取到最新的值就可以了，secondary并不参与其中，这里不再赘述。但是对于写则会复杂很多，因为需要经过主从之间的2PC来实现，这里主要对写做一些讲解。
