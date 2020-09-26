@@ -4,7 +4,6 @@ The compression techniques we have seen so far replace individual symbols with a
 In dictionary compression, variable length substrings are replaced by short, possibly even fixed length codewords.
 Compression is achieved by replacing long strings with shorter codewords.
 The general scheme is as follows:
-The general scheme is as follows:
     • The dictionary D is a collection of strings, often called phrases. For completeness, the dictionary includes all single symbols.
     • The text T is parsed into a sequence of phrases: T = T1T2 . . . Tz, Ti ∈ D. The sequence is called a parsing or a factorization of T with respect to D.
     • The text is encoded by replacing each phrase Ti with a code that acts as a pointer to the dictionary.
