@@ -65,4 +65,4 @@ Valid starting       Expires              Service principal
 
 短期来看代码中不做renew逻辑不会有问题，但是为了可靠起见，最好还是对其进行支持。
 
-其他文档：https://andriymz.github.io/kerberos/authentication-using-kerberos/#keytab
+其他文档：<https://andriymz.github.io/kerberos/authentication-using-kerberos/#keytab>
