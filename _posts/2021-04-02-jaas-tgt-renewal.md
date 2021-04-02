@@ -30,12 +30,14 @@ server {
 但是想到hbase都这样做了，可能事情没有这么简单，还是要仔细调研再确认一下。所以去专门翻了下jaas的源码。
 
 ##renewTGT配置
+
 通过查看LoginContext.login函数，确实可以看到，如果renewTGT设置为true的话，会在login的时候对tgt进行更新。
 而且renewTGT这个配置仅仅是在login的时候用到，其他地方并没有使用。也就是说，这个配置仅仅会使login的时候去更新tgt，并没有文档中所说的会去持续更新。
 
 所以可以肯定的一点是，renewTGT并不是持续更新的配置，而只是在login时做一次更新。
 
 ##tgt是否支持renew
+
 继续看了下代码发现，tgt自身是支持自动renewal的，也就是说在tgt过期时，它会去自动刷新。
 ![tgt-refresh](../images/jaas-tgt-refresh.png)
 
@@ -60,6 +62,7 @@ Valid starting       Expires              Service principal
         renew until 2031-03-30T23:02:57
 
 ##结论
+
 短期来看代码中不做renew逻辑不会有问题，但是为了可靠起见，最好还是对其进行支持。
 
 其他文档：https://andriymz.github.io/kerberos/authentication-using-kerberos/#keytab
