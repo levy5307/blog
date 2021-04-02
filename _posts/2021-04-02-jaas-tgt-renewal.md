@@ -7,7 +7,7 @@ comments: true
 toc: true
 ---
 
-##背景
+## 背景
 
 之前看java的官方文档和mit的文档里都写到，只要将renewTGT设置为true，那么jaas内部便会对tgt进行自动更新。
 
@@ -29,14 +29,14 @@ server {
 但是社区同学联系我们说Pegasus当前没有针对tgt做自动更新，并且hbase实现了一个线程用于更新tgt。最初对于这位的说法我没有太当回事，觉得可能是他理解的问题，毕竟官方文档都这样写了。
 但是想到hbase都这样做了，可能事情没有这么简单，还是要仔细调研再确认一下。所以去专门翻了下jaas的源码。
 
-##renewTGT配置
+## renewTGT配置
 
 通过查看LoginContext.login函数，确实可以看到，如果renewTGT设置为true的话，会在login的时候对tgt进行更新。
 而且renewTGT这个配置仅仅是在login的时候用到，其他地方并没有使用。也就是说，这个配置仅仅会使login的时候去更新tgt，并没有文档中所说的会去持续更新。
 
 所以可以肯定的一点是，renewTGT并不是持续更新的配置，而只是在login时做一次更新。
 
-##tgt是否支持renew
+## tgt是否支持renew
 
 继续看了下代码发现，tgt自身是支持自动renewal的，也就是说在tgt过期时，它会去自动刷新。
 ![tgt-refresh](../images/jaas-tgt-refresh.png)
@@ -61,7 +61,7 @@ Valid starting       Expires              Service principal
 2021-04-01T23:03:39  2021-04-02T23:03:39 
         renew until 2031-03-30T23:02:57
 
-##结论
+## 结论
 
 短期来看代码中不做renew逻辑不会有问题，但是为了可靠起见，最好还是对其进行支持。
 
