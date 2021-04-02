@@ -11,10 +11,10 @@ toc: true
 
 之前看java的官方文档和mit的文档里都写到，只要将renewTGT设置为true，那么jaas内部便会对tgt进行自动更新。
 
-java官方文档(https://docs.oracle.com/en/java/javase/14/docs/api/jdk.security.auth/com/sun/security/auth/module/Krb5LoginModule.html)：
+java官方文档(<https://docs.oracle.com/en/java/javase/14/docs/api/jdk.security.auth/com/sun/security/auth/module/Krb5LoginModule.html>)：
 > *renewTGT:Set this to true, if you want to renew the TGT when it's more than half-way expired (the time until expiration is less than the time since start time). If this is set, useTicketCache must also be set to true; otherwise a configuration error will be returned.*
 
-mit文档(https://web.mit.edu/java_v1.5.0_22/distrib/share/docs/guide/security/jgss/jgss-tiger.html)：
+mit文档(<https://web.mit.edu/java_v1.5.0_22/distrib/share/docs/guide/security/jgss/jgss-tiger.html>)：
 > *TGT Renewals
 The Java Authentication and Authorizaton Server (JAAS) Kerberos login module in JDK 5.0, Krb5LoginModule, now supports Ticket Granting Ticket (TGT) renewal. This allows long-running services to renew their TGT automatically without user interaction or requiring the services to restart.
 With this feature, if Krb5LoginModule obtains an expired ticket from the ticket cache, the TGT will be automatically renewed and be added to Subject of the caller who requested the ticket. If the ticket cannot be renewed for any reason, then Krb5LoginModule will use its configured callback handler to retrieve a username and password to acquire a new TGT.
