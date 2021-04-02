@@ -56,10 +56,12 @@ server {
 （翻到一篇博客讲到，这个renew till时间是取客户端till时间和kdc till时间两者的最小值：https://blog.51cto.com/caiguangguang/1383723）
 
 另外通过查看，公司内部的这个renew till时间是10年，所以我们平时测试的话，确实不容易看出问题。
+```
 ➜  /etc klist
 Valid starting       Expires              Service principal
 2021-04-01T23:03:39  2021-04-02T23:03:39 
         renew until 2031-03-30T23:02:57
+```
 
 ## 结论
 
