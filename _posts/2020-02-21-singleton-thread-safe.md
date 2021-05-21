@@ -63,8 +63,8 @@ void native_linux_aio_provider::get_event()
 但是打印该日志，访问到logger_proxy的instance的时候，发生了coredump。也就是说，这时候的instance已经被销毁了
 ![](../images/sigleton-coredump.png)
 
-***说明这时候的单例并不是真正的线程安全的。***
-
+***说明这时候的单例并不是真正的线程安全的。正常来说c11可以保证static是线程安全的，具体原因未知***
+ 
 *二、饿汉式*
 -------------
 
