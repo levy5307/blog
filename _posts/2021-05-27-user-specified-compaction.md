@@ -26,11 +26,11 @@ Finally, we should save the information about user specified compaction in app e
 Here is the class diagram for user specified compaction.
 
 ```
-
+/*
           ┌─────────────┐                               ┌──────────────┐
-          │   compact   ├───────────────────────────────>    compact   │
+          │   compact   ├───────────────────────────────►    compact   │
           │  operation  │                               │     rule     │
-          └──────^──────┘                               └───────^──────┘
+          └──────▲──────┘                               └───────▲──────┘
                  │                                              │
        ┌─────────┴─────────┐                  ┌─────────────────┼──────────────────┐
        │                   │                  │                 │                  │
@@ -41,5 +41,5 @@ Here is the class diagram for user specified compaction.
 │ update ttl │       │   delete   │    │ hashkey rule│   │ sortkey rule│    │   ttl rule  │
 │            │       │            │    │             │   │             │    │             │
 └────────────┘       └────────────┘    └─────────────┘   └─────────────┘    └─────────────┘
-
+ */
 ```
