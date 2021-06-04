@@ -23,7 +23,7 @@ toc: true
 
 ***缺点：*** 写请求需要沿链流经所有的节点，延迟会比较高。相当于延迟换吞吐。
 
-Ref: https://levy5307.github.io/blog/chain-replication/
+Ref: <https://levy5307.github.io/blog/chain-replication/>
 
 ## CRCQ（Chain Replication with Apportioned Queries）
 
@@ -40,7 +40,7 @@ Ref: https://levy5307.github.io/blog/chain-replication/
 - 写请求需要流经所有的节点，延迟会比较高。
 - 需要对每个key维护一个version和clean标记，更适合于内存型存储
 
-Ref: https://levy5307.github.io/blog/object-storage-on-CRAQ/
+Ref: <https://levy5307.github.io/blog/object-storage-on-CRAQ/>
 
 ## Hermes
 
@@ -53,7 +53,7 @@ Ref: https://levy5307.github.io/blog/object-storage-on-CRAQ/
 ***优点：*** 任意节点都可以发起读取和写入，性能比较高，对负载均衡也更友好。
 ***缺点：*** 类似于CRCQ，每个key都需要维护一些数据（比如key的状态），更适合内存型数据库
 
-Ref: https://levy5307.github.io/blog/Hermes/
+Ref: <https://levy5307.github.io/blog/Hermes/>
 
 ## PacificA
 
@@ -65,7 +65,7 @@ Ref: https://levy5307.github.io/blog/Hermes/
 
 ***优点：***可用性高。对于拥有2N+1个节点的集群，PacificA可以容忍2N个节点挂掉（对于挂掉的节点，manager会及时将其移除，不会影响写入可用性）
 ***缺点：***容易抖动。由于写入需要所有节点都成功写入，所以只要有一个节点写入较慢，就会影响写入的延迟。
-Ref: https://levy5307.github.io/blog/PacificA/
+Ref: <https://levy5307.github.io/blog/PacificA/>
 
 ## Raft
 
@@ -78,4 +78,4 @@ Ref: https://levy5307.github.io/blog/PacificA/
 - PacificA对延迟抖动更敏感。少数的慢节点基本不会影响Raft协议的写入，该节点可以写入完成后再同步追赶日志。
 - Raft可用性不如PacificA。对于拥有2N+1个节点的集群，PacificA可以容忍2N个节点挂掉。而Raft则只能容忍N个节点挂掉（其实可以通过增加副本数来一定弥补）
 
-Ref: https://levy5307.github.io/blog/raft/
+Ref: <https://levy5307.github.io/blog/raft/>
