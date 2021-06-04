@@ -1,6 +1,6 @@
 ---
 layout: post
-title: raft
+title: 一致性协议总结与对比
 date: 2021-06-04
 Author: Levy5307
 tags: [一致性协议]
