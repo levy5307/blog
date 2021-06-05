@@ -77,5 +77,6 @@ Ref: <https://levy5307.github.io/blog/PacificA/>
 所以相较于PacificA: 
 - PacificA对延迟抖动更敏感。少数的慢节点基本不会影响Raft协议的写入，该节点可以写入完成后再同步追赶日志。
 - Raft可用性不如PacificA。对于拥有2N+1个节点的集群，PacificA可以容忍2N个节点挂掉。而Raft则只能容忍N个节点挂掉（其实可以通过增加副本数来一定弥补）
+- 在PacificA实现的大集群中，manager由于需要和每个server都维持心跳等通讯，其可能成为集群的瓶颈。Raft协议中不需要使用manager所以不存在这样的困惑
 
 Ref: <https://levy5307.github.io/blog/raft/>
