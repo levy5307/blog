@@ -7,7 +7,7 @@ tags: []
 comments: true
 ---
 
-目前团队所做的kv存储，对于数据分区所采用的方式是hash分区，即对key取hash值，对获取的hash值对partition取模。即：hash(key) % partition_count。
+目前团队所做的kv存储，对于数据分区所采用的方式是hash分区，即对key取hash值，对获取的hash值对partition取模。即：```hash(key) % partition_count```
 
 最近在思考这种方式的实现问题。
 
