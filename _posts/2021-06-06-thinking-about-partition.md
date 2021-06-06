@@ -11,7 +11,9 @@ comments: true
 
 最近在思考这种方式的实现问题。
 
-显然，这种方式由于对于连续的key，有可能获取到不同的hash值，所以并不能分配到同一个分片上。这样对于范围查询非常不友好，需要向所有的分片发送请求才能保证获取到该范围内的所有key。所以为了解决这个问题，团队项目采用了两级key的方式，即将key分为hashkey和sortkey，hashkey用于分区映射，同一个hashkey按照sortkey排序。这样同一个hashkey下的sortkey便可以存储于同一个partition下，即同一个hashkey下的sortkey可以支持范围查询。但是这样也带来一些问题：
+显然，由于这种方式对于连续的key可能获取到不同的hash值, 导致并不一定能分配到同一个分片上。所以对于范围查询非常不友好，需要向所有的分片发送请求才能保证获取到该范围内的所有key。为了解决这个问题，团队项目采用了两级key的方式，即将key分为hashkey和sortkey：hashkey用于分区映射，同一个hashkey下数据按照sortkey排序。这样同一个hashkey下的sortkey便可以存储于同一个partition下，这样同一个hashkey下的sortkey便可以支持范围查询。
+
+但是这样也带来一些问题：
 
 - hashkey+sortkey的方式并不符合主流的kv接口设计(如redis)，导致接口设计完全不同。
 
