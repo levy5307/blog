@@ -10,7 +10,9 @@ comments: true
 ## 背景
 
 checker_load_balancer：用于功能测试
+
 simple_load_balancer：主要用于cure，另外还有执行load balancer计划
+
 greedy_load_balancer：用于生成load balancer计划。当前只有app load balance，后续要添加cluster load balance
 
 ![](../images/load-balancer-background.svg)
@@ -22,7 +24,7 @@ greedy_load_balancer：用于生成load balancer计划。当前只有app load ba
 
 ![](../images/load-balancer-refactor-step1.svg)
 
-另外，由于要加入cluster load balancer，不希望将这部分功能加入greedy_load_balancer了，因为这样会导致greedy_load_balancer过于臃肿。并且之前和昱晨聊过，加入了cluster load balancer之后，暂时先不希望把原先的load balance删掉，所以短期内两者应该会并存。
+另外，由于要加入cluster load balancer，不希望将这部分功能加入greedy_load_balancer了，因为这样会导致greedy_load_balancer过于臃肿。并且加入了cluster load balancer之后，暂时先不希望把原先的load balance删掉，所以短期内两者应该会并存。
 所以想将其抽出来放入一个单独的类中。
 
 考虑了如下几种实现思路：
