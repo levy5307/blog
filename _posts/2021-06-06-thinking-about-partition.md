@@ -55,7 +55,9 @@ node index = hash(data) % server_count
 
 ![](../images/partition-hashkey-add-node.png)
 
-从图中可以看到，数据搬迁的量还是比较大的。所以很多采用hash分片的实现中，节点扩展需要成倍增加，这样便可以只移动50%的数据即可（Pegasus中便是如此，partition split需要将分片数翻倍，无法做到partition数量+1或者+2）。为了克服这个问题，redis引入了逻辑节点的概念来屏蔽真实的server数量。
+从图中可以看到，数据搬迁的量还是比较大的。所以很多采用hash分片的实现中，节点扩展需要成倍增加，这样只移动50%的数据即可（Pegasus中便是如此，partition split需要将分片数翻倍，无法做到partition数量+1或者+2）。
+
+为了克服这个问题，redis引入了逻辑节点的概念，用以屏蔽真实的server node。
 
 ### 逻辑节点
 
