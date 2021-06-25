@@ -48,7 +48,7 @@ node index = hash(data) % server_count
 
 当然，其缺点也是很明显的：
 
-- key均匀不代表流量均匀，实际负载并不一定相同。又由于映射射固定，不灵活，一个key固定映射到一个node上，导致很难做灵活的迁移、将热点的key迁移走
+- key均匀不代表流量均匀，实际负载并不一定相同。又由于映射射固定，不灵活，一个key固定映射到一个node上，导致很难做灵活的迁移、将热点的key迁移走。
 
 - 由于数据被打散，如果要进行范围查询则是比较吃力的，如上图中，如果要查询key在[11,13]范围之间的数据，则需要分别向所有的三个node发送请求，如文章开头所讲，不仅浪费资源，事务性也很难实现。
 
@@ -132,9 +132,11 @@ bigtable就是采用了范围分片的方式，其将数据切分成很多个tab
 
 ## 总结
 
-如果系统中范围查询很多时，建议使用范围分片; 由于范围分片热点问题比较严重，所以其他情况推荐使用hash分片。
+如果系统中范围查询很多时，建议使用范围分片; 另外，由于范围分片元数据管理比较复杂，以及相对hash分片有更严重的热点问题，所以其他情况推荐使用hash分片。
 
 ## Reference
+
+[BitTable: A Distributed Storage System for Structured Data](https://research.google/pubs/pub27898/)
 
 [Redis Cluster数据分片](https://www.huaweicloud.com/articles/38e2316d01880fdbdd63d62aa26b31b4.html)
 
@@ -142,5 +144,5 @@ bigtable就是采用了范围分片的方式，其将数据切分成很多个tab
 
 [YogabyteDB分析的不同分片策略](https://zhuanlan.zhihu.com/p/107618160)
 
-[一致性hash与Dynamo](https://zhuanlan.zhihu.com/p/107560108)
+[Dynamo与一致性hash](https://zhuanlan.zhihu.com/p/107560108)
 
