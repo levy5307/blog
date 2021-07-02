@@ -65,4 +65,7 @@ int main()
 
 [RVO and NRVO in cpp](https://www.codenong.com/cs106863732/)
 
+[返回值优化的一些示例](https://stackoverflow.com/questions/4986673/c11-rvalues-and-move-semantics-confusion-return-statement?lq=1)
+
+
 
