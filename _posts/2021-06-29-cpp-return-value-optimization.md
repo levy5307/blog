@@ -55,7 +55,7 @@ int main()
 
 这说明返回值优化起了作用，原本应该有将一系列的构造和析构，优化成了只有target对象的构造和析构。优化效果还是很明显的。
 
-那什么时候该考虑使用返回值优化呢？根据effective modern c++中介绍，只要满足下述两个条件即可：
+那什么时候该考虑使用返回值优化呢？根据effective modern c++中介绍，需要满足下述两个条件：
 
 - return的值类型与函数签名的返回值类型相同
 
@@ -65,7 +65,7 @@ int main()
 
 [RVO and NRVO in cpp](https://www.codenong.com/cs106863732/)
 
-[返回值优化的一些示例](https://stackoverflow.com/questions/4986673/c11-rvalues-and-move-semantics-confusion-return-statement?lq=1)
+[Some Examples](https://stackoverflow.com/questions/4986673/c11-rvalues-and-move-semantics-confusion-return-statement?lq=1)
 
 
 
