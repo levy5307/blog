@@ -2,7 +2,7 @@
 layout: post
 title: object-storage-on-CRAQ
 Author: Levy5307
-tags: [论文]
+tags: [论文, 一致性协议]
 comments: true
 toc: true
 ---

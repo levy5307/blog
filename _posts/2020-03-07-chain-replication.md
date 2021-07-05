@@ -3,7 +3,7 @@ layout: post
 title: Chain Replication
 date: 2020-03-07
 Author: Levy5307
-tags: [论文]
+tags: [论文, 一致性协议]
 comments: true
 toc: true
 ---
