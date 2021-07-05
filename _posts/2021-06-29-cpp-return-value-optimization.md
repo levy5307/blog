@@ -67,5 +67,3 @@ int main()
 
 [Some Examples](https://stackoverflow.com/questions/4986673/c11-rvalues-and-move-semantics-confusion-return-statement?lq=1)
 
-
-
