@@ -5,6 +5,7 @@ date: 2021-06-06
 Author: levy5307
 tags: []
 comments: true
+toc: true
 ---
 
 目前团队所做的kv存储，对于数据分区所采用的方式是hash分区：对key取hash值，获取的hash值再对partition取模。即：```hash(key) % partition_count```

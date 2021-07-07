@@ -5,6 +5,7 @@ date: 2021-07-01
 Author: levy5307
 tags: [分布式事务]
 comments: true
+toc: true
 ---
 
 ## 事务的属性
