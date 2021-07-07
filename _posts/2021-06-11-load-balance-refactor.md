@@ -9,11 +9,11 @@ comments: true
 
 ## 背景
 
-simple_load_balancer：主要用于cure，另外还有执行load balancer计划
+`simple_load_balancer`：主要用于cure，cure的目的是维护分片的健康（一主两备份）
 
-greedy_load_balancer：用于生成load balancer计划。当前只有app load balance，后续要添加cluster load balance
+`greedy_load_balancer`：用于生成load balancer计划。当前只有app load balance，后续要添加cluster load balance
 
-checker_load_balancer：用于功能测试
+`checker_load_balancer`：用于功能测试
 
 ![](../images/load-balancer-background.svg)
 
