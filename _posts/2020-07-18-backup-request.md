@@ -67,5 +67,5 @@ Multi-get/Batch-Set operation:
 
 [The Tail at Scale](https://research.google/pubs/pub40801/)
 
-[backup_request_in_brpc](https://github.com/apache/incubator-brpc/blob/master/docs/en/backup_request.md)
+[backup request in brpc](https://github.com/apache/incubator-brpc/blob/master/docs/en/backup_request.md)
 
