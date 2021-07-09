@@ -1,3 +1,15 @@
+---
+layout: post
+title: 限流方案调研
+date: 2020-04-01
+Author: levy5307
+tags: []
+comments: true
+toc: true
+---
+
+这篇文章是之前做限流时调研总结的文档，由于工作上要求写英文，也懒得翻译了，就直接把当时的文档内容粘贴过来了。
+
 In general, a rate is a simple count of occurrences over time. However, there are several different techniques for measuring and limiting rates.
 
 ### Fixed Window 
