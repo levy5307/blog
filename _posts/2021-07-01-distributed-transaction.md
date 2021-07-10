@@ -243,8 +243,8 @@ Greenplum支持读已提交和可重复读两种隔离级别。同OceanBase一�
 
 ## Reference
 
-[](https://developer.aliyun.com/article/657843)
+[OceanBase全局数据一致](https://developer.aliyun.com/article/657843)
 
-[](https://maiyang.me/post/2019-10-23-global-id-in-tidb/)
+[全局唯一ID](https://maiyang.me/post/2019-10-23-global-id-in-tidb/)
 
 
