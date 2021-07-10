@@ -245,6 +245,9 @@ Greenplum支持读已提交和可重复读两种隔离级别。同OceanBase一�
 
 [OceanBase全局数据一致](https://developer.aliyun.com/article/657843)
 
+[硬核来了！OceanBase 2.2版本事务引擎三大核心功能全揭秘](https://zhuanlan.zhihu.com/p/114089455)
+
 [全局唯一ID](https://maiyang.me/post/2019-10-23-global-id-in-tidb/)
 
+[GreenPlum MVCC并发控制](https://segmentfault.com/a/1190000023880921)
 
