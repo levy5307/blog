@@ -235,14 +235,16 @@ OceanBase中的读已提交和串行化的实现不同主要在于读。读已�
 
 - 通过集中式的服务获取全局一致的版本号，由这个服务来保证版本号的单调向前。这种问题的缺点就是，全局时钟服务可能会导致性能瓶颈。
 
-为了避免对特殊硬件的依赖、并且彻底根除不同机器间的时钟差异，OceanBase选择了集中式服务来提供全局统一的版本号。OceanBase将这个服务命名为全局时间戳服务（Global Timestamp Service，简称GTS）。OceanBase为每个租户维护了一个单独GTS服务。当然，这个GTS是一个单点，为了实现高可用，GTS也采用了Paxos来维护高可用。
+为了避免对特殊硬件的依赖、并且彻底根除不同机器间的时钟差异，OceanBase选择了集中式服务来提供全局统一的版本号。OceanBase将这个服务命名为全局时间戳服务（Global Timestamp Service，简称GTS）。OceanBase为每个租户维护了一个单独GTS服务。当然这个GTS是一个单点，为了解决单点问题，GTS也采用了Paxos来保证高可用。
 
-### Greenplum
+### Greenplum 
 
 Greenplum支持读已提交和可重复读两种隔离级别。同OceanBase一样，可重复读也是通过MVCC来实现的，所以Greenplum中的可重复读与OceanBase中的串行化隔离级别只是称呼上的不同。与OceanBase相同，Greenplum默认的隔离级别也是可重复读。
 
 ## Reference
 
 [](https://developer.aliyun.com/article/657843)
+
+[](https://maiyang.me/post/2019-10-23-global-id-in-tidb/)
 
 
