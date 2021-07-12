@@ -1,9 +1,11 @@
-
 ---
 layout: post
-Author: Levy5307
+title: The Design Of A Practical System For Fault Tolerant Virtual Machine
+date: 2020-02-23
+Author: levy5307
 tags: [论文]
 comments: true
+toc: true
 ---
 
 Three chanllenges for replicating executing of any VM running any operating system and workload 
