@@ -4,6 +4,7 @@ title: jaas tgt renewal调研
 date: 2021-04-02
 Author: Levy5307
 comments: true
+tags: [kerberos]
 toc: true
 ---
 
