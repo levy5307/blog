@@ -56,3 +56,13 @@ Percolator需要维护锁，其对锁有如下几个要求：
 
 基于这些要求，Percolator采用了Bigtable，将锁和数据存储在同一行，采用特殊的列来存放锁。在访问某行数据时，Percolator将在一个Bigtable行事务中对同行的锁执行读取与修改。
 
+下表展示了Percolator中名为c的column在Bigtable中所对应的columns
+
+| Column   | Use                                  |
+|----------|--------------------------------------|
+| c:lock   | 未提交的事务才会写入该cell, 包含primary lock的位置   |
+| c:write  | 已提交的事务才会写入。存储bigtable中data的timestamp |
+| c:data   | data itself                          |
+| c:notify | Hint: Observers可以开始运行了               |
+| c:ack_O  | Observer “O”已经运行过了。存储其最后一次运行成功的时间戳   |
+
