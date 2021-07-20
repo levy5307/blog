@@ -66,3 +66,31 @@ Percolator需要维护锁，其对锁有如下几个要求：
 | c:notify | Hint: Observers可以开始运行了               |
 | c:ack_O  | Observer “O”已经运行过了。存储其最后一次运行成功的时间戳   |
 
+在percolator的事务中，每个事务有两个对应的timestamp：start timestamp和commit timestamp。分别代表事务开始时间和事务提交时间。
+
+下面以Bog向Joe转账7元为例，看一下Percolator事务的执行流程：
+
+- 初始状态，Joe的账户中有2元，Bob的账户有10元
+
+![](../images/percolator-initial-state.jpg)
+
+- 该事务获取其start timestamp: 7。并且获取Bob这一行的锁（该锁是primary lock），同时向该start timestamp中写入数据3
+
+![](../images/percolator-step-1.jpg)
+
+- 该事务现在为Joe这一行加锁，并且写入Joe新的余额，该锁是一个secondary lock，其包含一个指向primary lock的引用。当事务crash时，该事务需要清理，此时其需要获取primary lock。
+
+![](../images/percolator-step-2.jpg)
+
+- 此时，该事务达到commit point。此时事务获取其commit timestamp: 8。并且清空primary lock，并在timestamp 8的行的balance:write列中写入一条record，该record记录了data在哪个timestamp行中存储。这样后续的reader便可以读取到Bob的新余额3
+
+![](../images/percolator-step-3.jpg)
+
+- 该事务完成向Joe这一行中write records写入以及删除锁
+
+![](../images/percolator-step-4.jpg)
+
+
+
+
+
