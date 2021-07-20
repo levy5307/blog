@@ -82,7 +82,7 @@ Percolator需要维护锁，其对锁有如下几个要求：
 
 ![](../images/percolator-step-2.jpg)
 
-- 此时，该事务达到commit point。此时事务获取其commit timestamp: 8。并且清空primary lock，并在timestamp 8的行的balance:write列中写入一条record，该record记录了data在哪个timestamp行中存储。这样后续的reader便可以读取到Bob的新余额3
+- 此时，该事务达到commit point。此时事务获取其commit timestamp: 8。并且清空primary lock，并在timestamp 8的行的balance:write列中写入一条record，该record记录了data在哪个timestamp行中存储。这样commit point之后开始的的事务便可以读取到Bob的新余额3
 
 ![](../images/percolator-step-3.jpg)
 
