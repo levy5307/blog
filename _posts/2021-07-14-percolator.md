@@ -66,9 +66,9 @@ Percolator需要维护锁，其对锁有如下几个要求：
 | c:notify | Hint: Observers可以开始运行了               |
 | c:ack_O  | Observer “O”已经运行过了。存储其最后一次运行成功的时间戳   |
 
-在percolator的事务中，每个事务有两个对应的timestamp：start timestamp和commit timestamp。分别代表事务开始时间和事务提交时间。
+在percolator的事务中，每个事务有两个对应的timestamp：start timestamp和commit timestamp。分别代表事务开始时间和事务提交时间。start timestamp决定了该事务的Get()操作可以看到的数据snapshot。commit timestamp决定了只有在该timestamp之后开始的事务才能读取到该事务的写入。
 
-下面以Bog向Joe转账7元为例，看一下Percolator事务的执行流程：
+下面流程展示了事务执行过程中bigtable中的data和metadata的布局: 
 
 - 初始状态，Joe的账户中有2元，Bob的账户有10元
 
@@ -86,9 +86,82 @@ Percolator需要维护锁，其对锁有如下几个要求：
 
 ![](../images/percolator-step-3.jpg)
 
-- 该事务完成向Joe这一行中write records写入以及删除锁
+- 该事务完成向Joe这一行中balance:write列中写入record以及删除锁
 
 ![](../images/percolator-step-4.jpg)
+
+如下是事务实现的伪代码：
+
+```cpp
+class Transaction {
+    struct Write { Row row; Column col; string value; };
+    vector<Write> writes ;
+    int start ts ;
+    Transaction() : start_ts_(oracle.GetTimestamp()) {}
+
+    void Set(Write w) { writes .push back(w); }
+    bool Get(Row row, Column c, string* value) {
+        while (true) {
+            bigtable::Txn T = bigtable::StartRowTransaction(row);
+            // Check for locks that signal concurrent writes.
+            if (T.Read(row, c+"lock", [0, start ts ])) {
+                // There is a pending lock; try to clean it and wait
+                BackoffAndMaybeCleanupLock(row, c);
+                continue;
+            }
+
+            // Find the latest write below our start timestamp.
+            latest write = T.Read(row, c+"write", [0, start ts ]);
+            if (!latest write.found()) return false; // no data
+            int data ts = latest write.start timestamp();
+            *value = T.Read(row, c+"data", [data ts, data ts]);
+            return true;
+        }
+    }
+    // Prewrite tries to lock cell w, returning false in case of conflict.
+    bool Prewrite(Write w, Write primary) {
+        Column c = w.col;
+        bigtable::Txn T = bigtable::StartRowTransaction(w.row);
+        
+        // Abort on writes after our start timestamp . . .
+        if (T.Read(w.row, c+"write", [start ts , ∞])) return false;
+        // . . . or locks at any timestamp.
+        if (T.Read(w.row, c+"lock", [0, ∞])) return false;
+        
+        T.Write(w.row, c+"data", start ts , w.value);
+        T.Write(w.row, c+"lock", start ts , {primary.row, primary.col}); // The primary’s location.
+        return T.Commit();
+    }
+        
+    bool Commit() {
+        Write primary = writes [0];
+        vector<Write> secondaries(writes .begin()+1, writes .end());
+        if (!Prewrite(primary, primary)) return false;
+        for (Write w : secondaries)
+            if (!Prewrite(w, primary)) return false;
+        
+        int commit ts = oracle .GetTimestamp();
+        
+        // Commit primary first.
+        Write p = primary;
+        bigtable::Txn T = bigtable::StartRowTransaction(p.row);
+        if (!T.Read(p.row, p.col+"lock", [start ts , start ts ]))
+            return false; // aborted while working
+        T.Write(p.row, p.col+"write", commit ts, start ts ); // Pointer to data written at start ts .
+        T.Erase(p.row, p.col+"lock", commit ts);
+        if (!T.Commit()) return false; // commit point
+       
+        // Second phase: write out write records for secondary cells.
+        for (Write w : secondaries) {
+            bigtable::Write(w.row, w.col+"write", commit ts, start ts );
+            bigtable::Erase(w.row, w.col+"lock", commit ts);
+        }
+        return true;
+    }
+} // class Transaction
+```
+
+在事务的构造函数中，向timestamp oracle获取一个start timestamp。如前面所说，其决定了Get()接口可以获取到的数据snapshot。对于Set()操作的调用将在commit之前一直缓冲在本地。对于缓冲的writes的提交是由2pc来完成的，其中client作为协调者。不同机器上的本地事务是通过bigtable的行事务来执行的。
 
 
 
