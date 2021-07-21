@@ -161,9 +161,18 @@ class Transaction {
 } // class Transaction
 ```
 
-在事务的构造函数中，向timestamp oracle获取一个start timestamp。如前面所说，其决定了Get()接口可以获取到的数据snapshot。对于Set()操作的调用将在commit之前一直缓冲在本地。对于缓冲的writes的提交是由2pc来完成的，其中client作为协调者。不同机器上的本地事务是通过bigtable的行事务来执行的。
+在事务的构造函数中，向timestamp oracle获取一个start timestamp。如前面所说，其决定了Get()接口可以获取到的数据snapshot。
 
+对于Set()操作的调用将在commit之前一直缓冲在本地。对于缓冲的writes的提交是由2pc来完成的，其中client作为协调者。不同机器上的本地事务是通过bigtable的行事务来执行的。
 
+在prewrite阶段，我们将尝试获取所有将要写的cell的锁（其中一个锁是primary lock）。首先，该事务先读取metadata查看是否有冲突存在，这里一共有两种冲突：
 
+1. 如果其看到一个在其start timestamp之后的write record，则abort。这代表在该事务开启之后，有其他的事务执行了写入，是典型的写-写冲突
+
+2. 如果该事务看到一个任意timestamp的锁，同样会abort。这代表有其他事务给该row加了锁。
+
+如果没有冲突，则写入data，以及lock（代表获取锁）
+
+如果没有冲突，事务将会执行到第二阶段。
 
 
