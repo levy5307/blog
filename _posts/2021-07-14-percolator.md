@@ -167,7 +167,7 @@ class Transaction {
 
 在prewrite阶段，我们将尝试获取所有将要写的cell的锁（其中一个锁是primary lock）。首先，该事务先读取metadata查看是否有冲突存在，这里一共有两种冲突：
 
-1. 如果其看到一个在其start timestamp之后的write record，则abort。这代表在该事务开启之后，有其他的事务执行了写入，是典型的写-写冲突
+1. 如果其看到一个在其start timestamp之后的write record，则abort。这代表在该事务开启之后，有其他的事务执行了写入，是典型的写-写冲突。这样可以解决更新丢失的问题，当然，对于写倾斜还是束手无策。
 
 2. 如果该事务看到一个任意timestamp的锁，同样会abort。这代表有其他事务给该row加了锁。
 
