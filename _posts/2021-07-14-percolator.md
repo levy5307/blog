@@ -163,6 +163,8 @@ class Transaction {
 
 在事务的构造函数中，向timestamp oracle获取一个start timestamp。如前面所说，其决定了Get()接口可以获取到的数据snapshot。
 
+#### Set操作
+
 对于Set()操作的调用将在commit之前一直缓冲在本地。对于缓冲的writes的提交是由2pc来完成的，其中client作为协调者。不同机器上的本地事务是通过bigtable的行事务来执行的。
 
 在prewrite阶段，我们将尝试获取所有将要写的cell的锁（其中一个锁是primary lock）。首先，该事务先读取metadata查看是否有冲突存在，这里一共有两种冲突：
@@ -184,4 +186,12 @@ class Transaction {
 1. 为什么primary commit失败就要回滚？按照percolator的说法，primary和secondary都是参与者，根据2pc协议，参与者失败了只要后续重试就可以了。
 
 2. secondary提交失败了并没有重试操作，这样如何保证最终secondary的成功提交？
+
+#### Get操作
+
+Get()操作首先查看[0, start timestamp]范围内的锁（该范围表示当前事务可以看到的数据版本），如果有锁，说明有一个其他的事务正在同时进行写入。因此当前读事务需要等待该锁释放。如果没有锁，那么Get()操作读取该时间范围内最新的write record并且根据write record内容获取该其对应的数据。
+
+#### 失败处理
+
+由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁有事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
 
