@@ -171,8 +171,10 @@ class Transaction {
 
 2. 如果该事务看到一个任意timestamp的锁，同样会abort。这代表有其他事务给该row加了锁。
 
-如果没有冲突，则写入data，以及lock（代表获取锁）
+如果没有冲突，则写入data以及lock（代表获取锁），并且将会开始执行第二阶段（commit阶段），并获取commit timestamp，并且commit timestamp > start timestamp。
 
-如果没有冲突，事务将会执行到第二阶段。
+1. 向write列中写入数据，数据的时间戳为commit timestamp，内容为start timestamp，代表数据的最新版本是timestamp对应的写入数据。
+
+2. 删除获取的lock
 
 
