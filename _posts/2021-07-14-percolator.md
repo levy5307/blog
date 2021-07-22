@@ -177,7 +177,11 @@ class Transaction {
 
 - 对于每一个cell，释放获取的lock
 
-如果primary提交失败，那么事务就需要回滚。而如果primary提交成功，则可以***异步***提交secondaries, 流程和commit primary一致。不过对于secondary提交，失败了也无所谓，后续重试就可以了。这意味着，***一旦primary的写入可见之后事务就提交了，因为其使得写入操作对readers可见***。
+如果primary提交失败，那么事务就需要回滚。而如果primary提交成功，则可以***异步***提交secondaries, 流程和primary提交一致。不过不同的一点是，secondary提交失败了不会回滚这意味着，***一旦primary的写入可见之后事务就提交了，因为其使得写入操作对readers可见***。
 
-***Question:*** 为什么primary commit失败就要回滚？按照percolator的说法，primary和secondary都是参与者，参与者失败了只要后续重试就可以了。
+***Question:*** 
+
+1. 为什么primary commit失败就要回滚？按照percolator的说法，primary和secondary都是参与者，根据2pc协议，参与者失败了只要后续重试就可以了。
+
+2. secondary提交失败了并没有重试操作，这样如何保证最终secondary的成功提交？
 
