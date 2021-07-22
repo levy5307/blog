@@ -169,12 +169,15 @@ class Transaction {
 
 1. 如果其看到一个在其start timestamp之后的write record，则abort。这代表在该事务开启之后，有其他的事务执行了写入，是典型的写-写冲突。***这样可以解决更新丢失的问题，当然，对于写倾斜还是束手无策。***
 
-2. 如果该事务看到一个任意timestamp的锁，同样会abort。这代表有其他事务给该row加了锁。
+2. 如果该事务看到一个任意timestamp的锁，同样会abort。这代表有其他事务给该cell加了锁。
 
-如果没有冲突，则写入data以及lock（代表获取锁），并且将会开始执行第二阶段（commit阶段），并获取commit timestamp，并且commit timestamp > start timestamp。
+如果没有冲突，则写入data以及lock（代表获取锁），并且将会开始执行第二阶段（commit阶段），并从oracle获取commit timestamp，并且commit timestamp > start timestamp。
 
-1. 向write列中写入数据，数据的时间戳为commit timestamp，内容为start timestamp，代表数据的最新版本是timestamp对应的写入数据。
+- 向write列中写入数据，数据的时间戳为commit timestamp，内容为start timestamp，通过该start timestamp，readers可以查找到实际写入的数据。
 
-2. 删除获取的lock
+- 对于每一个cell，释放获取的lock
 
+如果primary提交失败，那么事务就需要回滚。而如果primary提交成功，则可以***异步***提交secondaries, 流程和commit primary一致。不过对于secondary提交，失败了也无所谓，后续重试就可以了。这意味着，***一旦primary的写入可见之后事务就提交了，因为其使得写入操作对readers可见***。
+
+***Question:*** 为什么primary commit失败就要回滚？按照percolator的说法，primary和secondary都是参与者，参与者失败了只要后续重试就可以了。
 
