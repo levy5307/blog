@@ -167,11 +167,15 @@ class Transaction {
 
 对于Set()操作的调用将在commit之前一直缓冲在本地。对于缓冲的writes的提交是由2pc来完成的，其中client作为协调者。不同机器上的本地事务是通过bigtable的行事务来执行的。
 
+***prewrite阶段***
+
 在prewrite阶段，我们将尝试获取所有将要写的cell的锁（其中一个锁是primary lock）。首先，该事务先读取metadata查看是否有冲突存在，这里一共有两种冲突：
 
 1. 如果其看到一个在其start timestamp之后的write record，则abort。这代表在该事务开启之后，有其他的事务执行了写入，是典型的写-写冲突。***这样可以解决更新丢失的问题，当然，对于写倾斜还是束手无策。***
 
 2. 如果该事务看到一个任意timestamp的锁，同样会abort。这代表有其他事务给该cell加了锁。
+
+***commit阶段***
 
 如果没有冲突，则写入data以及lock（代表获取锁），并且将会开始执行第二阶段（commit阶段），并从oracle获取commit timestamp，并且commit timestamp > start timestamp。
 
@@ -185,7 +189,11 @@ class Transaction {
 
 1. 为什么primary commit失败就要回滚？按照percolator的说法，primary和secondary都是参与者，根据2pc协议，参与者失败了只要后续重试就可以了。
 
+只要primary commit写入了，后续可以通过失败处理让secondary也commit成功。这样可以免去client重试，详情可见下文失败处理-客户端在第二阶段挂掉了
+
 2. secondary提交失败了并没有重试操作，这样如何保证最终secondary的成功提交？
+
+同样参照失败处理-客户端在第二阶段挂掉了
 
 #### Get操作
 
@@ -193,5 +201,16 @@ Get()操作首先查看[0, start timestamp]范围内的锁（该范围表示当�
 
 #### 失败处理
 
-由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁有事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
+由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时（prewrite或者commit阶段）失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁有事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
 
+不过让事务A很自信的判断事务B挂掉是很难的，因此我们要正确处理事务A的清理与（事实上没有失败的）事务B的提交之间的竞争情况。Percolator通过指定事务中的一个cell作为synchronizing point，该cell的lock作为primary lock。清理与提交操作需要修改该primary lock（获取该primary lock）。由于该修改时基于Bigtable的单行事务的，所以只会有一个清理或者提交能够成功执行。明确地说就是：在B提交之前，它必须先检查其是否还持有primary lock，如果持有，则将primary lock替换为一个write record；在A清除B的事务之前，必须检查primary lock看事务B是否已经提交，如果primary lock仍然还在，则可以安全的清除该锁。
+
+当客户端在提交的第二阶段（commit）挂掉了，一个事务将错过commit point，并且仍然持有一些锁。对这种事务，我们必须执行roll-forward。当其他事务遇到这些被遗弃的锁时，可以通过primary lock来区分这两种情况：
+
+1. 如果primary lock已经被替换为一个write record，则写入此锁的事务肯定已经提交了，此锁必须被roll forward
+
+2. 否则，该事务应该被回滚（因为事务总是会先提交primary lock，如果primary lock没有被提交，则说明事务没有提交，此时回滚肯定是安全的）
+
+在执行roll forward时，执行清理的事务也会将这些被遗弃的锁替换为一个write record。
+
+因为对于primary lock的清除是同步的，所以清理活跃客户端所持有的锁是安全的。然而回滚会强迫事务abort，这样会严重影响性能。因此，一个事务将不会清理一个锁除非它猜测这个锁属于一个挂掉的事务。
