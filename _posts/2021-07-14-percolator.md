@@ -50,7 +50,7 @@ Percolator需要维护锁，其对锁有如下几个要求：
 
 - 锁服务一定要支持高吞吐量，因为可能会有几千台机器并行请求锁
 
-- 锁服务一定要是低延迟的，每个Get()操作都会申请读锁，以最大化降低锁服务带来的延迟
+- 由于每个Get()操作都会申请读锁，锁服务一定要是低延迟的，以最大化降低锁服务带来的延迟
 
 - 高可用。需要冗余备份，以防异常故障
 
@@ -185,15 +185,15 @@ class Transaction {
 
 如果primary提交失败，那么事务就需要回滚。而如果primary提交成功，则可以***异步***提交secondaries, 流程和primary提交一致。不过不同的一点是，secondary提交失败了不会回滚这意味着，***一旦primary的写入可见之后事务就提交了，因为其使得写入操作对readers可见***。
 
-***Question:*** 
+***Questions:*** 
 
-1. 为什么primary commit失败就要回滚？按照percolator的说法，primary和secondary都是参与者，根据2pc协议，参与者失败了只要后续重试就可以了。
+Q:  为什么primary commit失败就要回滚？按照percolator的说法，primary和secondary都是参与者，根据2pc协议，参与者失败了只要后续重试就可以了。
 
-只要primary commit写入了，后续可以通过失败处理让secondary也commit成功。这样可以免去client重试，详情可见下文失败处理-客户端在第二阶段挂掉了
+A: 只要primary commit写入了，后续可以通过失败处理让secondary也commit成功。这样可以免去client重试，详情可见下文失败处理-客户端在第二阶段挂掉了
 
-2. secondary提交失败了并没有重试操作，这样如何保证最终secondary的成功提交？
+Q: secondary提交失败了并没有重试操作，这样如何保证最终secondary的成功提交？
 
-同样参照失败处理-客户端在第二阶段挂掉了
+A: 同样参照失败处理-客户端在第二阶段挂掉了
 
 #### Get操作
 
