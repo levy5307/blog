@@ -231,7 +231,7 @@ Percolator应用其实包含很少的观察者，Google索引系统大概有10�
 
 我们提供***一个保证***：每一个被观察列的每次改变，至多一个observer的事务被提交。反之则不然：一个被观察的列的多次写可能只会触发一次observer事务。我们称这个特性为***消息重叠***，它可以避免不必要的重复计算。比如，对http://google.com页面来说，周期性的通知其变化就够了，不需要每当一个新链接指向它时就触发一次
 
-每个observed column都有为每个observer都有一个"acknowledgment" column（详见图1的ack_O列），包含这个observer最新运行的时间戳。当observerd column写入时，Percolator启动一个事务来处理通知。该事务读取observed column和对应的acknowledgment列。分两种情况：
+每个observed column都有为每个observer都有一个"acknowledgment" column（详见图1的ack_O列），包含这个observer最新运行的时间戳。当observed column写入时，Percolator启动一个事务来处理通知。该事务读取observed column和对应的acknowledgment列。分两种情况：
 
 1. 如果observed column发生写操作的时间戳在acknowledgment列的最新时间戳之后，就运行observer逻辑，并设置acknowledgment列为新的时间戳
 
@@ -242,5 +242,9 @@ Percolator应用其实包含很少的观察者，Google索引系统大概有10�
 为了实现notificatioins，Percolator需要高效找到被观察的脏的cell。该搜索是很复杂的，因为notifications往往是稀疏的：我们的表有万亿的cell，但是notifications可能只有百万个。并且，observer代码运行在一大批分布式的、跨大量机器的客户端进程上，因此这代表脏cell的搜索也必须是分布式的。
 
 为了鉴别dirty cells，Percolator在Bigtable维护了一个特殊的名叫"notify"的列，当一个事务写入observed cell时，它同时会设置对应的notify cell。系统中有些workers来对notify列执行分布式扫描，用以找到脏cell。在observer被触发并且对应的事务提交成功之后，我们将删除该notify cell。由于notify column仅仅是一个Bigtable column，而非Percolator column，它没有事务属性。它仅仅作为一个暗示，用以提醒scanner检查acknowledgment列来决定是否运行observer
+
+为了使扫描高效，Percolator将notify column存储在一个单独的Bigtable locality group，因此扫描时仅仅需要读取百万个dirty cell，而不是万亿个cell。每个Percolator worker指定几个线程来扫描。对每个线程，worker选取table一部分的一部分来扫描：首先随机选取一部分Bigtable tablet，然后随机选取tablet中的一些key，最后从那个位置开始扫描该table。因为每个线程随机扫描table中共的一个范围，我们担心两个worker会扫描到同一行、c从而并发的运行同一行上的observer。虽然由于notifications的事务本性，这样不会导致正确性问题，但是这样是不高效的。为了避免这个情况，在遍历一个row之前，每个worker需要从轻量化锁服务中获取一个锁。这个锁服务不需要持久化状态，因此可伸缩性很强。
+
+该随机扫描机制还需要一个额外的优化：在最初部署时，我们注意到扫描线程都倾向于集中到table中的少量region上，这严重影响了扫描的并行效果。这种现象经常在公交系统中看到，被称为***"platooning"或者"bus clumping"***。当某一个bus因为某种原因速度减慢（比如客流增大），将导致它到达后续车站的时间延后。由于每个车站的乘客数量是随着时间增长的，于是便会导致越来越慢（类似于滚雪球效应）。这导致该bug与其后面的bus时间间隔缩短、这个慢的bus后面的bus速度则会提高，因为它在每个站装载的乘客数量减少了。最终的结果就是在后续的车站，多辆公交车将会同时到达。我们的扫描线程工作机制类似：一个扫描线程运行的observer减慢导致之后的线程快速跳过已经被处理的cell，并逐渐与最开头的thread狙击在一起，但是却没能超过零头的线程，因为线程堆积导致该tablet服务器过载。为了解决这个问题，我们做了一个公交系统不能实现的优化：当一个扫描线程发现了它和其他的线程在扫描相同的行时，它就会在table中重新选择一个随机定位继续扫描。这就好比在公交系统中，公交车（扫描线程）为避免clumping而时空穿梭到一个随机的车站（table中的某个位置）
 
 
