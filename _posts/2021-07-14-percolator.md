@@ -231,10 +231,16 @@ Percolator应用其实包含很少的观察者，Google索引系统大概有10�
 
 我们提供***一个保证***：每一个被观察列的每次改变，至多一个observer的事务被提交。反之则不然：一个被观察的列的多次写可能只会触发一次observer事务。我们称这个特性为***消息重叠***，它可以避免不必要的重复计算。比如，对http://google.com页面来说，周期性的通知其变化就够了，不需要每当一个新链接指向它时就触发一次
 
-每个observed column都有为每个observer都有一个"acknowledgment" column，包含这个observer最新运行的时间戳。当observerd column写入时，Percolator启动一个事务来处理通知。该事务读取observed column和对应的acknowledgment列。分两种情况：
+每个observed column都有为每个observer都有一个"acknowledgment" column（详见图1的ack_O列），包含这个observer最新运行的时间戳。当observerd column写入时，Percolator启动一个事务来处理通知。该事务读取observed column和对应的acknowledgment列。分两种情况：
 
 1. 如果observed column发生写操作的时间戳在acknowledgment列的最新时间戳之后，就运行observer逻辑，并设置acknowledgment列为新的时间戳
 
 2. 反之，则说明已经有观察者被运行了，所以我们不重复运行它。
 
 这里需要注意的时，如果Percolator偶然的对一个特定的通知并发启动了两个事务，由于Bigtable的单行事务，可以保证其中一个将取消运行，因为他们会在acknowlegment列上产生写冲突，从而保证每个通知至多一个观察者可以提交。
+
+为了实现notificatioins，Percolator需要高效找到被观察的脏的cell。该搜索是很复杂的，因为notifications往往是稀疏的：我们的表有万亿的cell，但是notifications可能只有百万个。并且，observer代码运行在一大批分布式的、跨大量机器的客户端进程上，因此这代表脏cell的搜索也必须是分布式的。
+
+为了鉴别dirty cells，Percolator在Bigtable维护了一个特殊的名叫"notify"的列，当一个事务写入observed cell时，它同时会设置对应的notify cell。系统中有些workers来对notify列执行分布式扫描，用以找到脏cell。在observer被触发并且对应的事务提交成功之后，我们将删除该notify cell。由于notify column仅仅是一个Bigtable column，而非Percolator column，它没有事务属性。它仅仅作为一个暗示，用以提醒scanner检查acknowledgment列来决定是否运行observer
+
+
