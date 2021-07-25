@@ -3,7 +3,7 @@ layout: post
 title: Percolator
 date: 2021-07-14
 Author: levy5307
-tags: [论文]
+tags: [论文, 分布式事务]
 comments: true
 toc: true
 ---
