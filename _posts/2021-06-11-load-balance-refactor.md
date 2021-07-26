@@ -10,6 +10,8 @@ toc: true
 
 ## 背景
 
+现有的实现如下所示：
+
 simple_load_balancer：主要用于cure，cure的目的是维护分片的健康（一主两备份）
 
 greedy_load_balancer：用于生成load balancer计划。当前只有app load balance，后续要添加cluster load balance
@@ -18,9 +20,17 @@ checker_load_balancer：用于功能测试
 
 ![](../images/load-balancer-background.svg)
 
+## 问题
+
+现有实现有如下几个问题：
+
+1. cure功能严格意义上来说已经不是load balance的一部分，在这里将其放入simple_load_balancer，使server_load_balancer的接口变得异常复杂，既包括cure的接口，也包括load balance的接口。 从而间接导致greedy_load_balancer和checker_load_balancer变得很复杂。
+
+2. 目前greedy_load_balancer实现了针对表的负载均衡，其基于这样一个思想：当集群中所有的表都负载均衡时，整个集群便是负载均衡的。因此在对每个表做负载均衡时并没有考虑到集群当前的负载情况。这是绝对有问题的。因此我们想要加入一个cluster load balance的功能。由于greedy_load_balancer已经很臃肿了，无法往里面再堆逻辑了。
+
 ## 重构
 
-cure功能严格意义上来说已经不是load balance的一部分了，所以首先把simple_load_balancer中cure的功能抽出来放入一个新创建类partition_healer，专门用于cure。load balance相关的功能放入greedy_load_balancer。这样simple_load_balancer便可以删掉。
+如上所述，cure功能严格意义上来说已经不是load balance的一部分了，所以首先把simple_load_balancer中cure的功能抽出来放入一个新创建类partition_healer，专门用于cure。load balance相关的功能放入greedy_load_balancer。这样simple_load_balancer便可以删掉。
 
 ![](../images/load-balancer-refactor-step1.svg)
 
