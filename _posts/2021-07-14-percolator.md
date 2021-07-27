@@ -203,11 +203,11 @@ Get()操作首先查看[0, start timestamp]范围内的锁（该范围表示当�
 
 #### 失败处理
 
-由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时（prewrite或者commit阶段）失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁由事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
+由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁由事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
 
 不过让事务A很自信的判断事务B挂掉是很难的，因此我们要正确处理事务A的清理与（事实上没有失败的）事务B的提交之间的竞争情况。Percolator通过指定事务中的一个cell作为synchronizing point，该cell的lock作为primary lock。清理与提交操作需要修改该primary lock（获取该primary lock）。由于该修改时基于Bigtable的单行事务的，所以只会有一个清理或者提交能够成功执行。明确地说就是：在B提交之前，它必须先检查其是否还持有primary lock，如果持有，则将primary lock替换为一个write record；在A清除B的事务之前，必须检查primary lock看事务B是否已经提交，如果primary lock仍然还在，则可以安全的清除该锁。
 
-当客户端在提交的第二阶段（commit）挂掉了，一个事务将错过commit point，并且仍然持有一些锁。对这种事务，我们必须执行roll-forward。当其他事务遇到这些被遗弃的锁时，可以通过primary lock来区分这两种情况：
+当客户端在提交的第二阶段（commit）挂掉了，一个事务可能越了过commit point，但是仍然持有一些锁。对这种事务，我们必须执行roll-forward。当其他事务遇到这些被遗弃的锁时，可以通过primary lock来区分这两种情况：
 
 1. 如果primary lock已经被替换为一个write record，则写入此锁的事务肯定已经提交了，此锁必须被roll forward
 
