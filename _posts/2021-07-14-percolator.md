@@ -171,19 +171,21 @@ class Transaction {
 
 在prewrite阶段，我们将尝试获取所有将要写的cell的锁（其中一个锁是primary lock）。首先，该事务先读取metadata查看是否有冲突存在，这里一共有两种冲突：
 
-1. 如果其看到一个在其start timestamp之后的write record，则abort。这代表在该事务开启之后，有其他的事务执行了写入，是典型的写-写冲突。***这样可以解决更新丢失的问题，当然，对于写倾斜还是束手无策。***
+1. 如果其看到一个在其start timestamp之后的write record，则abort。这代表在该事务开启之后有其他的事务执行了写入。***这样可以解决更新丢失的问题，当然，对于写倾斜还是束手无策。***
 
 2. 如果该事务看到一个任意timestamp的锁，同样会abort。这代表有其他事务给该cell加了锁。
 
+如果没有冲突，则写入data以及lock（代表获取锁），并且将会开始执行第二阶段（commit阶段）
+
 ***commit阶段***
 
-如果没有冲突，则写入data以及lock（代表获取锁），并且将会开始执行第二阶段（commit阶段），并从oracle获取commit timestamp，并且commit timestamp > start timestamp。
+在commit阶段开始，先从oracle获取commit timestamp，并且commit timestamp > start timestamp。
 
 - 向write列中写入数据，数据的时间戳为commit timestamp，内容为start timestamp，通过该start timestamp，readers可以查找到实际写入的数据。
 
 - 对于每一个cell，释放获取的lock
 
-如果primary提交失败，那么事务就需要回滚。而如果primary提交成功，则可以***异步***提交secondaries, 流程和primary提交一致。不过不同的一点是，secondary提交失败了不会回滚这意味着，***一旦primary的写入可见之后事务就提交了，因为其使得写入操作对readers可见***。
+如果primary提交失败，那么事务就需要回滚。而如果primary提交成功，则可以***异步***提交secondaries, 流程和primary提交一致。不过不同的一点是，secondary提交失败了不会回滚。这意味着，***一旦primary的写入可见之后事务就提交了，因为其使得写入操作对readers可见***。
 
 ***Questions:*** 
 
@@ -201,7 +203,7 @@ Get()操作首先查看[0, start timestamp]范围内的锁（该范围表示当�
 
 #### 失败处理
 
-由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时（prewrite或者commit阶段）失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁有事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
+由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时（prewrite或者commit阶段）失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁由事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
 
 不过让事务A很自信的判断事务B挂掉是很难的，因此我们要正确处理事务A的清理与（事实上没有失败的）事务B的提交之间的竞争情况。Percolator通过指定事务中的一个cell作为synchronizing point，该cell的lock作为primary lock。清理与提交操作需要修改该primary lock（获取该primary lock）。由于该修改时基于Bigtable的单行事务的，所以只会有一个清理或者提交能够成功执行。明确地说就是：在B提交之前，它必须先检查其是否还持有primary lock，如果持有，则将primary lock替换为一个write record；在A清除B的事务之前，必须检查primary lock看事务B是否已经提交，如果primary lock仍然还在，则可以安全的清除该锁。
 
