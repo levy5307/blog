@@ -13,7 +13,7 @@ toc: true
 
 # 设计实现
 
-backup reqeust的实现原理比较简单：当client向primary发送请求后，如果经过一段时间延时后（通常是p999），如果其response仍然没有返回，则随机选择一台secondary并向其发送backup request。最后获取最快返回来的response进行处理。
+backup reqeust的实现原理比较简单：当client向primary发送请求后，经过一段时间延时后（通常是p999），如果其response仍然没有返回，则随机选择一台secondary并向其发送backup request。最后获取最快返回来的response进行处理。
 
 这里发送secondary请求的延时我们建议选择p999，因为backup request操作是用来实现消除长尾的，并不是提升集群性能的。如果将该值设置过低，则会由于backup request的请求量过大而导致集群压力增大（假设选择p50作为其延时，这样便会有50%的请求向secondary发送请求，系统负载便会增大50%）。
 
@@ -68,4 +68,7 @@ Multi-get/Batch-Set operation:
 [The Tail at Scale](https://research.google/pubs/pub40801/)
 
 [backup request in brpc](https://github.com/apache/incubator-brpc/blob/master/docs/en/backup_request.md)
+
+[backup request investigation](https://levy5307.github.io/blog/backup-request-investigation)
+
 

@@ -1,7 +1,17 @@
+---
+layout: post
+title: Backup Request 
+date: 2019-12-18
+Author: Levy5307
+tags: [backup request]
+comments: true
+toc: true
+---
+
 Backup request function can optimize the long tail problem of read delay, suitable for users with low consistency requirements.
 
 ## Investigation
-----------------
+
 There are two ways to implement backup request.
 
 ### Hedged requests
@@ -10,9 +20,14 @@ A client first sends one request to the replica believed to be the most appropri
 This approach limits the benefits to only a small fraction of requests(the tail of the latency distribution).
 
 ### Tied requests
-the client send the request to two different servers, each tagged with the identity of the other server (“tied”). When a request begins execution, it sends a cancellation message to its counterpart. The corre- sponding request, if still enqueued in the other server, can be aborted imme- diately or deprioritized substantially.
+the client send the request to two different servers, each tagged with the identity of the other server (“tied”). When a request begins execution, it sends a cancellation message to its counterpart. The corresponding request, if still enqueued in the other server, can be aborted immediately or deprioritized substantially.
 
-There is another variation in which the request is sent to one server and forwarded to replicas only if the ini- tial server does not have it in its cache and uses cross-server cancellations.
+There is another variation in which the request is sent to one server and forwarded to replicas only if the initial server does not have it in its cache and uses cross-server cancellations.
 
 This approach limits the benefits to not only the tail of the latency, but also median latency distribution. But it result in higher network load.
 
+## Reference
+
+[The Tail at Scale](https://research.google/pubs/pub40801/)
+
+[backup request in brpc](https://github.com/apache/incubator-brpc/blob/master/docs/en/backup_request.md)
