@@ -74,7 +74,7 @@ Percolator需要维护锁，其对锁有如下几个要求：
 
 ![](../images/percolator-initial-state.jpg)
 
-- 该事务获取其start timestamp: 7。并且获取Bob这一行的锁（该锁是primary lock），同时向该start timestamp中写入数据3
+- 该事务获取其start timestamp: 7。并且获取Bob这一行的锁（该锁是primary lock，拥有primary lock的row作为primary，其他row是secondary），同时向该start timestamp中写入数据3
 
 ![](../images/percolator-step-1.jpg)
 
