@@ -215,6 +215,8 @@ Percolator使用Chubby服务来协助判断事务是否存活。运行中的事�
 
 2. 如何解决事务A和事务B之间的竞争情况
 
+由于1中只能猜测、并不能十分确定事务是否已经挂掉，所以必须要解决事务A和事务B之间的竞争情况。
+
 Percolator通过指定事务中的一个cell作为synchronizing point，该cell的lock作为primary lock。清理与提交操作需要修改该primary lock（获取该primary lock）。由于该修改时基于Bigtable的单行事务的，所以只会有一个清理或者提交能够成功执行。明确地说就是：在B提交之前，它必须先检查其是否还持有primary lock，如果持有，则将primary lock替换为一个write record；在A清除B的事务之前，必须检查primary lock看事务B是否已经提交，如果primary lock仍然还在，则可以安全的清除该锁（分为直接清或者roll forward之后再清两种情况）。
 
 3. 如何判断是否该roll forward
