@@ -205,17 +205,25 @@ Get()操作首先查看[0, start timestamp]范围内的锁（该范围表示当�
 
 由于客户端存在失败的可能，所以导致事务的处理过程变得复杂了。如果当一个事务正在进行提交时失败了，那么其持有的锁将会一直持有。Percolator必须清理掉这些锁，否则它将导致其他的事务永远的hang住。Percolator采用了lazy的处理方式来清理这些锁：当事务A遇到了锁冲突（这些锁由事务B持有），事务A必须判断事务B是否已经失败、并且清理这些锁。
 
-不过让事务A很自信的判断事务B挂掉是很难的，因此我们要正确处理事务A的清理与（事实上没有失败的）事务B的提交之间的竞争情况。Percolator通过指定事务中的一个cell作为synchronizing point，该cell的lock作为primary lock。清理与提交操作需要修改该primary lock（获取该primary lock）。由于该修改时基于Bigtable的单行事务的，所以只会有一个清理或者提交能够成功执行。明确地说就是：在B提交之前，它必须先检查其是否还持有primary lock，如果持有，则将primary lock替换为一个write record；在A清除B的事务之前，必须检查primary lock看事务B是否已经提交，如果primary lock仍然还在，则可以安全的清除该锁。
+对于这个问题，分为如下三个方面：
+
+1. 如何判断事务B是否仍然存活
+
+Percolator使用Chubby服务来协助判断事务是否存活。运行中的事务会向Chubby锁服务中写一个token，其他事务会将改token的存在代表当前事务处于alive（如果事务退出，该token会被自动清除掉）。为了处理事务alive但是没有working的情况，需要向锁中写一个wall time。如果该锁的wall time太老，即使token有效也会被清理。有些事务可能需要运行很长时间才会提交，在这种情况下，该事务需要周期性的更新wall time。
+
+这里需要注意的一点是：回滚会强迫事务abort，这样会严重影响性能。因此，一个事务将不会清理一个锁除非它猜测这个锁属于一个挂掉的事务。
+
+2. 如何解决事务A和事务B之间的竞争情况
+
+Percolator通过指定事务中的一个cell作为synchronizing point，该cell的lock作为primary lock。清理与提交操作需要修改该primary lock（获取该primary lock）。由于该修改时基于Bigtable的单行事务的，所以只会有一个清理或者提交能够成功执行。明确地说就是：在B提交之前，它必须先检查其是否还持有primary lock，如果持有，则将primary lock替换为一个write record；在A清除B的事务之前，必须检查primary lock看事务B是否已经提交，如果primary lock仍然还在，则可以安全的清除该锁（分为直接清或者roll forward之后再清两种情况）。
+
+3. 如何判断是否该roll forward
 
 当客户端在提交的第二阶段（commit）挂掉了，一个事务可能越了过commit point，但是仍然持有一些锁。对这种事务，我们必须执行roll-forward。当其他事务遇到这些被遗弃的锁时，可以通过primary lock来区分这两种情况：
 
-1. 如果primary lock已经被替换为一个write record，则写入此锁的事务肯定已经提交了，此锁必须被roll forward
+- 如果primary lock已经被替换为一个write record，则写入此锁的事务肯定已经提交了，此锁必须被roll forward。在执行roll forward时，执行清理的事务也会将这些被遗弃的锁替换为一个write record。
 
-2. 否则，该事务应该被回滚（因为事务总是会先提交primary lock，如果primary lock没有被提交，则说明事务没有提交，此时回滚肯定是安全的）
-
-在执行roll forward时，执行清理的事务也会将这些被遗弃的锁替换为一个write record。
-
-因为对于清理操作是由primary lock同步的，所以清理活跃客户端所持有的锁是安全的。然而回滚会强迫事务abort，这样会严重影响性能。因此，一个事务将不会清理一个锁除非它猜测这个锁属于一个挂掉的事务。Percolator使用Chubby服务来协助判断事务是否存活。运行中的事务会向Chubby锁服务中写一个token，其他事务会将改token的存在代表当前事务处于alive（如果事务退出，该token会被自动清除掉）。为了处理事务alive但是没有working的情况，需要向锁中写一个wall time。如果该锁的wall time太老，即使token有效也会被清理。有些事务可能需要运行很长时间才会提交，在这种情况下，该事务需要周期性的更新wall time。
+- 否则，该事务应该被回滚（因为事务总是会先提交primary lock，如果primary lock没有被提交，则说明事务没有提交，此时回滚肯定是安全的）
 
 ### Timestamps
 
