@@ -1,9 +1,9 @@
 ---
 layout: post
-title: backup request implementation
+title: Backup Request Implementation
 date: 2020-07-18
 Author: Levy5307
-tags: [pegasus, backup request]
+tags: [pegasus, Backup Request]
 comments: true
 toc: true
 ---
