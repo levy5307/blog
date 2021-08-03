@@ -241,6 +241,20 @@ OceanBase中的读已提交和串行化的实现不同主要在于读。读已�
 
 Greenplum支持读已提交和可重复读两种隔离级别。同OceanBase一样，可重复读也是通过MVCC来实现的，所以Greenplum中的可重复读与OceanBase中的串行化隔离级别只是称呼上的不同。与OceanBase相同，Greenplum默认的隔离级别也是可重复读。
 
+### Percolator
+
+Percolator基于Bigtable的单行事务实现了跨行、跨表的***快照隔离级别***的事务。并且充分利用的Bigtable的timestamp，对每个数据项都维护多个版本（MVCC）以实现快照隔离。
+
+同OceanBase一样，其依赖一个名为oracle的独立服务来提供单调向前的时间戳，并且每个事务需要获取两个时间戳：start timestamp和commit timestamp。其中start timestamp决定了该事务可以看到的snapshot，commit timestamp决定事务提交的数据的版本。
+
+对于写入，其需要检测两种冲突：
+
+1. 该事务开启之后对同样的row是否有新的写入，如果有则rollback。***这样可以解决更新丢失的问题***，当然，对于写倾斜还是束手无策。
+
+2. 是否有其他事务对相同的row持有锁，如果有则rollback，***这样可以避免脏写问题***
+
+对于读取，首先查看[0, start timestamp]范围内的锁（该范围表示当前事务可以看到的数据版本），如果有锁，说明有一个其他的事务正在同时进行写入。因此当前读事务需要等待该锁释放。如果没有锁或者所有锁已经释放，则读取该时间范围内最新的数据。
+
 ## Reference
 
 [OceanBase全局数据一致](https://developer.aliyun.com/article/657843)
