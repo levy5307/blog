@@ -50,5 +50,17 @@ Cassandra的一个关键特性是其拥有逐渐扩展的能力，这就需要�
 
 Cassandra选择第二种方法，因为它的设计和实现更容易驾驭，并且可以帮助负载均衡作出更加确定的选择。
 
+另外需要说明，每一个节点都知道系统中的所有其他节点以及其负责的数据range。
+
 ### Replication
+
+Cassandra使用Replication来实现高可用以及持久性。每个数据都被复制到N个节点上，其中N是一个per-instance的replication配置。如Partitioning一节所述，每个key都会被分配到一个coordinator节点（该coordinator负责以个range的key，该key刚好落入该range内）。除了将数据在本地持久化以外，coordinator还需要将数据复制到环上的N-1个节点之上。Cassandra为客户端提供了数据复制的多种不同选择，包括：Rack Unaware, Rack ware, Datacenter aware，前两者在一个data center，后者跨越多个data center。根据客户端选择的replication policy来选择副本:
+
+- Rack Unaware。如果客户端选择了Rack Unware，那么选择coordinator在环上的下游的N-1个节点作为non-coordinator副本。
+
+- Rack Aware和Datacenter aware。这两种情况稍微复杂。Cassandra在集群中通过zookeeper选择一个leader节点出来，该leader节点告诉一个节点其需要作为副本的环上的range。并且leader会保证每个节点不会为超过N-1个range作副本。关于一个节点负责作为副本的range的meta信息会缓存在本地，并且持久化在zk上，这样当一个节点重启的时候可以从zk拉取该信息。我们借用了Dynamo的说法，将负责一个指定range的节点叫做preference list。需要说明的一点是，Rack Aware和Datacenter aware的区别在于前者的副本在同一个data center，而后者需要跨data center。
+
+如上一节所述，每一个节点都知道系统中的所有其他节点，以及其负责的range。通过放款quorum要求，即使在节点发生故障或者发生网络分区的情况下，Cassandra仍然可以提供持久化保证。Cassandra可以通过配置，让每一个row都复制到跨越多个data center，本质上，一个key的preference list是有跨越多个datacenter的存储节点构成的，这些datacenter通过高速网络连接，这种设计让我们可以在整个data center都挂掉的时候仍然可以正常提供服务。
+
+### Membership
 
