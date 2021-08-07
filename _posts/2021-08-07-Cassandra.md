@@ -64,3 +64,30 @@ Cassandra使用Replication来实现高可用以及持久性。每个数据都被
 
 ### Membership
 
+Cassandra的cluster membership是基于Scuttlebutt实现的，Scuttlebutt是一个非常高效的、反熵的Gossip协议。其突出特性是其高效的CPU利用率以及高效的gossip channel利用率。在Cassandra中，Gossip不仅应用在membership，也应用在传播其他系统相关控制状态。
+
+#### Failure Detection
+
+failure detection是一个节点用来判断其他节点up或者down的机制。在Cassandra中，failure detection用来防止尝试向已经下线的机器发送请求。Cassandra使用了&Phi; Accrual Failure Detector的变种。Accrual Failure Detector的思想是，不简单的使用Bool值来判断节点的up或者down，而是使用一个value来代表每个节点的怀疑度。该value是&phi;，其实动态调整的，用来表示当前被监控节点的网络和负载条件。
+
+其判断方法如下：
+
+1. 一个给定的&Phi;
+
+2. 每个节点维护一个窗口，用于记录gossip message从其他节点的到达间隔时间，从而获得一个时间分布，并且根据分布获取&phi;，
+
+3. 当&phi > &Phi时，就可以认为该主机已经宕机了。
+
+当然这里可能会产生误判，误判的可能如下：
+
+- &Phi=1，10%
+
+- &Phi=2, 1%
+
+- &Phi=3, 0.1%
+
+通过查阅Cassandra手册，Cassandra默认采用8。并且Cassandra建议，在不稳定的网络中可以将其提高到10-12，用于避免false failure。值大于12或者小于5都是不推荐的。
+
+另外需要说明的一点，在Scuttlebutt的paper中，其使用的是Gaussian分布，而Cassandra采用的是指数分布，因为Cassandra认为由于gossip channel以及其对延迟的影响，指数分布更加相似。
+
+### Bootstraping
