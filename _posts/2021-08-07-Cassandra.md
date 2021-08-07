@@ -122,4 +122,18 @@ Cassandra依赖本地文件系统做持久化，数据以一种有助于高效�
 
 为了论述起见，我们再这里不讨论故障的详细情况。系统可以被配置为同步写入或者异步写入。对于特定的需要高吞吐的系统，我们会选择异步replication。对于使用同步的情况，我们需要等待quorum数量的response返回后才会返回结果给客户端。
 
+任何的日志系统都存在一个清除commit log的机制。在Cassandra中我们使用一种滚动的提交日志，在一个旧的提交日志超过一个特定的可配置大小后，就推出一个新的提交日志。我们发现在我们的线上生产环境中，128MB的大小运行的特别好。每个commit log都有一个header，该header是一个固定大小的bit vector，其大小大于可能的column family数量。每个commit log都有一个bit vector并且会在内存中维护。对该bit vector有如下几个操作：
+
+1. 修改
+
+在我们的实现中，对每个column family都有一个in-memory数据结构和一个磁盘上的data file。每次当一个column family的in-memory数据结构被持久化到磁盘中，我们在commit header中设置一个bit，用于表示该column family已经成功持久化到磁盘上。
+
+2. 检查
+
+每次滚动提交日志时，都会检查其bit vector，并检查之前滚动的提交日志的所有bit vector。如果发现所有的column family都持久化到了磁盘上，那么该commit log就可以清除了。
+
+写入到commit log的操作可以分为normal模式和fast sync模式两种。在fast sync模式中，写入commit log的数据会被缓存起来。这意味着当机器宕机时，是有可能数据丢失的。在这种模式下，in-memory数据结构被持久化到磁盘时，也是会进行缓存的。
+
+传统的数据库并不是设计用来处理高写入吞吐的，在Cassandra中，所有向磁盘的写入都是顺序的，以最大化磁盘写吞吐。由于文件dump到磁盘后不会再修改了，所以在读取时无需进行加锁。Cassandra的服务实例的读写操作实际上都是无锁操作，因此我们并不需要应付基于B-Tree的数据库实现中存在的并发问题。
+
 
