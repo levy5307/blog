@@ -155,3 +155,5 @@ bigtable就是采用了范围分片的方式，其将数据切分成很多个tab
 
 [Dynamo与一致性hash](https://zhuanlan.zhihu.com/p/107560108)
 
+[Cassandra](https://levy5307.github.io/blog/Cassandra/)
+
