@@ -255,6 +255,18 @@ Percolator基于Bigtable的单行事务实现了跨行、跨表的***快照隔�
 
 对于读取，首先查看[0, start timestamp]范围内的锁（该范围表示当前事务可以看到的数据版本），如果有锁，说明有一个其他的事务正在同时进行写入。因此当前读事务需要等待该锁释放。如果没有锁或者所有锁已经释放，则读取该时间范围内最新的数据。
 
+### Spanner
+
+Spanner的事务分为三种类型，分别是：读写事务、snapshot事务以及snapshot读。其中后两者是只读事务，都是lock free的。区别在于后者是对历史数据的读取，由客户端来指定时间戳或者时间戳范围。
+
+- 读写事务。Spanner中的事务运行时间都比较长，所以如果频繁冲突回滚的话，性能损耗比较大。所以，对于读写事务，Spanner采用了2PL这种悲观方式。
+
+- snapshot事务。snapshot事务提供了快照隔离级别。其首要任务是获取一个时间戳S<sub>read</sub>，然后当成S<sub>read</sub>时刻的快照读来执行事务读操作。这里分为两种情况：
+
+1. 读取只由一个Paxos Group提供服务。
+
+2. 读取需要由多个Paxos Group提供服务。
+
 ## Reference
 
 [OceanBase全局数据一致](https://developer.aliyun.com/article/657843)
