@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 分布式事务
+title: 分布式事务与业内实践
 date: 2021-07-01
 Author: levy5307
 tags: [分布式事务]
@@ -259,13 +259,21 @@ Percolator基于Bigtable的单行事务实现了跨行、跨表的***快照隔�
 
 Spanner的事务分为三种类型，分别是：读写事务、snapshot事务以及snapshot读。其中后两者是只读事务，都是lock free的。区别在于后者是对历史数据的读取，由客户端来指定时间戳或者时间戳范围。
 
-- 读写事务。Spanner中的事务运行时间都比较长，所以如果频繁冲突回滚的话，性能损耗比较大。所以，对于读写事务，Spanner采用了2PL这种悲观方式。
+#### 读写事务
 
-- snapshot事务。snapshot事务提供了快照隔离级别。其首要任务是获取一个时间戳S<sub>read</sub>，然后当成S<sub>read</sub>时刻的快照读来执行事务读操作。这里分为两种情况：
+Spanner中的事务运行时间都比较长，所以如果频繁冲突回滚的话，性能损耗比较大。所以，对于读写事务，Spanner采用了2PL这种悲观方式，通过2PL可以实现串行化事务隔离级别。在读写操作之前，首先需要获取相应的锁（读操作获取读锁，写操作获取写锁）。另外，读写使用采用了伤停等待（wound wait）来解决冲突的问题。
 
-1. 读取只由一个Paxos Group提供服务。
+#### snapshot事务
 
-2. 读取需要由多个Paxos Group提供服务。
+snapshot事务提供了快照隔离级别。其首要任务是获取一个时间戳S<sub>read</sub>，然后当成S<sub>read</sub>时刻的快照读来执行事务读操作。这里分为两种情况：
+
+1. 读取只由一个Paxos Group提供服务。客户端把该事务发送给Paxos group leader，该leader分配s<sub>read</sub>并执行读取操作。定义LastTS()为一个Paxos group最后一次提交的写入timestamp，那么设置s<sub>read</sub>就可以满足外部一致性要求：该事务将会看到最新的一次写入，然后排在其后面执行。
+
+2. 读取需要由多个Paxos Group提供服务。最复杂的操作是需要做一次沟通，然后大家根据各自的LastTS()协商出s<sub>read</sub>。然而spanner根据TrueTime实现了一个更简单的方案，这个方案可以避免该沟通过程。其令s<sub>read</sub>=TT.now().latest，由TrueTime来保证各个副本中获取的时间的一致，然后使用该时刻去执行读操作。
+
+#### snapshot读
+
+在spanner的每个replica中，都会记录一个safe time，名叫t<sub>safe</sub>，其代表副本更新后的最大timestamp。当该读操作所指定的时间戳t <= t<sub>safe</sub>时，则该副本可以满足该读取操作，因为该副本最新的更新时间在该事务读取时间之后。
 
 ## Reference
 
