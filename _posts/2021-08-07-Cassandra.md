@@ -62,6 +62,8 @@ Cassandra使用Replication来实现高可用以及持久性。每个数据都被
 
 如上一节所述，每一个节点都知道系统中的所有其他节点，以及其负责的range。通过放款quorum要求，即使在节点发生故障或者发生网络分区的情况下，Cassandra仍然可以提供持久化保证。Cassandra可以通过配置，让每一个row都复制到跨越多个data center，本质上，一个key的preference list是有跨越多个datacenter的存储节点构成的，这些datacenter通过高速网络连接，这种设计让我们可以在整个data center都挂掉的时候仍然可以正常提供服务。
 
+在Cassandra中，并没有使用一致性协议来进行replication，所以Cassandra是一个最终一致性的系统。
+
 ### Membership
 
 Cassandra的cluster membership是基于Scuttlebutt实现的，Scuttlebutt是一个非常高效的、反熵的Gossip协议。其突出特性是其高效的CPU利用率以及高效的gossip channel利用率。在Cassandra中，Gossip不仅应用在membership，也应用在传播其他系统相关控制状态。
