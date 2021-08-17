@@ -28,14 +28,15 @@ toc: true
 
 分离两者使得Socrates可以采取更合适的机制来处理。具体来说，Socrates相比于其他失眠上的database，更少的存储在本地昂贵快速存储上的副本数量、更少的整体的副本数量、更少的网络带宽以及更少的计算资源来维护副本更新。
 
-|                 | Today            | Socrates      |
-|:---------------:|:----------------:|:-------------:|
-| Max DB Size     | 4TB              | 100TB         |
-| Availability    | 99.99            | 99.999        |
-| Upsize/downsize | O(data)          | O(1)          |
-| CPU impact      | 4x single images | 25% reduction |
-| Recovery        | O(1)             | O(1)          |
-| Commit Latency  | 3ms              | < 0.5ms       |
-| Log Throughput  | 50MB/s           | 100+MB/s      |
+| ****            | **Today**          | **Socrates**       |
+|:---------------:|:------------------:|:------------------:|
+| Max DB Size     | 4TB                | 100TB              |
+| Availability    | 99.99              | 99.999             |
+| Upsize/downsize | O(data)            | O(1)               |
+| Storage impact  | 4x copies(+backup) | 2x copies(+backup) |
+| CPU impact      | 4x single images   | 25% reduction      |
+| Recovery        | O(1)               | O(1)               |
+| Commit Latency  | 3ms                | < 0.5ms            |
+| Log Throughput  | 50MB/s             | 100+MB/s           |
 
 上表列出了Socrates在可扩展性、可用性、弹性、资源消耗以及性能的优异表现。如何做到这些是本篇论文的主题
