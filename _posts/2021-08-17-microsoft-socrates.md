@@ -40,3 +40,35 @@ toc: true
 | Log Throughput  | 50MB/s             | 100+MB/s           |
 
 上表列出了Socrates在可扩展性、可用性、弹性、资源消耗以及性能的优异表现。如何做到这些是本篇论文的主题
+
+## State Of The Art
+
+这一节介绍一些市面上常用的接触DBaaS系统。
+
+SQL DB是微软Azure上的一款DBaaS。其基于HADR来构建。HADR是基于日志复制的状态机实现，其拥有一个Primary用户处理所有的update事务，并将update log同步至所有的Secondary节点。日志复制是分布式数据库系统中保持副本一致性的标准做法。另外，Primary会周期性的备份数据到Azure的XStore存储服务上：
+
+- 每5分钟备份一次日志
+
+- 每天做一次整个数据库的增量备份
+
+- 每周做一次数据库的完全备份
+
+Secondary节点只处理只读事务，当一个Primary挂掉时，其中一个Secondary会被选为新Primary。使用HADR架构，SQL DB需要四个节点（一个Primary和三个Secondary）用以保证高可用和高持久性。但是由于日志每5分钟备份一次，如果所有的4个节点都挂了，是会存在数据丢失的。
+
+HADR有如下优点：
+
+1. 在Azure上部署了上百万个database，成熟稳定
+
+2. 每个计算节点都有database的全量本地数据拷贝，性能比较高
+
+HADR的缺点：
+
+1. 由于每个计算节点都有database的全量本地数据拷贝，database的数据量无法超越单机存储上限
+
+2. 当运行一个long-running的事务时，当日志的增长超过了磁盘容量的上限，在事务提交之前并不能截断该日志。
+
+3. O(size-of-data)问题，扩建一个新节点的代价与数据量大小成线性关系，Backup/Restore和扩容/缩容的代价与数据量大小成线性关系。
+
+这就是为什么SQL DB的容量上限被限制在4TB。
+
+
