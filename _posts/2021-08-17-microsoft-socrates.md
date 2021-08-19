@@ -107,3 +107,14 @@ SQL的Accelerated Database Recovery(ADR)利用了上述的持久化version store
 
 Socrates将数据库引擎的组件分布在多层之中。为了支持更丰富的计算分布，扩展了传统的SQL Server网络层（称为Unified Communication），使用了一种新的协议，称为Remote Block I/O，简称RBIO。RBIO是一种无状态协议，强类型，支持自动版本控制，对短暂性故障具有可快速恢复性，并且对最佳副本选择具有QoS支持。
 
+### Snapshot Backup/Restore
+
+当数据库文件存储在Azure中时，SQL Server 2016引入了快速备份的能力。这个feature依赖于XStore实现的blob snapshot的特性，XStore是一个日志结构的存储系统，备份几乎是实时的，因为它只需要维护一个指针(时间戳)指向当前日志的头部。Socrates扩展了这个feature，将备份/恢复的工作完全使用XStore snapshot。因此，Socrates可以不用消耗计算层的CPU和IO就可以在常量时间内完成备份或者恢复。在XStore的快照机制下，一个数百TB的大数据库也可以在分钟内完成备份。
+
+当然，apply log使机器状态恢复到正确、启动机器、对restore的database刷新其cache都需要一些时间，但是这些时间与data size无关。Bacup/restore是Scorate消除了size-of-data操作的一个显著例子。
+
+### I/O Stack Virtualization
+
+在I/O栈的最低层，SQLServer使用一个叫作File Control Block(FCB)的抽象层作为。FCB层抽象了底层设备的细节，提供给上层I/O的能力，支持多个文件系统、多样的存储平台和I/O模式。Socrates通过实现新的FCB instance广泛的使用了这个IO虚拟化层，该FCB instance在计算过程中隐藏Socraetes的存储层次结构。这种方法帮助我们再不改变太多SQL Server组件的情况下实现Socrates。大多数组件相信它们是一个独立的、独立的数据库系统的组件，而在FCB层之上的任何组件都不需要处理分布式、异构系统的复杂性（Socrates实际上是这样的系统）
+
+## Socrates Architecture
