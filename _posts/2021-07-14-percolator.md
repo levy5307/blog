@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Percolator
+title: Google Percolator
 date: 2021-07-14
 Author: levy5307
 tags: [论文, 分布式事务]
