@@ -3,7 +3,7 @@ layout: post
 title: Pegasus安全认证
 date: 2021-08-20
 Author: levy5307
-tags: [Pegasus, 安全认证]
+tags: [pegasus, 安全认证]
 comments: true
 toc: true
 ---
