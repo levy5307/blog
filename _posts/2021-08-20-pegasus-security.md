@@ -29,7 +29,8 @@ Pegasus的身份认证功能是基于Kerberos实现的。Kerberos是由MIT提出
 第三阶段则是身份认证成功后，客户端与服务端之间的正常rpc调用。
 
 这里需要注意的是，在第一阶段或者第二阶段中如果发生了错误，则会导致认证失败、连接断开，也就无法开展后续的rpc调用。
-另外，为了提供server端身份认证的执行效率，我们使用了credential cache。然而由于kerberos的credential是有生命期限的，因此我们需要在credential失效之前对其进行自动更新。为了实现这个功能，我们开启了一个后台定时任务对credential进行更新，当然，该定时周期也是根据当前credential的剩余生命时间计算而来。
+
+另外，为了提供server端身份认证的执行效率，我们使用了credential cache，用于缓存server端的credential信息。然而由于kerberos的credential是有生命期限的，因此我们需要在credential失效之前对缓存的credential信息进行自动更新。为了实现这个功能，我们开启了一个后台定时任务对credential进行更新，当然，该定时周期也是根据当前credential的剩余生命时间计算而来。
 
 ## 权限控制
 
