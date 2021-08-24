@@ -54,7 +54,7 @@ NVMe: 即Non-Volatile Memory Express，是专为固态存储器设计的新型�
 
 2. 具备无缝替代原生RocksDB的能力，这样可以方便我们做测试。然而生产环境不推荐用SpanDB替换，社区不成熟。
 
-### Pegasus借鉴与优化
+## Pegasus借鉴与优化
 
 Pegasus可以借鉴SpanDB的优化方案：
 
