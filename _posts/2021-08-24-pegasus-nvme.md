@@ -3,7 +3,7 @@ layout: post
 title: Pegasus使用NVMe的调研
 date: 2021-08-24
 Author: levy5307
-tags: []
+tags: [pegasus, SpanDB]
 comments: true
 toc: true
 ---
@@ -12,7 +12,7 @@ toc: true
 
 NVMe: 即Non-Volatile Memory Express，是专为固态存储器设计的新型传输协议。SATA (Serial Advanced Technology Attachment) 并非专为固态硬盘等闪存存储器设计，相比之下，NVMe使硬盘的性能得到极大的提升。
 
-参考文档：https://en.wikipedia.org/wiki/NVM_Express
+[参考文档](https://en.wikipedia.org/wiki/NVM_Express)
 
 ## SpanDB
 
@@ -52,7 +52,7 @@ NVMe: 即Non-Volatile Memory Express，是专为固态存储器设计的新型�
 
 1. 性能高。SpanDB相较于RocksDB，吞吐提升了8.8倍，延时降低了9.5%-58.3%。
 
-2. 具备无缝替代原生RocksDB的能力。这样可以方便我们做测试，然而不推荐用SpanDB替换，社区不成熟。
+2. 具备无缝替代原生RocksDB的能力，这样可以方便我们做测试。然而生产环境不推荐用SpanDB替换，社区不成熟。
 
 ### Pegasus借鉴与优化
 
