@@ -32,7 +32,7 @@ NVMe: 即Non-Volatile Memory Express，是专为固态存储器设计的新型�
 
   - 将LSM的剩余层放入CD中，这一部分数据大多是冷数据，且数据量大。将这一部分数据放入CD主要是基于成本考虑
 
-2. 通过SPDK访问SD，SPDK意为Storage Performance Development Kit，其通过引入以下技术，实现高性能存储技术。[官方文档](https://spdk.io/doc/)：
+2. 通过SPDK通过使用SPDK直接访问NVMe SSD设备，绕过文件系统和Linux IO stack。SPDK意为Storage Performance Development Kit，其通过引入以下技术，实现高性能存储技术:
 
   - 将存储用到的驱动转移到用户态，避免系统调用
 
@@ -41,6 +41,8 @@ NVMe: 即Non-Volatile Memory Express，是专为固态存储器设计的新型�
   - 避免在IO链路上使用锁
 
   - 使用轮询硬件，而不是中断。断模式带来了不稳定的性能和延时的提升
+
+[官方文档](https://spdk.io/doc/)
 
 下图是采用NVMe盘，不同场景下采用ext4和SPDK的吞吐和延迟对比
 
