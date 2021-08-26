@@ -12,15 +12,17 @@ toc: true
 
 NVMe: 即Non-Volatile Memory Express，是专为固态存储器设计的新型传输协议。SATA (Serial Advanced Technology Attachment) 并非专为固态硬盘等闪存存储器设计，相比之下，NVMe使硬盘的性能得到极大的提升。
 
-[参考文档](https://en.wikipedia.org/wiki/NVM_Express)
+[NVMe参考文档](https://en.wikipedia.org/wiki/NVM_Express)
 
 ## SpanDB
 
 最近读paper时发现了SpanDB。根据SpanDB的描述，将WAL和lsm tree的前几层放在NVMe中，可以有效提高性能和吞吐，同时也能兼顾成本
 
-[Paper](https://www.usenix.org/conference/fast21/presentation/chen-hao)
+[SpanDB Paper](https://www.usenix.org/conference/fast21/presentation/chen-hao)
 
-[项目地址](https://github.com/SpanDB/SpanDB)
+[SpanDB Paper解读](https://levy5307.github.io/blog/spandb/)
+
+[SpanDB项目地址](https://github.com/SpanDB/SpanDB)
 
 ### SpanDB的架构
 
@@ -42,7 +44,7 @@ NVMe: 即Non-Volatile Memory Express，是专为固态存储器设计的新型�
 
   - 使用轮询硬件，而不是中断。断模式带来了不稳定的性能和延时的提升
 
-[官方文档](https://spdk.io/doc/)
+[SPDK官方文档](https://spdk.io/doc/)
 
 下图是采用NVMe盘，不同场景下采用ext4和SPDK的吞吐和延迟对比
 
