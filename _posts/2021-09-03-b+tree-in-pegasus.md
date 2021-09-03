@@ -36,6 +36,8 @@ B+-tree的结构如下：
 
 - B+-tree只索引存储在SST文件中的key。对于immutable memtable和memtable中的key不去索引（而且也没必要索引，内存足够快）。只有在更新完B+-tree之后，才能更新MANIFEST文件（表示该LSM-tree的修改完成）
 
+- 如果担心B+-tree更新的过程影响读，可以采用COW，更新完后切换，只需给切换的过程加锁。
+
 ![](../images/b+tree-in-pegasus-arch.jpg)
 
 ## 问题
