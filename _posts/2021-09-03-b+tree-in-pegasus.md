@@ -1,9 +1,9 @@
 ---
 layout: post
-title: B+-tree优化RocksDB
+title: B+-tree优化Pegasus
 date: 2021-09-03
 Author: levy5307
-tags: []
+tags: [pegasus]
 comments: true
 toc: true
 ---
@@ -47,6 +47,8 @@ B+-tree的结构如下：
 2. 对于key比value大很多的情况不适用，太占用内存。
 
 ## Reference
+
+[SLM-DB解读](https://levy5307.github.io/blog/SLM-DB/)
 
 [SLM-DB](https://www.usenix.org/conference/fast19/presentation/kaiyrakhmet)
 
