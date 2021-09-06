@@ -42,9 +42,15 @@ B+-tree的结构如下：
 
 ## 问题
 
-1. B+-tree可以保存在内存中，但是这样会带来一个问题：recovery过程需要读取所有的key以构建B+-tree，所以会很慢。解决办法：将该B+-tree保存在PMEM中，免去恢复过程中的重建。
+1. B+-tree可以保存在内存中，但是这样会带来一个问题：recovery过程需要读取所有的key以构建B+-tree，所以会很慢。解决办法：
 
-2. 对于key比value大很多的情况不适用，太占用内存。
+   - 将该B+-tree保存在PMEM中，免去恢复过程中的重建。
+
+   - B+-tree只索引LSM-tree的top几层，这样重建的过程会比较快。
+
+   - 在重启过程中，只要LSM-tree准备好了就对外服务，此时查询时按照RocksDB原有的逻辑。同时开启一个线程从后台重建B+-tree，当其重建好之后，所有的查询再通过B+-tree索引
+
+2. 上述方案除了B+-tree只索引top几层的情况，其他情况下如果key比value大很多，将会太占用内存。不过Key比Value大很多的情况在Pegasus中基本不存在。
 
 ## Reference
 
