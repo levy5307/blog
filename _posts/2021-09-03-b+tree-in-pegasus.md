@@ -1,6 +1,6 @@
 ---
 layout: post
-title: B+-tree优化Pegasus
+title: B-tree优化Pegasus
 date: 2021-09-03
 Author: levy5307
 tags: [pegasus]
@@ -16,41 +16,41 @@ toc: true
 
 LSM-tree的核心思想是牺牲读性能来换取顺序写，提高写性能。所以，读性能低是LSM-tree based存储系统的通病，因为多level存在会引起读放大。
 
-因为现在Pegasus线上经常读导致抖动，所以之前考虑过用B+-tree的存储引擎来替换RocksDB，但是这样迁移成本太高，而且会导致不兼容。
+因为现在Pegasus线上经常读导致抖动，所以之前考虑过用B-tree的存储引擎来替换RocksDB，但是这样迁移成本太高，而且会导致不兼容。
 
-因此希望在尽量减少现有引擎改动的情况下，去优化读性能。所以想到可以结合LSM-tree和B+-tree两者的优点，即：
+因此希望在尽量减少现有引擎改动的情况下，去优化读性能。所以想到可以结合LSM-tree和B-tree两者的优点，即：
 
 - 使用LSM-tree来优化写，提高写性能。
 
-- 另外维护B+-tree，以提高读以及范围读性能。
+- 另外维护B-tree，以提高读以及范围读性能。
 
-B+-tree的结构如下：
+B-tree的结构如下：
 
-- B+-tree叶子节点保存key，及其对应的location info
+- B-tree叶子节点保存key，及其对应的location info
 
 - location info包括：SST file ID，block offset，用于定位具体的data block
 
-- 由于B+树的叶子节点是串联且有序的，可以根据叶子节点进行scan操作
+- 由于B树的叶子节点是串联且有序的，可以根据叶子节点进行scan操作
 
-- 在immutable memtable flush的时候，去更新该B+-tree。compaction过程同理。
+- 在immutable memtable flush的时候，去更新该B-tree。compaction过程同理。
 
-- B+-tree只索引存储在SST文件中的key。对于immutable memtable和memtable中的key不去索引（而且也没必要索引，内存足够快）。只有在更新完B+-tree之后，才能更新MANIFEST文件（表示该LSM-tree的修改完成）
+- B-tree只索引存储在SST文件中的key。对于immutable memtable和memtable中的key不去索引（而且也没必要索引，内存足够快）。只有在更新完B-tree之后，才能更新MANIFEST文件（表示该LSM-tree的修改完成）
 
-- 如果担心B+-tree更新的过程影响读，可以采用COW，更新完后切换，只需给切换的过程加锁。
+- 如果担心B-tree更新的过程影响读，可以采用COW，更新完后切换，只需给切换的过程加锁。
 
-![](../images/b+tree-in-pegasus-arch.jpg)
+![](../images/btree-in-pegasus-arch.jpg)
 
 ## 问题
 
-1. B+-tree可以保存在内存中，但是这样会带来一个问题：recovery过程需要读取所有的key以构建B+-tree，所以会很慢。解决办法：
+B-tree可以保存在内存中，但是这样会带来一些问题：
 
-   - 将该B+-tree保存在PMEM中，免去恢复过程中的重建。
+1. recovery过程需要读取所有的key以构建B-tree，所以会很慢。
 
-   - B+-tree只索引LSM-tree的top几层，这样重建的过程会比较快。
+2. 占用的内存太大。
 
-   - 在重启过程中，只要LSM-tree准备好了就对外服务，此时查询时按照RocksDB原有的逻辑。同时开启一个线程从后台重建B+-tree，当其重建好之后，所有的查询再通过B+-tree索引
+针对第二个问题，SLM-DB提出的解决方案是将B-tree保存在PMEM中，这样便可以免去重启过程中构建B-tree的过程。但是其占用内存大的问题仍然没有得到解决。
 
-2. 上述方案除了B+-tree只索引top几层的情况，其他情况下如果key比value大很多，将会太占用内存。不过Key比Value大很多的情况在Pegasus中基本不存在。
+在SpanDB中，其将LSM-tree的top n层放入NVMe，以此提高读写性能。我们可以借用SpanDB的灵感，只为LSM-tree的top n层构建B-tree索引，由于LSM-tree的层与层之间的空间比例是10，所以top几层所占用的内存空间不会太大，而且重启时的构建速度也会很快，可以解决上述两个问题。
 
 ## Reference
 
@@ -58,5 +58,7 @@ B+-tree的结构如下：
 
 [SLM-DB](https://www.usenix.org/conference/fast19/presentation/kaiyrakhmet)
 
-[B+ tree](https://en.wikipedia.org/wiki/B%2B_tree)
+[SpanDB](https://levy5307.github.io/blog/spandb/)
+
+[B-tree](https://en.wikipedia.org/wiki/B-tree)
 
