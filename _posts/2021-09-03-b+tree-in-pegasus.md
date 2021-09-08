@@ -30,8 +30,6 @@ B-tree的结构如下：
 
 - location info包括：SST file ID，block offset，用于定位具体的data block
 
-- 由于B树的叶子节点是串联且有序的，可以根据叶子节点进行scan操作
-
 - 在immutable memtable flush的时候，去更新该B-tree。compaction过程同理。
 
 - B-tree只索引存储在SST文件中的key。对于immutable memtable和memtable中的key不去索引（而且也没必要索引，内存足够快）。只有在更新完B-tree之后，才能更新MANIFEST文件（表示该LSM-tree的修改完成）
