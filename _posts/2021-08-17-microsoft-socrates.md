@@ -127,7 +127,7 @@ Socrates将数据库引擎的组件分布在多层之中。为了支持更丰富
 
 快速的存储设备（SSD）主要用于获取高性能，而慢速存储设备（hard disk）主要用于大量数据的持久性和可扩展性。在云上，每台机器上都会有本地的SSD，这些SSD是高速的、容量有限的并且是non-durable的，也就是说当机器永久地挂掉之后，数据就丢失了。另外，像Azure这样的云厂商都会提供一个远端的存储，这些存储比较便宜、容量无上限并且是durable的。
 
-为了实现高性能、高扩展性以及持久性，Scorates使用了上述两种存储来提供了分层的、scale-out的存储架构。这种架构的特点在于，它避免了高速增长的数据量导致的动态存储分配所带来的花销巨大的数据搬迁。
+为了实现高性能、高扩展性以及持久性，Scorates使用了上述两种存储来提供了分层的、scale-out的存储架构。这种架构的特点在于，它避免了高速增长的数据量导致的动态存储分配所带来的大量数据搬迁的花销。
 
 2. Bounded-time Operations
 
@@ -176,3 +176,24 @@ SQL Server具体有很丰富的生态系统，具有很多工具、库和应用�
 - 将功能下沉到存储层
 
 - 复用已有组件
+
+从整体上来看，Socrates的架构由四层组成。分别是：计算节点、XLOG日志服务层、存储层pager server及XLog存储服务层：
+
+Applications与计算节点相连接。与HADR一样，只有一个Primary计算节点，它用于处理所有的读事务和写事务，并且有一些Secondary只处理只读事务。计算节点实现了查询优化、并发控制、security以及支持T-SQL。如果Primary宕机，一个Secondary将会被提升为Primary。所有的计算节点都在内存和SSD的弹性buffer poll extention中缓存data pages。
+
+Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原则，该原则是Socrates与其他的云数据库（例如Aurora）的主要区别。log分离实现了低commit延迟以及存储层的好的扩展性。由于只有Primary处理写入请求，所以只有Primary向log写入。单个writer保证了写入log的低延迟和高吞吐。所有的Secondary采用异步的形式消费log，以保持其数据的更新。
+
+第三层是存储层，该层是由Page Server实现的。每个Page Server保存数据库一个分片的数据拷贝。Page Server扮演两个重要角色：
+
+1. 向计算节点提供pages。每个计算节点都可以向Page Server请求pages。我们当前正在Page Server实现bulk operations（例如：bulk loading、index creation、DB reorgs、deep page repair和table scan）来为计算节点减负。
+
+2. 在XStore中checkpoint data pages以及创建备份。
+
+如同计算节点一样，Page Servers在内存和SSD中保存所有数据，以达到快速访问的目的。
+
+第四层是Azure Storage Service（XStore），它是由Azure提供的独立的服务。XStore是基于hard disk的高扩展、持久性和廉价的存储服务。数据访问是远程的，所以这限制了吞吐和延迟。将采用本地快速磁盘的Page Servers与持久化、可扩展的、廉价存储进行分离是前面所讲到的设计原则。
+
+***计算节点和Page Servers是无状态的。***他们可以在任意时间宕机、而不会有任何的数据损失。真正的数据保存在XStore和XLOG中。XStore是高可靠的，在Azure服务了多年并从没导致过数据丢失，Socrates利用了这种健壮性。XLOG是我们为Socrates构建的新服务，它具有高性能、可扩展、价格可承受，并且不会有任何数据丢失。
+
+### XLOG Service
+
