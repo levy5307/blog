@@ -197,3 +197,9 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 ### XLOG Service
 
+![](../images/socrate-xlog.jpg)
+
+上图显示了XLOG服务的内部实现。从图中的左上角开启，Primary计算节点向landing zone(LZ)中写入log blocks，LZ是一个快速的持久化存储服务，其提供了很强的数据一致性、弹性和一致性保证。
+
+landing zone是由Azure Premium Storage服务（XIO）来实现的。XIO为所有数据维护了三个副本来保证持久性。对每个存储服务，有performance、cost、availability和durability之间的tradeoff。
+
