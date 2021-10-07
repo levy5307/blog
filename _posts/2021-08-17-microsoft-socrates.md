@@ -203,5 +203,18 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 landing zone是由Azure Premium Storage服务（XIO）来实现的。XIO为所有数据维护了三个副本来保证持久性。对每个存储服务，有performance、cost、availability和durability之间的tradeoff。
 
-为了尽可能的达到最低的提交延迟，Primary直接同步地向LZ写入log blocks。LZ是小而快的（有可能比较贵）。LZ组织成一个环形缓冲，日志格式采用的与（所有Microsoft SQL服务和产品中使用的）传统SQL Server日志格式向后兼容扩展的形式。并且log format与现有的SQL Server log format保持向后兼容，这里遵从了两条设计原则：不重复造轮子、以及保持Socrates与其他SQL Server产品间的兼容性。该日志的一个关键能力是它允许在写存在时可以并发读，并且通过读取可以获取一致性的信息，而且不需要任何的同步(beyond wraparound protection)。最小化同步使得系统更具伸缩性和弹性。
+为了尽可能的达到最低的提交延迟，Primary直接同步地向LZ写入log blocks。LZ是小而快的（有可能比较贵）。LZ组织成一个环形缓冲，日志格式采用的与（所有Microsoft SQL服务和产品中使用的）传统SQL Server日志格式向后兼容扩展的形式。并且log format与现有的SQL Server log格式保持向后兼容，这里遵从了两条设计原则：不重复造轮子、以及保持Socrates与其他SQL Server产品间的兼容性。该日志的一个关键能力是它允许在写存在时可以并发读，并且通过读取可以获取一致性的信息，而且不需要任何的同步(beyond wraparound protection)。最小化同步使得系统更具伸缩性和弹性。
 
+Primary同样会向一个特殊的XLOG进程写入所有的log blocks，该进程会将这些log blocks传播到Page Servers和Secondary。该写入时异步的、而且是不可靠的。采用这种方式是基于如下想法：
+
+1. Socrates向LZ中同步且可靠地写入LZ以保证持久性
+
+2. 异步的向该XLOG进程写入以保证可用性
+
+Primary向LZ和该XLOG进程中并行写入。没有同步机制的话，有可能会导致log block到达Secondary早于LZ，当出现故障的时候，可能会出现不一致以及数据丢失的情况。为了避免这种情况，XLOG仅仅传播hardened log blocks（hardened log blocks是指已经在LZ中持久化的blocks）。其步骤如下：
+
+1. Primary首先将log blocks写入到XLOG进程的pending area
+
+2. Primary通知XLOG所有的harden log blocks
+
+3. 一旦某block已经hardened，XLOG便将其从pending area移动到LogBrocker，LogBroker会将该block传播，同时会做空缺填充以及排序等工作。
