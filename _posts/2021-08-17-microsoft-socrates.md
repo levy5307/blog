@@ -218,3 +218,20 @@ Primary向LZ和该XLOG进程中并行写入。没有同步机制的话，有可�
 2. Primary通知XLOG所有的harden log blocks
 
 3. 一旦某block已经hardened，XLOG便将其从pending area移动到LogBrocker，LogBroker会将该block传播，同时会做空缺填充以及排序等工作。
+
+为了分发和归档日志块，XLOG进程实现了一个存储层次结构。一旦一个日志块移动到LogBroker中，一个称为destaging的内部XLOG进程就会将日志移动到固定大小的本地SSD缓存以实现快速访问，并移动到XStore以实现长期保留。XStore使用廉价存储，价格便宜、耐用，但速度慢。将此日志块的长期存档称为LT。如果未特别指定，SQL DB将日志记录保留30天，用于指定时间点恢复和模糊备份的灾难恢复。在LZ中保留30天的日志记录的成本非常高，是一项低延迟、昂贵的服务。虽然这个分层体系结构很复杂，但不需要其他日志备份过程，在LZ和LT（XStore）之间，所有日志信息都是持久存储的。而且，这个层次结构满足了Socrates对延迟（LZ实现快速提交）和成本的要求（XStore用于大容量存储）。
+
+消费者（备节点和page server）从XLOG服务中拉取日志。这种方式下架构的可伸缩性更强，因为LogBroker不需要维护日志消费者（可能会有数百个page server）。
+
+1. 在最上层，LogBroker在内存中维护了一个日志块的hashmap，在理想情况下，所有的日志请求都在Sequence Map中得到回应。
+
+2. 如果Map中没有找到，则查找XLOG进程中的本地SSD缓存。本地的SSD缓存是日志尾部的另一个环形缓冲区。
+
+3. 如果请求者需要的块也不在SSD缓存中，则需要从LZ中拿取。
+
+4. 如果还是没有找到则从最后一层存储LT中拿取，最后一层确保log block可以被找得到。
+
+XLOG进程也实现了一些其它的分布式DBaaS系统的通用功能：日志生命周期租约、LT Blob清理、备份/还原、日志使用统计、block filter等。
+
+### Primary Compute Node
+
