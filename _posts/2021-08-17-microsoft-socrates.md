@@ -223,7 +223,7 @@ Primary向LZ和该XLOG进程中并行写入。没有同步机制的话，有可�
 
 消费者（备节点和page server）从XLOG服务中拉取日志。这种方式下架构的可伸缩性更强，因为LogBroker不需要维护日志消费者（可能会有数百个page server）。
 
-1. 在最上层，LogBroker在内存中维护了一个日志块的hashmap，在理想情况下，所有的日志请求都在Sequence Map中得到回应。
+1. 在最上层，LogBroker在内存中维护了一个日志块的hashmap（上图中的Sequence Map），在理想情况下，所有的日志请求都在Sequence Map中得到回应。
 
 2. 如果Map中没有找到，则查找XLOG进程中的本地SSD缓存。本地的SSD缓存是日志尾部的另一个环形缓冲区。
 
