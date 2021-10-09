@@ -235,3 +235,15 @@ XLOG进程也实现了一些其它的分布式DBaaS系统的通用功能：日�
 
 ### Primary Compute Node
 
+数据库实例本身感知不到其它副本的存在，以及不知道它的存储是远程存储、以及log不是本地文件管理的。相反，HADR架构下的Primary非常清楚复制状态机的参与者，并且实现仲裁机制来完成日志的持久化和事务提交。而且，HADR的Primary以一种紧密耦合的方式获取备的信息，相比来看，Socrates的Primary在实现上更加简单。
+
+不过两种架构下的主计算节点所实现的核心功能是相同的：处理读写事务和产生日志。与on-premise部署（企业内部部署）的SQL Server有几个显著的差异：
+
+1. 存储层的操作，例如：checkpoint、backup/restore、page repair等，委托给了Page Servers或者更低的存储层来做
+
+2. Socrates Primary使用虚拟文件系统机制来向LZ中写入log
+
+3. Socrates Primary使用RBPEX缓存。RBPEX成为虚拟I/O层之上透明的一层
+
+4. 最大的差异是socrates的主节点不再保存数据库全量的数据，它只将较热的那部分数据放入内存和SSD(RBPEX)中
+
