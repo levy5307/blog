@@ -300,3 +300,31 @@ pageId唯一地标识Primary需要读取的页，LSN代表page log sequence numb
 
 ### Page Servers
 
+Page Server主要负责三件事：
+
+1. 维护数据库的一个partition，通过apply log的方式
+
+2. 相应Compute Node的GetPage请求
+
+3. 完成分布式的checkpoints和执行backup操作
+
+遵从复用的原则，PageServer apply日志与Secondary处理日志的过程是类似的。相比Secondary需要关心所有有关数据库修改的日志记录和需要消费所有的log blocks的特性，PageServer仅仅需要关心特定Page Server中的partition相关的log blocks。为此，Primary为每个log block增加充分的注释信息标明日志块中的日志记录需要应用到哪些partition中。XLOG利用这些过滤信息仅仅分发相关的日志块到对应的Page Server中。
+
+服务GetPage@LSN请求也很简单。Page Server也使用RBPEX（SSD扩展可恢复缓存）。这个机制与Compute Node相同，但是策略不同。Compute Node缓存hot pages以达到最好的性能，其缓存是稀疏的。相比而言，Page Server缓存所有那些不足以放入Compute Node缓存中的页面，即该Page Server负责partition的所有page全部存储在Page Server的RBPEX中。
+
+此外，Socrates将page server的RBPEX组织在一个保持跨距的布局中，使得来自Compute Node的覆盖多个页面范围的单个I/O请求在Page Server上转换为单个I/O请求。因为Page Server的缓存是密集的，相比Compute Node的RBPEX不会带来读放大。这个特性对于性能是非常重要的，尤其是对于那些查询多达128个page的场景。
+
+Page Server缓存的另外一个重要特性是当XStore无法提供服务时，Page Server继续以这样一种模式运行：page仅仅写入RBPEX中并记录不在XStore中的页面。当XStore重新联机时，重新恢复checkpointing（并捕获XStore）。相同的机制允许Socrates聚集多次I/O一次性写到XStore中，以便在底层存储服务中获得尽可能高的吞吐。
+
+另外，当一个Page Server启动时，RBPEX以异步的方式建立，而同时Page Server已经可用并且能够服务请求和应用日志。将这种long running操作解耦出来是Socrates的重要设计原则
+
+最后，Page Server通过与XStore交互进行checkpoint和backup操作。
+
+### XStore for Durability and Backup/Restore
+
+如前所述，数据库真正的数据是保存在XStore中的。XStore是cheap(基于硬盘)、durable(由于跨可用性区域的高度复制，几乎没有数据丢失)，提供高效备份和恢复。***XStore扮演传统数据库中硬盘和磁盘相同的角色，而Compute Node的主存和SSD缓存(RBPEX)扮演传统数据库内存的角色。***
+
+对于checkpointing，Page Server定期将修改过的pages发送到XStore。
+
+备份是使用XStore的snapshot实现，通过简单地记录时间戳来实现，使得可以在常数时间内创建备份。
+
