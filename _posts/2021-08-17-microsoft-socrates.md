@@ -221,7 +221,7 @@ Primary向LZ和该XLOG进程中并行写入。没有同步机制的话，有可�
 
 为了分发和归档日志块，XLOG进程实现了一个存储层次结构。一旦一个日志块移动到LogBroker中，一个称为destaging的内部XLOG进程就会将日志移动到固定大小的本地SSD缓存以实现快速访问，并移动到XStore以实现长期保留。XStore使用廉价存储，价格便宜、耐用，但速度慢。将此日志块的长期存档称为LT。如果未特别指定，SQL DB将日志记录保留30天，用于指定时间点恢复和模糊备份的灾难恢复。在LZ中保留30天的日志记录的成本非常高，是一项低延迟、昂贵的服务。虽然这个分层体系结构很复杂，但不需要其他日志备份过程，在LZ和LT（XStore）之间，所有日志信息都是持久存储的。而且，这个层次结构满足了Socrates对延迟（LZ实现快速提交）和成本的要求（XStore用于大容量存储）。
 
-消费者（备节点和page server）从XLOG服务中拉取日志。这种方式下架构的可伸缩性更强，因为LogBroker不需要维护日志消费者（可能会有数百个page server）。
+消费者（Secondary和page server）从XLOG服务中拉取日志。这种方式下架构的可伸缩性更强，因为LogBroker不需要维护日志消费者（可能会有数百个page server）。
 
 1. 在最上层，LogBroker在内存中维护了一个日志块的hashmap（上图中的Sequence Map），在理想情况下，所有的日志请求都在Sequence Map中得到回应。
 
@@ -245,7 +245,7 @@ XLOG进程也实现了一些其它的分布式DBaaS系统的通用功能：日�
 
 3. Socrates Primary使用RBPEX缓存。RBPEX成为虚拟I/O层之上透明的一层
 
-4. 最大的差异是socrates的主节点不再保存数据库全量的数据，它只将较热的那部分数据放入内存和SSD(RBPEX)中
+4. 最大的差异是socrates的Primary不再保存数据库全量的数据，它只将较热的那部分数据放入内存和SSD(RBPEX)中
 
 最后的差异是Primary可以获取没有被缓存在本地的page。这个机制称为`GetPage@LSN`。GetPage@LSN机制是一个RPC，其由Primary使用RBIO协议从FCB I/O虚拟化层发起。
 其函数原型如下：
@@ -278,10 +278,25 @@ pageId唯一地标识Primary需要读取的页，LSN代表page log sequence numb
 
 1. Socrates不需要保存和持久化log blocks，这是XLOG所负责的。
 
-2. Socrates是一个松耦合的架构，备节点不需要知道谁产生的日志。
+2. Socrates是一个松耦合的架构，Secondary不需要知道谁产生的日志。
 
 如同HADR，Socrates Secondary只处理只读事务。另外，一些重要的组件例如query processor、security manager和transaction manager这些都没有修改。
 
-同Primary一样，最显著的差异是Socrates不需要保存数据库的完整备份。这点对于支持大型数据库、以及使计算节点无状态的设计目标至关重要。
+同Primary一样，最显著的差异是Socrates不需要保存数据库的完整备份。这点对于支持大型数据库、以及使计算节点无状态的设计目标至关重要。但是这会导致当Secondary处理一个log record时，该log record相对应的page并没有在缓存中（memory和SSD中都不存在）。针对这个问题有不同的处理策略：
 
+1. 一个可能的策略是从底层fetch page并且应用log，这种方式下，Secondary与Primary的缓存大致保持一致。当failover并导致Secondary晋升发生时，其性能可以更加稳定。
+
+2. 令一个策略是当前SQL DB Hyperscale当前采用的，即简单忽略掉不在cache中的pages。这个策略会导致一个问题，Secondary处理只读事务时的GetPage请求与判断page是否存在于cache中存在并发性问题。为了解决这个冲突，Secondary必须在实际调用之前先注册GetPage请求，Secondary的apply-log线程将GetPage请求相关的log records进行排队。当所有的page被加载进来之后，才进行实际的调用。
+
+另一个问题出现在Secondary执行B树遍历来处理只读事务时。Secondary使用与Primary相同的GetPage协议，但是在同一时刻Secondary的LSN可能会比Primary中最新写入的LSN小，这会带来不一致问题。考虑下面B-Tree遍历的部分场景：
+
+1. Secondary读取了B-tree的结点P，LSN为23(Secondary回放到23的日志)。
+
+2. 下一个节点C，是P的子结点，没有在缓存中。Secondary发出一个getPage(C, 23)的请求。
+
+3. PageServer返回LSN为25的Page C
+
+根据GetPage的协议，PageServer可能会返回一个更新的page，这导致了不一致问题。不过这种不一致比较容易甄别。如果在遍历过程中检测出了不一致，它会暂停一会儿等待日志apply。之后再次启动B-Tree的遍历，以到达一致的结果。
+
+### Page Servers
 
