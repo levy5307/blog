@@ -252,4 +252,24 @@ XLOG进程也实现了一些其它的分布式DBaaS系统的通用功能：日�
 ```
 getPage(pageId, LSN)
 ```
-pageId唯一地标识主节点需要读取的页，LSN代表page log sequence number，值与page中的的最大PageLSN相同。page server返回已应用此LSN或者更新的page version。
+pageId唯一地标识主节点需要读取的页，LSN代表page log sequence number，其值至少要与该page中的的最大PageLSN相同。page server返回已应用此LSN或者更新的page version。
+
+为了理解这种机制，举例如下：
+
+1. Primary更新了Page X在其本地缓存中
+
+2. Primary由于内存压力或者积压将Page X从本地缓存中驱逐出去。在驱逐之间，Primary将描述Page X修改的日志写入到XLOG中
+
+3. Primary再次读取Page X
+
+在这个场景中，Primary在第三步中获取最新版本的Page X是很重要的。通过指定X-LSN来请求getPage(X, X-LSN)保证了可以获取到该page的最新版本。Page Server通过如下步骤来处理getPage(X, X-LSN)请求
+
+1. 等待直到所有X-LSN的日志都从XLOG中确认了。
+
+2. 返回Page X
+
+这个简单的协议确保了page server不会将page X的旧版本返回。
+
+目前为止我们还没有描述Primary如何获取X-LSN来发送getPage(X, X-LSN)请求。理想状态下，X-LSN是Page X中最新的LSN。然而，Primary并不会知道已经驱逐出去的Page的最新LSN。因此Priary根据pageId构建了一个hashmap，用于确定getpage中使用的lsn，hashmap记录了每一个被淘汰page的最大LSN
+
+### Secondary Compute Node
