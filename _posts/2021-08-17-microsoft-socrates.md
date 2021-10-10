@@ -273,3 +273,15 @@ pageId唯一地标识Primary需要读取的页，LSN代表page log sequence numb
 目前为止我们还没有描述Primary如何获取X-LSN来发送getPage(X, X-LSN)请求。理想状态下，X-LSN是Page X中最新的LSN。然而，Primary并不会知道已经驱逐出去的Page的最新LSN。因此Priary根据pageId构建了一个hashmap，用于确定getpage中使用的lsn，hashmap记录了每一个被淘汰page的最大LSN
 
 ### Secondary Compute Node
+
+遵循复用的设计原则，Socrates Secondary共享与HADR中相同的apply日志功能。但是有两个不同点：
+
+1. Socrates不需要保存和持久化log blocks，这是XLOG所负责的。
+
+2. Socrates是一个松耦合的架构，备节点不需要知道谁产生的日志。
+
+如同HADR，Socrates Secondary只处理只读事务。另外，一些重要的组件例如query processor、security manager和transaction manager这些都没有修改。
+
+同Primary一样，最显著的差异是Socrates不需要保存数据库的完整备份。这点对于支持大型数据库、以及使计算节点无状态的设计目标至关重要。
+
+
