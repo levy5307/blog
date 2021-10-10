@@ -247,3 +247,9 @@ XLOG进程也实现了一些其它的分布式DBaaS系统的通用功能：日�
 
 4. 最大的差异是socrates的主节点不再保存数据库全量的数据，它只将较热的那部分数据放入内存和SSD(RBPEX)中
 
+最后的差异是Primary可以获取没有被缓存在本地的page。这个机制称为`GetPage@LSN`。GetPage@LSN机制是一个RPC，其由Primary使用RBIO协议从FCB I/O虚拟化层发起。
+其函数原型如下：
+```
+getPage(pageId, LSN)
+```
+pageId唯一地标识主节点需要读取的页，LSN代表page log sequence number，值与page中的的最大PageLSN相同。page server返回已应用此LSN或者更新的page version。
