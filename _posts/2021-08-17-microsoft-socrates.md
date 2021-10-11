@@ -97,11 +97,11 @@ SQL的Accelerated Database Recovery(ADR)利用了上述的持久化version store
 
 3. 对于最后一次checkpoint以后的未提交且失败的事务，回放其undo日志
 
-在这种模式下，对于一个长时间运行的事务，undo阶段可能会变得无限长。使用多版本存储可以优化这种情况：在一个共享的、持久性的version store中，系统可以在宕机重启后立马访问已经提交的版本，系统在很多情况下可以忽略undo阶段的影响, 在分析和redo阶段后马上变得可用，这是一个很短的常量时间（该常量时间由checkpoint的interval决定）。
+在这种模式下，对于一个长时间运行的事务，undo阶段可能会变得无限长。对于线上数百万台机器的数据库而言，这将是一个很重要的问题。使用version store可以优化这种情况：在一个共享的、持久性的version store中，系统可以在宕机重启后访问已经提交的版本，这使得系统在很多情况下可以忽略undo阶段的影响, 在分析和redo阶段后马上变得可用。这将是一个很短的常量时间（该常量时间由checkpoint的interval决定）。
 
 ### Resilient Buffer Pool Extension
 
-在2012年，SQL Server发布了一个叫做buffer poll extension(BPE)的功能，其将buffer poll从内存延伸到了本地SSD磁盘上（在内存和磁盘上使用相同的生命周期和驱逐策略）。在Socrates中扩展了这种思想，使得buffer pool具有可恢复性，例如故障后的恢复。这个组件叫做RBPEX，他作为对数据页的缓存机制服务于存储层和计算层。这种方式使得宕机后节点可以快速恢复到之前的性能：如果宕机时比较短暂的（例如软件升级后的机器重启），相比传统的从远程server读取缓存的page，读取和回放更新日志记录的代码会更小，提高了可用性。
+在2012年，SQL Server发布了一个叫做buffer pool extension(BPE)的功能，其将buffer pool从内存延伸到了本地SSD磁盘上（在内存和磁盘上使用相同的生命周期和驱逐策略）。在Socrates中扩展了这种思想，使得buffer pool具有可恢复性，例如故障后的恢复。这个组件叫做RBPEX，他作为对数据页的缓存机制服务于存储层和计算层。这种方式使得宕机后节点可以快速恢复到之前的性能：如果宕机是比较短暂的（例如软件升级后的机器重启），相比传统的从远程server读取缓存的page，读取和回放更新log records会更轻量，使得恢复时间更短，而更短的恢复时间提高了可用性。
 
 ### RBIO protocol
 
@@ -111,11 +111,11 @@ Socrates将数据库引擎的组件分布在多层之中。为了支持更丰富
 
 当数据库文件存储在Azure中时，SQL Server 2016引入了快速备份的能力。这个feature依赖于XStore实现的blob snapshot的特性，XStore是一个日志结构的存储系统，备份几乎是实时的，因为它只需要维护一个指针(时间戳)指向当前日志的头部。Socrates扩展了这个feature，将备份/恢复的工作完全使用XStore snapshot。因此，Socrates可以不用消耗计算层的CPU和IO就可以在常量时间内完成备份或者恢复。在XStore的快照机制下，一个数百TB的大数据库也可以在分钟内完成备份。
 
-当然，apply log使机器状态恢复到正确、启动机器、对restore的database刷新其cache都需要一些时间，但是这些时间与data size无关。Bacup/restore是Scorate消除了size-of-data操作的一个显著例子。
+当然，apply log使机器状态恢复到正确、启动机器、对restore的database刷新其cache都需要一些时间，但是这些时间***与data size无关***。***Bacup/restore是Scorate消除了size-of-data操作的一个显著例子***。
 
 ### I/O Stack Virtualization
 
-在I/O栈的最低层，SQLServer使用一个叫作File Control Block(FCB)的抽象层作为。FCB层抽象了底层设备的细节，提供给上层I/O的能力，支持多个文件系统、多样的存储平台和I/O模式。Socrates通过实现新的FCB instance广泛的使用了这个IO虚拟化层，该FCB instance在计算过程中隐藏Socraetes的存储层次结构。这种方法帮助我们再不改变太多SQL Server组件的情况下实现Socrates。大多数组件相信它们是一个独立的、独立的数据库系统的组件，而在FCB层之上的任何组件都不需要处理分布式、异构系统的复杂性（Socrates实际上是这样的系统）
+在I/O栈的最低层，SQLServer使用一个叫作File Control Block(FCB)的抽象。FCB层抽象了底层设备的细节，提供给上层I/O的能力。使用该虚拟层，SQL DB支持多个文件系统、多样的存储平台和I/O模式。Socrates通过实现新的FCB实例而广泛的使用了这个IO虚拟化层，该FCB实例在计算过程中隐藏Socraetes的存储层次结构。这种方法帮助我们在不改变太多SQL Server组件的情况下实现Socrates。大多数组件相信它们是一个整体的、独立的数据库系统，而在FCB层之上的任何组件都不需要处理分布式、异构系统的复杂性。（即实现了一个实例，实现了该抽象层，并屏蔽Socrates的存储层次等信息，使得上层可以屏蔽Socrates复杂的结构信息）
 
 ## Socrates Architecture
 
