@@ -123,17 +123,17 @@ Socrates将数据库引擎的组件分布在多层之中。为了支持更丰富
 
 ### Design Goals and Principles
 
-1. Local Fast vs Cheap, Scalable, Durable Storage
+- Local Fast vs Cheap, Scalable, Durable Storage
 
 快速的存储设备（SSD）主要用于获取高性能，而慢速存储设备（hard disk）主要用于大量数据的持久性和可扩展性。在云上，每台机器上都会有本地的SSD，这些SSD是高速的、容量有限的并且是non-durable的，也就是说当机器永久地挂掉之后，数据就丢失了。另外，像Azure这样的云厂商都会提供一个远端的存储，这些存储比较便宜、容量无上限并且是durable的。
 
 为了实现高性能、高扩展性以及持久性，Scorates使用了上述两种存储来提供了分层的、scale-out的存储架构。这种架构的特点在于，它避免了高速增长的数据量导致的动态存储分配所带来的大量数据搬迁的花销。
 
-2. Bounded-time Operations
+- Bounded-time Operations
 
 Socrates的设计目标之一是支持100TB级别的数据量。很不幸的是，当前的HADR的很多操作的性能都和数据量有关。快速创建新副本的操作决定了系统的恢复时间，而恢复时间则直接影响了可用性。避免任何size-of-data操作促使我们针对很多重要的功能开发了新的机制。
 
-3. From shared-nothing to Shared-disk
+- From shared-nothing to Shared-disk
 
 HADR架构的一个基础原则是每个副本维持了数据的一份拷贝，这与我们要设计100TB级别的large database的目标背道而驰。尽管单台机器的存储有可能达到这个级别，但是存储仍然是一个限制因素以及重要标准。当一个100TB的database拥有非常轻量的workload时，CPU资源将会被极大的浪费。
 
@@ -141,21 +141,21 @@ HADR架构的一个基础原则是每个副本维持了数据的一份拷贝，�
 
 依托于[accelerated database recovery](https://levy5307.github.io/blog/microsoft-socrates/#accelerated-database-recovery)和Page Version Store，使得新的计算节点可以快速启动，并且令Scorates的读请求boundary达到了HADR所不可企及的高度。
 
-4. Low Log Latency, Separation of Log
+- Low Log Latency, Separation of Log
 
 log是OLTP数据库系统的一个潜在性能瓶颈，每一个事物在提交之前必须写入log，并且该log需要传输到所有的副本上。在Socrates中提供了一个独立的log服务，这样的话，我们便可以基于其访问特性对其进行针对性的优化：
 
-- 首先，Socrates对log进行持久化，并为了实现fault-tolerant，对其进行复制。一旦该log进行了持久化之后，事务就可以提交了。***我们这种实现机制比在状态机里实现仲裁的效率要高的多***。
+1. 首先，Socrates对log进行持久化，并为了实现fault-tolerant，对其进行复制。一旦该log进行了持久化之后，事务就可以提交了。***我们这种实现机制比在状态机里实现仲裁的效率要高的多***。
 
-- 将log组件与其他组件分离，使得读取和传输log records更加灵活和可伸缩。Scorates利用了日志访问的不对称性，即：最新创建的log records的访问需求比较高、而老的log records仅仅在一些异常情况下才需要访问（例如abort或者redo一个长时间运行的事务）。因此，Socrates将最近的log保存在内存中、并将其以一种可伸缩的方式进行分布（通常是分布到数百台机器）。老的log records将会转出，并仅在需要的时候获取。
+2. 将log组件与其他组件分离，使得读取和传输log records更加灵活和可伸缩。Scorates利用了日志访问的不对称性，即：最新创建的log records的访问需求比较高、而老的log records仅仅在一些异常情况下才需要访问（例如abort或者redo一个长时间运行的事务）。因此，Socrates将最近的log保存在内存中、并将其以一种可伸缩的方式进行分布（通常是分布到数百台机器）。老的log records将会转出，并仅在需要的时候获取。
 
-- 将log分离使得我们可以站在巨人的肩膀上，这样可以使用外部的存储服务来实现log组件。这已经其了作用：Socrates可以利用Azure storage的最新的创新，而无需修改Socrates的架构。这使得Socrates可以在无需实现log shipping、gossip quorum protocol、log storage system的情况下实现较低的commit延迟。
+3. 将log分离使得我们可以站在巨人的肩膀上，这样可以使用外部的存储服务来实现log组件。这已经其了作用：Socrates可以利用Azure storage的最新的创新，而无需修改Socrates的架构。这使得Socrates可以在无需实现log shipping、gossip quorum protocol、log storage system的情况下实现较低的commit延迟。
 
-5. Pushdown Storage Functions
+- Pushdown Storage Functions
 
 shared-disk的一个优势在于，其可以将一些功能从计算层offload到存储层。这样的话，Socrates可以实现很明显的性能提升。更重要的是，每一个可以offload到存储层的功能（backup/checkpoint/IO filtering等等）***都可以减轻Primary Compute节点以及log组件的压力，而这两者是系统的瓶颈。***
 
-6. Reuse Components, Tuning, Optimization
+- Reuse Components, Tuning, Optimization
 
 SQL Server具体有很丰富的生态系统，具有很多工具、库和应用程序。现存的数百万数据库实例应用必须无缝迁移到Socrates上。Socrates需要向后兼容SQL Server，并且重复造轮子的代价也非常大，因此SQLServer的重要组件像查询优化器、查询执行器、security、事务管理和恢复等都被复用保持不变。
 
