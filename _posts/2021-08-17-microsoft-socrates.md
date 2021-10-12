@@ -127,17 +127,17 @@ Socrates将数据库引擎的组件分布在多层之中。为了支持更丰富
 
 快速的存储设备（SSD）主要用于获取高性能，而慢速存储设备（hard disk）主要用于大量数据的持久性和可扩展性。在云上，每台机器上都会有本地的SSD，这些SSD是高速的、容量有限的并且是non-durable的，也就是说当机器永久地挂掉之后，数据就丢失了。另外，像Azure这样的云厂商都会提供一个远端的存储，这些存储比较便宜、容量无上限并且是durable的。
 
-为了实现高性能、高扩展性以及持久性，Scorates使用了上述两种存储来提供了分层的、scale-out的存储架构。这种架构的特点在于，它避免了高速增长的数据量导致的动态存储分配所带来的大量数据搬迁的花销。
+为了实现高性能、高扩展性以及持久性，Scorates***使用了上述两种存储来提供了分层的、scale-out的存储架构***。这种架构的特点在于，它避免了高速增长的数据量导致的动态存储分配所带来的大量数据搬迁的花销。
 
 - Bounded-time Operations
 
-Socrates的设计目标之一是支持100TB级别的数据量。很不幸的是，当前的HADR的很多操作的性能都和数据量有关。快速创建新副本的操作决定了系统的恢复时间，而恢复时间则直接影响了可用性。避免任何size-of-data操作促使我们针对很多重要的功能开发了新的机制。
+Socrates的设计目标之一是支持100TB级别的数据量。很不幸的是，当前的HADR的很多操作的性能都和数据量有关。快速创建新副本的操作决定了系统的恢复时间，而恢复时间则直接影响了可用性。***避免任何size-of-data操作***促使我们针对很多重要的功能开发了新的机制。
 
 - From shared-nothing to Shared-disk
 
 HADR架构的一个基础原则是每个副本维持了数据的一份拷贝，这与我们要设计100TB级别的large database的目标背道而驰。尽管单台机器的存储有可能达到这个级别，但是存储仍然是一个限制因素以及重要标准。当一个100TB的database拥有非常轻量的workload时，CPU资源将会被极大的浪费。
 
-这促使我们从shared-noting向shared-disk进行转换。在这种架构中，所有（执行事务和查询的）计算节点都访问同一个存储服务。在不同的数据库节点间贡献数据在不同的层级对data version进行支持，Socrates依赖了前面所讲到的[page version store](https://levy5307.github.io/blog/microsoft-socrates/#page-version-store)。
+这促使我们从shared-noting向shared-disk进行转换。在这种架构中，所有（执行事务和查询的）计算节点都访问同一个存储服务。在不同的数据库节点间共享数据需要在不同的level对data version进行支持，Socrates依赖了前面所讲到的[page version store](https://levy5307.github.io/blog/microsoft-socrates/#page-version-store)。
 
 依托于[accelerated database recovery](https://levy5307.github.io/blog/microsoft-socrates/#accelerated-database-recovery)和Page Version Store，使得新的计算节点可以快速启动，并且令Scorates的读请求boundary达到了HADR所不可企及的高度。
 
