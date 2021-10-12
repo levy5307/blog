@@ -177,7 +177,7 @@ SQL Server具体有很丰富的生态系统，具有很多工具、库和应用�
 
 - 复用已有组件
 
-从整体上来看，Socrates的架构由四层组成。分别是：计算节点、XLOG日志服务层、存储层page server及XLog存储服务层：
+从整体上来看，Socrates的架构由四层组成。分别是：计算节点、XLOG日志服务层、存储层page server及XLOG存储服务层：
 
 Applications与计算节点相连接。与HADR一样，只有一个Primary计算节点，它用于处理所有的读事务和写事务，并且有一些Secondary只处理只读事务。计算节点实现了查询优化、并发控制、security以及支持T-SQL。如果Primary宕机，一个Secondary将会被提升为Primary。所有的计算节点都在内存和SSD的resilient buffer poll extention(RBPEX)中缓存data pages。
 
@@ -191,7 +191,7 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 如同计算节点一样，Page Servers在内存和SSD中保存所有数据，以达到快速访问的目的。
 
-第四层是Azure Storage Service（XStore），它是由Azure提供的独立的服务。XStore是基于hard disk的高扩展、持久性和廉价的存储服务。数据访问是远程的，所以这限制了吞吐和延迟。将采用本地快速磁盘的Page Servers与持久化、可扩展的、廉价存储进行分离是前面所讲到的设计原则。
+第四层是Azure Storage Service（XStore），它是由Azure提供的独立的服务。XStore是基于hard disk的高扩展、持久性和廉价的存储服务。数据访问是远程的，所以这限制了吞吐和延迟。将采用本地快速存储的Page Servers与持久化、可扩展的廉价存储进行分离是前面所讲到的设计原则。
 
 ***计算节点和Page Servers是无状态的。***他们可以在任意时间宕机、而不会有任何的数据损失。真正的数据保存在XStore和XLOG中。XStore是高可靠的，在Azure服务了多年并从没导致过数据丢失，Socrates利用了这种健壮性。XLOG是我们为Socrates构建的新服务，它具有高性能、可扩展、价格可承受，并且不会有任何数据丢失。
 
@@ -203,13 +203,13 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 landing zone是由Azure Premium Storage服务（XIO）来实现的。XIO为所有数据维护了三个副本来保证持久性。对每个存储服务，有performance、cost、availability和durability之间的tradeoff。
 
-为了尽可能的达到最低的提交延迟，Primary直接同步地向LZ写入log blocks。LZ是小而快的（有可能比较贵）。LZ组织成一个环形缓冲，日志格式采用的与（所有Microsoft SQL服务和产品中使用的）传统SQL Server日志格式向后兼容扩展的形式。并且log format与现有的SQL Server log格式保持向后兼容，这里遵从了两条设计原则：不重复造轮子、以及保持Socrates与其他SQL Server产品间的兼容性。该日志的一个关键能力是它允许在写存在时可以并发读，并且通过读取可以获取一致性的信息，而且不需要任何的同步(beyond wraparound protection)。最小化同步使得系统更具伸缩性和弹性。
+为了尽可能的达到最低的提交延迟，Primary直接同步地向LZ写入log blocks。***LZ是小而快的（有可能比较贵）***。LZ组织成一个环形缓冲，日志格式采用的与（所有Microsoft SQL服务和产品中使用的）传统SQL Server日志格式向后兼容扩展的形式。并且log format与现有的SQL Server log格式保持向后兼容，这里遵从了两条设计原则：不重复造轮子、以及保持Socrates与其他SQL Server产品间的兼容性。该日志的一个关键能力是它允许在写存在时可以并发读，并且通过读取可以获取一致性的信息，而且不需要任何的同步(beyond wraparound protection)。最小化同步使得系统更具伸缩性和弹性。
 
-Primary同样会向一个特殊的XLOG进程写入所有的log blocks，该进程会将这些log blocks传播到Page Servers和Secondary。该写入时异步的、而且是不可靠的。采用这种方式是基于如下想法：
+Primary同样会向一个特殊的XLOG Process写入所有的log blocks，该进程会将这些log blocks传播到Page Servers和Secondary。***该写入是异步的、而且是不可靠的***。采用这种方式是基于如下想法：
 
-1. Socrates向LZ中同步且可靠地写入LZ以保证持久性
+1. ***Socrates向LZ中同步且可靠地写入LZ以保证持久性***
 
-2. 异步的向该XLOG进程写入以保证可用性
+2. ***异步的向该XLOG进程写入以保证可用性***
 
 Primary向LZ和该XLOG进程中并行写入。没有同步机制的话，有可能会导致log block到达Secondary早于LZ，当出现故障的时候，可能会出现不一致以及数据丢失的情况。为了避免这种情况，XLOG仅仅传播hardened log blocks（hardened log blocks是指已经在LZ中持久化的blocks）。其步骤如下：
 
