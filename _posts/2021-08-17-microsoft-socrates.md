@@ -177,7 +177,7 @@ SQL Server具体有很丰富的生态系统，具有很多工具、库和应用�
 
 - 复用已有组件
 
-从整体上来看，Socrates的架构由四层组成。分别是：计算节点、XLOG日志服务层、存储层page server及XLOG存储服务层：
+从整体上来看，***Socrates的架构由四层组成，分别是：计算节点、XLOG日志服务层、存储层page server及XLOG存储服务层：***
 
 Applications与计算节点相连接。与HADR一样，只有一个Primary计算节点，它用于处理所有的读事务和写事务，并且有一些Secondary只处理只读事务。计算节点实现了查询优化、并发控制、security以及支持T-SQL。如果Primary宕机，一个Secondary将会被提升为Primary。所有的计算节点都在内存和SSD的resilient buffer poll extention(RBPEX)中缓存data pages。
 
@@ -193,7 +193,7 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 第四层是Azure Storage Service（XStore），它是由Azure提供的独立的服务。XStore是基于hard disk的高扩展、持久性和廉价的存储服务。数据访问是远程的，所以这限制了吞吐和延迟。将采用本地快速存储的Page Servers与持久化、可扩展的廉价存储进行分离是前面所讲到的设计原则。
 
-***计算节点和Page Servers是无状态的。***他们可以在任意时间宕机、而不会有任何的数据损失。真正的数据保存在XStore和XLOG中。XStore是高可靠的，在Azure服务了多年并从没导致过数据丢失，Socrates利用了这种健壮性。XLOG是我们为Socrates构建的新服务，它具有高性能、可扩展、价格可承受，并且不会有任何数据丢失。
+***计算节点和Page Servers是无状态的。***他们可以在任意时间宕机、而不会有任何的数据损失，***真正的数据保存在XStore和XLOG中***。XStore是高可靠的，在Azure服务了多年并从没导致过数据丢失，Socrates利用了这种健壮性。XLOG是我们为Socrates构建的新服务，它具有高性能、可扩展、价格可承受，并且不会有任何数据丢失。
 
 ### XLOG Service
 
