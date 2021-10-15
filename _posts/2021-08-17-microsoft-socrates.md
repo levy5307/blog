@@ -241,9 +241,9 @@ XLOG进程也实现了一些其它的分布式DBaaS系统的通用功能：日�
 
 ### Primary Compute Node
 
-数据库实例本身感知不到其它副本的存在，以及不知道它的存储是远程存储、以及log不是本地文件管理的。相反，HADR架构下的Primary非常清楚复制状态机的参与者，并且实现仲裁机制来完成日志的持久化和事务提交。而且，HADR的Primary以一种紧密耦合的方式获取备的信息，相比来看，Socrates的Primary在实现上更加简单。
+***Socrates的Primary Compute节点感知不到其它副本的存在，不知道它的存储是远程存储、以及log不是本地文件管理的***。相反，HADR架构下的Primary非常清楚复制状态机的参与者，并且实现仲裁机制来完成日志的持久化和事务提交。而且，HADR的Primary以一种紧密耦合的方式获取Secondary的信息，相比来看，Socrates的Primary在实现上更加简单。
 
-不过两种架构下的主计算节点所实现的核心功能是相同的：处理读写事务和产生日志。与on-premise部署（企业内部部署）的SQL Server有几个显著的差异：
+不过两种架构下的Primary Compute节点所实现的核心功能是相同的：处理读写事务和产生日志。与on-premise部署（企业内部部署）的SQL Server有几个显著的差异：
 
 1. 存储层的操作，例如：checkpoint、backup/restore、page repair等，委托给了Page Servers或者更低的存储层来做
 
@@ -282,7 +282,7 @@ pageId唯一地标识Primary需要读取的页，LSN代表page log sequence numb
 
 遵循复用的设计原则，Socrates Secondary共享与HADR中相同的apply日志功能。但是有两个不同点：
 
-1. Socrates不需要保存和持久化log blocks，这是XLOG所负责的。
+1. Socrates Secondary不需要保存和持久化log blocks，这是XLOG所负责的。
 
 2. Socrates是一个松耦合的架构，Secondary不需要知道谁产生的日志。
 
