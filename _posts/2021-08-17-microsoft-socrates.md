@@ -296,11 +296,11 @@ pageId唯一地标识Primary需要读取的页，LSN代表page log sequence numb
 
 另一个问题出现在Secondary执行B树遍历来处理只读事务时。Secondary使用与Primary相同的GetPage协议，但是在同一时刻Secondary的LSN可能会比Primary中最新写入的LSN小，这会带来不一致问题。考虑下面B-Tree遍历的部分场景：
 
-1. Secondary读取了B-tree的结点P，LSN为23(Secondary回放到23的日志)。
+1. Secondary读取了B-tree的结点P，LSN为23(Secondary本地回放到了LSN为23的日志)。
 
-2. 下一个节点C，是P的子结点，没有在缓存中。Secondary发出一个getPage(C, 23)的请求。
+2. 下一个节点C（是P的子结点）没有在缓存中。Secondary向PageServer发出一个getPage(C, 23)的请求。
 
-3. PageServer返回LSN为25的Page C
+3. 由于Primary比Secondary的LSN大，已经将LSN写入到PageServer中，因此PageServer返回LSN为25的Page C
 
 根据GetPage的协议，PageServer可能会返回一个更新的page，这导致了不一致问题。不过这种不一致比较容易甄别。如果在遍历过程中检测出了不一致，它会暂停一会儿等待日志apply。之后再次启动B-Tree的遍历，以到达一致的结果。
 
@@ -310,7 +310,7 @@ Page Server主要负责三件事：
 
 1. 维护数据库的一个partition，通过apply log的方式
 
-2. 相应Compute Node的GetPage请求
+2. 响应Compute Node的GetPage请求
 
 3. 完成分布式的checkpoints和执行backup操作
 
