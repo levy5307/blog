@@ -18,3 +18,15 @@ IT workloads正在逐渐向公有云上迁移，这种迁移的重要原因在�
 
 事务提交是另一个干扰源，提交一个事务时的暂停可能会阻碍其他事务的进展。在cloud-scale的分布式系统中，使用多阶段同步协议(如两阶段提交2PC)处理提交是一个挑战。这些协议不能容忍故障，而大规模分布式系统有持续不断的硬故障和软故障。同时它们还具有高延迟的问题，因为大规模系统分布在多个数据中心。
 
+在这篇paper中，我们提出了Aurora，一个通过在分布式云环境利用redo log，而解决了上述问题的数据库服务。我们使用了一种新颖的面向服务的体系结构，并使用了一个多租户扩展存储服务，该服务抽象了一个虚拟化的分段redo log，并与数据库实例松散耦合。尽管每个实例依旧包括传统数据库内核的大部分组件（query processor, transactions, locking, buffer cache, access methods and undo management），很多功能（redo logging, durable storage, crash recovery, and backup/restore）都off-load到了存储层。
+
+相较于传统的数据库服务，Aurora的架构有如下三个显著的优点：
+
+1. 使用了一个独立的，能容忍错误并自我修复的跨数据中心storage服务，保证了database不受网络层或数据存储层问题的影响。
+
+2. 在数据存储中，只写入redo log记录，可以从量级上减少网络IOPS。
+
+3. 将耗时复杂的功能从一次昂贵的操作转变为连续的异步操作，保证这些操作不会影响前台处理
+
+## Durability at Scale
+
