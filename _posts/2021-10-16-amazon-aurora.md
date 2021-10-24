@@ -30,7 +30,7 @@ IT workloads正在逐渐向公有云上迁移，这种迁移的重要原因在�
 
 3. 将耗时复杂的功能从一次昂贵的操作转变为连续的异步操作，保证这些操作不会影响前台处理
 
-## Durability at Scale
+## DURABILITY AT SCALE
 
 据库系统必须满足数据一旦写入就可以读取的约定，然而并不是所有的系统都是这样。在本节中，我们将讨论quorum model（仲裁模型）背后的基本原理，为什么要对存储进行分段，以及如何将这两种方法结合起来，不仅提供持久性、可用性和减少抖动，而且还帮助我们解决大规模存储的管理操作问题。
 
@@ -58,8 +58,15 @@ Aurora的仲裁模型使用6个副本，跨越3个AZ，每个AZ有两个copies�
 
 ### Segmented Storage
 
-让我们考虑AZ+1是否提供足够的耐久性的问题。为了提供足够的持久性，我们需要在故障修复期间尽量没有新的故障发生。即MTTF(Mean Time to Failure) > MTTR(Mean Time to repair)。如果双故障发生的概率足够高，这样当遇上AZ故障时，将会破坏仲裁模型。降低MTTF是很困难的，Aurora专注于降低MTTR。Aurora采用的策略如下：将数据分区成固定大小（10GB）的segment，每个segment有6个副本，分布在3个AZ中。数据存储在带有SSD的EC2上（亚马逊的虚拟服务器）。
+让我们考虑AZ+1是否提供足够的持久性的问题。为了提供足够的持久性，我们需要在故障修复期间尽量没有新的故障发生。即MTTF(Mean Time to Failure) > MTTR(Mean Time to repair)。如果双故障发生的概率足够高，这样当遇上AZ故障时，将会破坏仲裁模型。降低MTTF是很困难的，Aurora专注于降低MTTR。Aurora采用的策略如下：将数据分区成固定大小（10GB）的segment，每个segment有6个副本（称为一个PG: Protection Group），分布在3个AZ中。数据存储在带有SSD的EC2上（亚马逊的虚拟服务器）。
 
 Segment就是系统探测失效和修复的最小单元。10GB的分段数据在10Gbps的网络连接上只需要10s就能传输完毕。根据我们的观察，两个副本同时失效、以及一个不包含这两个副本的AZ失效的概率非常非常低。
 
+### Operational Advantages of Resilience
+
+如果一个系统设计为可以适应long failures，那它自然的就可以适应shorter failures。例如，如果一个系统可以处理长时期的AZ故障，那么同样可以处理短期的停电故障或者因为软件问题而导致的回滚。
+
+由于整个Aurora的设计针对故障保证了高可用性，那么利用这个高可用性也可以做很多运维操作。例如回滚一次错误的部署；标记过hot节点上的segment为已损坏，由系统重新将其数据分配到coder节点中去；以及停止节点为其打上系统和安全补丁。打补丁时会一个个AZ依次进行，保证同一时间同一PG内最多只有一个副本（所在节点）进行打补丁操作。
+
+## THE LOG IS THE DATABASE
 
