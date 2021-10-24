@@ -70,3 +70,26 @@ Segment就是系统探测失效和修复的最小单元。10GB的分段数据在
 
 ## THE LOG IS THE DATABASE
 
+在这一节，我们将解释为什么在segmented replicated存储系统上使用传统数据库，由于网络IO和sync stall导致的性能负担。然后解释了我们的解决方法：将log处理流程下放到存储服务，并且通过实验证明了我们的方法可以大幅减少网络IO。最后，我们描述了我们在存储服务使用的各种技术来最小化sync stalls和不必要的写入。
+
+### The Burden of Amplified Writes
+
+我们将存储切分成segment并将每个segment复制6份，并以4/6的写入仲裁使得Aurora具有很大的弹性。不幸的是，这种方法会导致传统的数据库（例如MySQL）的性能不稳定，因为其每个application写入都会导致很多不同的实际IO。replication将会导致IO放大，从而导致沉重的PPS（packets per second）负担。同时，IO会导致同步点，而这些同步点将会导致pipeline stall并扩大latency。
+
+我们来查看一下传统数据库是如何写入的。传统数据库（例如MysQL）向其objects（例如heap file、b-tree等）写入data pages，以及向WAL写入redo log。每个redo log record包括before-image和after-image之间修改page的difference，也就是说，一个log record可以用于before-image以生产出after-image。
+
+实际上，其他的数据也必须写入。例如，考虑为了达到高可用性而做的跨data-center的MySQL同步镜像，该镜像以active-standby形式工作，如下图所示:
+
+![](../images/mysql-mirror.jpg)
+
+在图中，AZ1有一个active MYSQL实例，其拥有一个位于EBS的网络存储。AZ2中有一个standby的MySQL实例，同样其也拥有位于EBS的网络存储。向primary EBS的写入会使用software mirroring的方式同步至standby EBS。
+
+图中也展现了需要写入的各种类型数据：redo log，写入Amazon S3用以定点恢复的二进制log，修改的data pages，临时的double write以及metadata files。IO flow的顺序如下：
+
+- 在step1和step2，向EBS进行写入，并将其同步到AZ-local镜像。当所有写入都完成时将会收到通知
+
+- 在step3，写入将会通过sync block-level软件镜像暂存至standby实例
+
+- 最后，在step4和step5，将会写入standby EBS和其对应的镜像。
+
+- 
