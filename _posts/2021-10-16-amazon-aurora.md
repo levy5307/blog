@@ -82,9 +82,9 @@ Segment就是系统探测失效和修复的最小单元。10GB的分段数据在
 
 ![](../images/mysql-mirror.jpg)
 
-在图中，AZ1有一个active MYSQL实例，其拥有一个位于EBS的网络存储。AZ2中有一个standby的MySQL实例，同样其也拥有位于EBS的网络存储。向primary EBS的写入会使用software mirroring的方式同步至standby EBS。
+在图中，AZ1有一个active MySQL实例，其拥有一个位于EBS的网络存储。AZ2中有一个standby的MySQL实例，同样其也拥有位于EBS的网络存储。向primary EBS的写入会使用software mirroring的方式同步至standby EBS。
 
-图中也展现了需要写入的各种类型数据：redo log，写入Amazon S3用以定点恢复的二进制log，修改的data pages，临时的double write以及metadata files。IO flow的顺序如下：
+图中也展现了传统数据库需要写入的各种类型数据：redo log，写入Amazon S3用以定点恢复的二进制log，修改的data pages，临时的double write以及metadata files。IO flow的顺序如下：
 
 - 在step1和step2，向EBS进行写入，并将其同步到AZ-local镜像。当所有写入都完成时将会收到通知
 
@@ -102,9 +102,14 @@ Segment就是系统探测失效和修复的最小单元。10GB的分段数据在
 
 当传统的database修改一个data page时，其产生一个redo log record，并且唤醒log applicator来应用该log record，将其作用于before-image，以产生相应的after-image。事务提交需要log真正写入，但是data page的写入可以推迟。
 
-在Aurora中，唯一跨网络的写入是redo log records。从来没有从datatabase层写入pages。log applicator被下推到存储层，其可以在后台或者按需生产database pages。当然，根据完整的modification链去生产page是花费很高的，因此，我们持续在后台具化database pages以避免每次都根据需要重新生产他们。请注意，从正确性的角度来说，在后台进行具化操作是完全可选的：从引擎的角度来说，log就是数据库，存储系统具化的任意pages都是log的cache。另外需要注意，与checkpoint不同，仅仅有modification长链的pages需要具化。checkpoint是由整个redo log链的长度来控制，而Aurora page的具化是由该指定page的redo log链长度来控制。
+***在Aurora中，唯一跨网络的写入是redo log records。从来没有从datatabase层写入pages。这一点对比传统的database优化还是很大的***
+
+log applicator被下推到存储层，其可以在后台或者按需生产database pages。当然，根据完整的modification链去生产page是花费很高的，因此，我们持续在后台具化database pages以避免每次都根据需要重新生产他们。请注意，从正确性的角度来说，在后台进行具化操作是完全可选的：从引擎的角度来说，log就是数据库，存储系统具化的任意pages都是log的cache。另外需要注意，与checkpoint不同，仅仅有modification长链的pages需要具化。checkpoint是由整个redo log链的长度来控制，而Aurora page的具化是由该指定page的redo log链长度来控制。
 
 尽管由于replication导致了写入放大，Aurora的方法依然大幅减少了网络负载，并且提供了性能和可用性。下图展示了一个Aurora集群，该集群中有一个primary instance和跨越多个AZ的多个副本。primary仅仅向存储服务写入log records，并将这些log records以及metadata更新发送到replica instance。IO基于共同的目的地（逻辑段，即一个PG），批量的发送全局有序的log records，并将每个batch发送至所有的6个副本，这些副本在本地对batch进行持久化，并且database engine等待4/6的ack（此时代表这些log records已经持久化或者harden）。replicas使用redo log对buffer caches进行apply。
 
 ![](../images/aurora-network-io.jpg)
+
+经过实验对比，Aurora优化达成了其同一时间处理的事务量提高到了35倍，优化前每个事务处理的I/O数量是优化后的7.7倍，以及更多数据上的性能提高。性能的提高也意味着系统可用性的升级，降低了故障恢复时间。
+
 
