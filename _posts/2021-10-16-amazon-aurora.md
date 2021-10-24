@@ -92,4 +92,16 @@ Segment就是系统探测失效和修复的最小单元。10GB的分段数据在
 
 - 最后，在step4和step5，将会写入standby EBS和其对应的镜像。
 
-- 
+上面所讲的mirrored MySQL模式是不可取的，不仅仅是因为数据是如何写入的，还因为写入了什么样的数据。
+
+- 首先，step 1/3/5是顺序的、同步的，因为很多写入是顺序的，所以latency是叠加的。这样的话，抖动将会放大，因为即使是异步写入也需要等待最慢的操作完成。对于一个分布式系统来说，该模型可以视为拥有4/4的写仲裁。
+
+- 其次，user operations将会导致很多不同的写入，而这些写入以不同的形式代表着相同的信息。例如，为避免page撕裂，而向double write buffer的写入。
+
+### Offloading Redo Processing to Storage
+
+当传统的database修改一个data page时，其产生一个redo log record，并且唤醒log applicator来应用该log record，将其作用于before-image，以产生相应的after-image。事务提交需要log真正写入，但是data page的写入可以推迟。
+
+在Aurora中，唯一跨网络的写入是redo log records。从来没有从datatabase层写入pages。log applicator被下推到存储层，其可以在后台或者按需生产database pages。当然，根据完整的modification链去生产page是花费很高的，因此，我们持续在后台具化database pages以避免每次都根据需要重新生产他们。请注意，从正确性的角度来说，在后台进行具化操作是完全可选的：从引擎的角度来说，log就是数据库，存储系统具化的任意pages都是log的cache。另外需要注意，与checkpoint不同，仅仅有modification长链的pages需要具化。checkpoint是由整个redo log链的长度来控制，而Aurora page的具化是由该指定page的redo log链长度来控制。
+
+
