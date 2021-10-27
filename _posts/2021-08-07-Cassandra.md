@@ -130,11 +130,11 @@ failure detection是一个节点用来判断其他节点up或者down的机制。
 
 2. 检查。每次滚动提交日志时，都会检查其bit vector，并检查之前滚动的提交日志的所有bit vector。如果发现所有的column family都持久化到了磁盘上，那么该commit log就可以清除了。
 
-写入到commit log的操作可以分为normal模式和fast sync模式两种。在fast sync模式中，写入commit log的数据会被缓存起来。这意味着当机器宕机时，是有可能数据丢失的。在这种模式下，in-memory数据结构被持久化到磁盘时，也是会进行缓存的。
+***写入到commit log的操作可以分为normal模式和fast sync模式两种***。在fast sync模式中，写入commit log的数据会被缓存起来。这意味着当机器宕机时，是有可能数据丢失的。在这种模式下，in-memory数据结构被持久化到磁盘时，也是会进行缓存的。
 
 传统的数据库并不是设计用来处理高写入吞吐的，在Cassandra中，所有向磁盘的写入都是顺序的，以最大化磁盘写吞吐。由于文件dump到磁盘后不会再修改了，所以在读取时无需进行加锁。Cassandra的服务实例的读写操作实际上都是无锁操作，因此我们并不需要应付基于B-Tree的数据库实现中存在的并发问题。
 
-Cassandra是通过primary key来索引数据的。磁盘上的data file会被分成一系列的block。每个block最多包含128个key，并根据block index进行区分。block index记录block内键的相对偏移及其数据的大小。当in-memory数据结构被dump到磁盘上时，一个block index将会生成。为了快速存取，该block index同样会在内存中维护。
+Cassandra是通过primary key来索引数据的。磁盘上的data file会被分成一系列的block。每个block最多包含128个key，并根据block index进行区分。block index记录block内key的相对偏移及其数据的大小。当in-memory数据结构被dump到磁盘上时，一个block index将会生成。为了快速存取，该block index同样会在内存中维护。
 
 读操作同样会先查询in-memory数据结构，如果找到则返回给客户端，因为该in-memory数据结构肯定会包含最新的数据。如果没有找到则会以反向时间顺序去依次查找磁盘，因为这样先去查询最新的文件，一旦找到数据便可以返回给客户端。随着时间，磁盘上的数据文件数量将会增多，我们会运行一个非常类似于Bigtable系统的Compaction进程，通过它将多个文件合并成一个。merge操作是在一系列排好序的文件进行合并，系统总会对大小相近的两个文件进行compaction。例如，永远不会出现一个100GB的文件和一个50GB的文件进行compaction的情况。每隔一段时间，一个major compaction将会执行，将所有相关的文件合并成一个大的文件。compaction是一个IO密集型操作，需要对此进行大量的优化以做到不影响后续的读请求。
 
