@@ -30,7 +30,7 @@ IT workloads正在逐渐向公有云上迁移，这种迁移的重要原因在�
 
 3. 将耗时复杂的功能从一次昂贵的操作转变为连续的异步操作，保证这些操作不会影响前台处理
 
-## Durability at Scale
+## DURABILITY AT SCALE
 
 据库系统必须满足数据一旦写入就可以读取的约定，然而并不是所有的系统都是这样。在本节中，我们将讨论quorum model（仲裁模型）背后的基本原理，为什么要对存储进行分段，以及如何将这两种方法结合起来，不仅提供持久性、可用性和减少抖动，而且还帮助我们解决大规模存储的管理操作问题。
 
@@ -58,8 +58,58 @@ Aurora的仲裁模型使用6个副本，跨越3个AZ，每个AZ有两个copies�
 
 ### Segmented Storage
 
-让我们考虑AZ+1是否提供足够的耐久性的问题。为了提供足够的持久性，我们需要在故障修复期间尽量没有新的故障发生。即MTTF(Mean Time to Failure) > MTTR(Mean Time to repair)。如果双故障发生的概率足够高，这样当遇上AZ故障时，将会破坏仲裁模型。降低MTTF是很困难的，Aurora专注于降低MTTR。Aurora采用的策略如下：将数据分区成固定大小（10GB）的segment，每个segment有6个副本，分布在3个AZ中。数据存储在带有SSD的EC2上（亚马逊的虚拟服务器）。
+让我们考虑AZ+1是否提供足够的持久性的问题。为了提供足够的持久性，我们需要在故障修复期间尽量没有新的故障发生。即MTTF(Mean Time to Failure) > MTTR(Mean Time to repair)。如果双故障发生的概率足够高，这样当遇上AZ故障时，将会破坏仲裁模型。降低MTTF是很困难的，Aurora专注于降低MTTR。Aurora采用的策略如下：将数据分区成固定大小（10GB）的segment，每个segment有6个副本（称为一个PG: Protection Group），分布在3个AZ中。数据存储在带有SSD的EC2上（亚马逊的虚拟服务器）。
 
 Segment就是系统探测失效和修复的最小单元。10GB的分段数据在10Gbps的网络连接上只需要10s就能传输完毕。根据我们的观察，两个副本同时失效、以及一个不包含这两个副本的AZ失效的概率非常非常低。
+
+### Operational Advantages of Resilience
+
+如果一个系统设计为可以适应long failures，那它自然的就可以适应shorter failures。例如，如果一个系统可以处理长时期的AZ故障，那么同样可以处理短期的停电故障或者因为软件问题而导致的回滚。
+
+由于整个Aurora的设计针对故障保证了高可用性，那么利用这个高可用性也可以做很多运维操作。例如回滚一次错误的部署；标记过hot节点上的segment为已损坏，由系统重新将其数据分配到coder节点中去；以及停止节点为其打上系统和安全补丁。打补丁时会一个个AZ依次进行，保证同一时间同一PG内最多只有一个副本（所在节点）进行打补丁操作。
+
+## THE LOG IS THE DATABASE
+
+在这一节，我们将解释为什么在segmented replicated存储系统上使用传统数据库，由于网络IO和sync stall导致的性能负担。然后解释了我们的解决方法：将log处理流程下放到存储服务，并且通过实验证明了我们的方法可以大幅减少网络IO。最后，我们描述了我们在存储服务使用的各种技术来最小化sync stalls和不必要的写入。
+
+### The Burden of Amplified Writes
+
+我们将存储切分成segment并将每个segment复制6份，并以4/6的写入仲裁使得Aurora具有很大的弹性。不幸的是，这种方法会导致传统的数据库（例如MySQL）的性能不稳定，因为其每个application写入都会导致很多不同的实际IO。replication将会导致IO放大，从而导致沉重的PPS（packets per second）负担。同时，IO会导致同步点，而这些同步点将会导致pipeline stall并扩大latency。
+
+我们来查看一下传统数据库是如何写入的。传统数据库（例如MysQL）向其objects（例如heap file、b-tree等）写入data pages，以及向WAL写入redo log。每个redo log record包括before-image和after-image之间修改page的difference，也就是说，一个log record可以用于before-image以生产出after-image。
+
+实际上，其他的数据也必须写入。例如，考虑为了达到高可用性而做的跨data-center的MySQL同步镜像，该镜像以active-standby形式工作，如下图所示:
+
+![](../images/mysql-mirror.jpg)
+
+在图中，AZ1有一个active MySQL实例，其拥有一个位于EBS的网络存储。AZ2中有一个standby的MySQL实例，同样其也拥有位于EBS的网络存储。向primary EBS的写入会使用software mirroring的方式同步至standby EBS。
+
+图中也展现了传统数据库需要写入的各种类型数据：redo log，写入Amazon S3用以定点恢复的二进制log，修改的data pages，临时的double write以及metadata files。IO flow的顺序如下：
+
+- 在step1和step2，向EBS进行写入，并将其同步到AZ-local镜像。当所有写入都完成时将会收到通知
+
+- 在step3，写入将会通过sync block-level软件镜像暂存至standby实例
+
+- 最后，在step4和step5，将会写入standby EBS和其对应的镜像。
+
+上面所讲的mirrored MySQL模式是不可取的，不仅仅是因为数据是如何写入的，还因为写入了什么样的数据。
+
+- 首先，step 1/3/5是顺序的、同步的，因为很多写入是顺序的，所以latency是叠加的。这样的话，抖动将会放大，因为即使是异步写入也需要等待最慢的操作完成。对于一个分布式系统来说，该模型可以视为拥有4/4的写仲裁。
+
+- 其次，user operations将会导致很多不同的写入，而这些写入以不同的形式代表着相同的信息。例如，为避免page撕裂，而向double write buffer的写入。
+
+### Offloading Redo Processing to Storage
+
+当传统的database修改一个data page时，其产生一个redo log record，并且唤醒log applicator来应用该log record，将其作用于before-image，以产生相应的after-image。事务提交需要log真正写入，但是data page的写入可以推迟。
+
+***在Aurora中，唯一跨网络的写入是redo log records。从来没有从datatabase层写入pages。这一点对比传统的database优化还是很大的***
+
+log applicator被下推到存储层，其可以在后台或者按需生产database pages。当然，根据完整的modification链去生产page是花费很高的，因此，我们持续在后台具化database pages以避免每次都根据需要重新生产他们。请注意，从正确性的角度来说，在后台进行具化操作是完全可选的：从引擎的角度来说，log就是数据库，存储系统具化的任意pages都是log的cache。另外需要注意，与checkpoint不同，仅仅有modification长链的pages需要具化。checkpoint是由整个redo log链的长度来控制，而Aurora page的具化是由该指定page的redo log链长度来控制。
+
+尽管由于replication导致了写入放大，Aurora的方法依然大幅减少了网络负载，并且提供了性能和可用性。下图展示了一个Aurora集群，该集群中有一个primary instance和跨越多个AZ的多个副本。primary仅仅向存储服务写入log records，并将这些log records以及metadata更新发送到replica instance。IO基于共同的目的地（逻辑段，即一个PG），批量的发送全局有序的log records，并将每个batch发送至所有的6个副本，这些副本在本地对batch进行持久化，并且database engine等待4/6的ack（此时代表这些log records已经持久化或者harden）。replicas使用redo log对buffer caches进行apply。
+
+![](../images/aurora-network-io.jpg)
+
+经过实验对比，Aurora优化达成了其同一时间处理的事务量提高到了35倍，优化前每个事务处理的I/O数量是优化后的7.7倍，以及更多数据上的性能提高。性能的提高也意味着系统可用性的升级，降低了故障恢复时间。
 
 
