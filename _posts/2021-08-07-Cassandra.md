@@ -26,11 +26,11 @@ Cassandra API包括以下三种简单的方法：
 
 ```delete(table, key, columnName)```
 
-columnName可以是一个column family中的指定的column、一个column family，一个super column family或者一个super column中的column
+columnName可以是一个column family中的指定的column、一个column family、一个super column family或者一个super column中的column
 
 ## System Architecture
 
-对于运行在生产环境中的存储系统是非常复杂的。出了实际数据的持久化之外，存储系统还需要包括如下特性：scalable and robust solutions of load balance, membership and failure detection, failure recovery, replica synchronization, overload handling, state transfer, concurrency and job scheduling, request marshalling, request routing, system monitoring and alarming, and configuration management. 在本文中不讲述上述这些细节，主要集中在Cassandra中应用的核心的分布式技术： partitioning, replication, membership, failure handling and scaling。所有这些模块协同起来处理读写请求。一个对于key的读/写请求呗路由到Cassandra中的节点，该节点决定该key所在的副本。对于写入，系统将该请求路由到所有的副本，并且等待quorum数量的副本的写入完成的ack。对于读取，根据client需要的一致性保证，系统可能会将请求路由到最近的副本，或者路由到所有的副本，等待quorum数量的response。
+对于运行在生产环境中的存储系统是非常复杂的。出了实际数据的持久化之外，存储系统还需要包括如下特性：scalable and robust solutions of load balance, membership and failure detection, failure recovery, replica synchronization, overload handling, state transfer, concurrency and job scheduling, request marshalling, request routing, system monitoring and alarming, and configuration management. 在本文中不讲述上述这些细节，主要集中在Cassandra中应用的核心的分布式技术： partitioning, replication, membership, failure handling and scaling。所有这些模块协同起来处理读写请求。一个对于key的读/写请求被路由到Cassandra中的节点，该节点决定该key所在的副本。对于写入，系统将该请求路由到所有的副本，并且等待quorum数量的副本的写入完成的ack。对于读取，根据client需要的一致性保证，系统可能会将请求路由到最近的副本，或者路由到所有的副本，等待quorum数量的response。
 
 ### Partitioning
 
