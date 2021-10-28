@@ -16,6 +16,8 @@ Cassandra中的表示一个分布式的、由key索引的多维map。value是一
 
 此外，应用可以指定Super column family和Simple column faily中的column排列顺序，包括按时间排序和按名字排序。时间排序在Inbox Search中得到了应用，因为其需要按照时间顺序展示结果。column family中的任一column都需要通过column_family:column的形式来访问。在一个super column family中的列需要通过column_family:super_column:column的形式来访问。代表性的应用使用一个专用的Cassandra集群，并且将其作为他们服务的一部分，尽管Cassandra支持多个表，并且每个表都有其自己的schema。
 
+![](../images/cassandra-table.png)
+
 ## API
 
 Cassandra API包括以下三种简单的方法：
