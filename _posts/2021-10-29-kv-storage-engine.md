@@ -68,7 +68,7 @@ KV存储主要使用三种数据结构来管理数据。为了了解它们提供
 
 这是由***LSM-tree***所开创的设计，其将数据划分成一系列level。每个键值条目都首先进入最top level（内存中的写入缓冲区），并随着更多数据到达而在较低level进行排序合并。诸如bloom filter、fence pointers等内存结构有助于减少磁盘IO。LSM-tree已经被很多工业环境所采用，包括LevelDB，Google Bigtable，Facebook RocksDB，Cassandra，HBase等。以及更多的学术研究，例如SlimDB，WiscKey，Monkey，Dostoevsky和LSM-bush等。一些关系型数据库，例如MySQL和SQLite4通过将primary key作为key，row作为value而对其进行了支持。总而言之，LSM-tree比B+-tree实现了更好的写入，但是由于必须通过多个level来查找数据，其放弃了一些读性能，并且还会导致内存放大，以容纳足够的in-memory filters来支持高效的点查询。
 
-最近，为了支持更快的ingestion速度，出现了第三种设计。数据首先在in-memory写入缓冲区积累，当其满了之后，就将其push到二级存储中，作为持续增长日志的一个node。内存索引（例如Hash表）使得可以轻松定位任何kv pair，同时定期合并这些日志，以控制过期entry的上限。这种***Log and Index***设计在Riak BitCask、Spotify Sparkey，Microsoft FASTER以及一些学术研究中均有运用。大多数系统都使用Hash表作为日志索引。总的来说，这种设计实现了出色的写入性能，但是牺牲了读取性能（对于范围查询），而内存占用也通常很高，因为现在所有的key都需要在内存中建立索引，以最大限度地减少每个key的IO。
+最近，为了支持更快的导入速度，出现了第三种设计。数据首先在in-memory写入缓冲区积累，当其满了之后，就将其push到二级存储中，作为持续增长日志的一个node。内存索引（例如Hash表）使得可以轻松定位任何kv pair，同时定期合并这些日志，以控制过期entry的上限。这种***Log and Index***设计在Riak BitCask、Spotify Sparkey，Microsoft FASTER以及一些学术研究中均有运用。大多数系统都使用Hash表作为日志索引。总的来说，这种设计实现了出色的写入性能，但是牺牲了读取性能（对于范围查询），而内存占用也通常很高，因为现在所有的key都需要在内存中建立索引，以最大限度地减少每个key的IO。
 
 ***Memory Management***
 
@@ -91,4 +91,8 @@ KV存储需要支持大量的并发查询。当读取和写入同时到达时，
 KV存储引擎主要处理大数据，因此它们的大部分性能成本来自从磁盘拷贝数据和跨内存层次移动数据。然而，成本的很大一部分仍然来自CPU。例如，由于混合了不同访问模式的workload，存储引擎会密集的进行IO操作。同样，使用压缩会导致CPU消耗增大，所使用的压缩形式决定了节省的I/O与牺牲的CPU之间的平衡。这种权衡在云计算中变得尤为重要，因为CPU和I/O成本都是预算的一部分，而不同的云提供商提供不同（并且经常变化）的成本策略。
 
 *** Adaptive Indexing and Layouts***
+
+一个为不同workload调节各种性能属性的方式是通过自适应，虽然在NoSQL存储中还没有研究过这个概念，我们将在讨论NoSQL引擎的挑战时使用这些概念。自适应索引（Adaptive indexing）是self-tuning database中的轻量级方法，它解决了dynamic workload的离线和在线索引的局限性。对于工作负载的变化，它通过部分地、增量地构建或改进索引来做出反应。也就是说，不需要DBA或者离线处理。通过对每个查询做出轻量级操作的反应，自适应索引设法立即适应不断变化的workload。随着越来越多的查询到达，索引被细化得越多、性能提高得越多。最近，该领域受到了相当多的关注，许多工作研究了关系存储、NoSQL系统等基础存储的自适应。通常在这些工作中，layout会适应收到的请求。类似地，通过实验和学习进行调优，通过机器学习进行调优，可以使用来自测试的反馈来调整设计。
+
+## SELF-DESIGNED NOSQL STORAGE
 
