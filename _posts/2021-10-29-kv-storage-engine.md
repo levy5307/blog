@@ -68,7 +68,7 @@ KV存储主要使用三种数据结构来管理数据。为了了解它们提供
 
 这是由***LSM-tree***所开创的设计，其将数据划分成一系列level。每个键值条目都首先进入最top level（内存中的写入缓冲区），并随着更多数据到达而在较低level进行排序合并。诸如bloom filter、fence pointers等内存结构有助于减少磁盘IO。LSM-tree已经被很多工业环境所采用，包括LevelDB，Google Bigtable，Facebook RocksDB，Cassandra，HBase等。以及更多的学术研究，例如SlimDB，WiscKey，Monkey，Dostoevsky和LSM-bush等。一些关系型数据库，例如MySQL和SQLite4通过将primary key作为key，row作为value而对其进行了支持。总而言之，LSM-tree比B+-tree实现了更好的写入，但是由于必须通过多个level来查找数据，其放弃了一些读性能，并且还会导致内存放大，以容纳足够的in-memory filters来支持高效的点查询。
 
-最近，为了支持更快的导入速度，出现了***Log-structured Hash Table***。数据首先在in-memory写入缓冲区积累，当其满了之后，就将其push到二级存储中，作为持续增长日志的一个node。内存索引（例如Hash表）使得可以轻松定位任何kv pair，同时定期合并这些日志，以控制过期entry的上限。这种***Log and Index***设计在Riak BitCask、Spotify Sparkey，Microsoft FASTER以及一些学术研究中均有运用。大多数系统都使用Hash表作为日志索引。总的来说，这种设计实现了出色的写入性能，但是牺牲了读取性能（对于范围查询），而内存占用也通常很高，因为现在所有的key都需要在内存中建立索引，以最大限度地减少每个key的IO。
+最近，为了支持更快的导入速度，出现了***Log-structured Hash Table***。数据首先在in-memory写入缓冲区积累，当其满了之后，就将其push到二级存储中，作为持续增长日志的一个node。内存索引（例如Hash表）使得可以轻松定位任何kv pair，同时定期合并这些日志，以控制过期entry的上限。这种***Log and Index***设计在[Riak BitCask](https://levy5307.github.io/blog/BitCask/)、[Spotify Sparkey](https://github.com/spotify/sparkey)，[Microsoft FASTER](https://github.com/microsoft/FASTER)以及一些学术研究中均有运用。大多数系统都使用Hash表作为日志索引。总的来说，这种设计实现了出色的写入性能，但是牺牲了读取性能（对于范围查询），而内存占用也通常很高，因为现在所有的key都需要在内存中建立索引，以最大限度地减少每个key的IO。
 
 ***Memory Management***
 
