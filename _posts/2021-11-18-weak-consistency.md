@@ -64,5 +64,10 @@ Dynamo是由Amazon开发的一款分布式KV存储，其设计目标是：
 
 - vector clock格式：[node, counter]
 
-- 对于两个clock：clock1和clock2，如果clock1和clock2上所有node对应的counter，counter1都小于counter2，那么clock1就是clock2的祖先，可以通过syntactic reconciliation来解决冲突。否则就需要semantic reconciliation。
+- 对于两个clock：clock1和clock2，如果clock1和clock2上所有node对应的counter，counter1都小于counter2，那么clock1就是clock2的祖先，可以通过syntactic reconciliation来解决冲突。否则就需要semantic reconciliation。具体可以参照[Amazon Dynamo](https://levy5307.github.io/blog/Dynamo/)这篇文章
 
+## Redis
+
+## Reference
+
+[Amazon Dynamo](https://levy5307.github.io/blog/Dynamo/)
