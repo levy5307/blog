@@ -36,7 +36,7 @@ Dynamo是由Amazon开发的一款分布式KV存储，其设计目标是：
 
 但是这是否代表着其是强一致模型呢？答案当然是否定的。因为W有可能远小于N/2，只有写入到达大多数节点时，才有可能是强一致模型。（例如W=1, N=3，由于每次只要写入一个节点就算写入有效，当发生脑裂时仍然可以写入，强一致性就被破坏了）
 
-那是否设置W > N / 2就一定可以满足强一致性呢？答案也是否定的。因为Dynamo为了实现高可用性，允许在某些节点故障时加入一些新的节点来服务。因此有可能所有写入的副本都宕机了，选取一些新的节点来进行服务，强一致性仍然得不到满足。
+那是否设置W > N / 2就一定可以满足强一致性呢？答案也是否定的。因为Dynamo为了实现高可用性，允许在某些节点故障时加入一些新的节点来服务。因此有可能所有写入的副本都宕机了，选取一些新的节点来进行服务（例如前面所讲的Hinted off），强一致性仍然得不到满足。
 
 那是否不加入新的服务节点就可以满足强一致性呢？答案当然也是否定的。因为当W > N / 2时，可能只有一个节点拥有ture data。当该节点挂掉的时候，如果没有合理的同步机制，其他节点也是无法获取全部数据的，此时仍然不满足强一致性。
 
@@ -54,6 +54,11 @@ Dynamo是由Amazon开发的一款分布式KV存储，其设计目标是：
 
 1. 大部分情况下，新版本的数据都包含老版本的数据，这种情况下，由Dynamo服务端来解决就可以了，也叫做syntactic reconciliation
 
-2. 在发生故障或者并发更新的场景下，可能会发生版本分叉，从而导致冲突，这种情况下就需要客户端来接入了，这叫做semantic reconciliation
+2. 在发生故障或者并发更新的场景下，可能会发生版本分叉，从而导致冲突，这种情况下就需要应用来介入了，这叫做semantic reconciliation
 
-为了区分冲突是syntactic reconciliation还是semantic reconciliation，Dynamo采用了vector clock
+为了区分冲突是syntactic reconciliation还是semantic reconciliation，Dynamo采用了vector clock。
+
+- vector clock格式：[node, counter]
+
+- 对于两个clock：clock1和clock2，如果clock1和clock2上所有node对应的counter，counter1都小于counter2，那么clock1就是clock2的祖先，可以通过syntactic reconciliation来解决冲突。否则就需要semantic reconciliation。
+
