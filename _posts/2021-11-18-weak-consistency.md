@@ -64,7 +64,27 @@ Dynamo是由Amazon开发的一款分布式KV存储，其设计目标是：
 
 - vector clock格式：[node, counter]
 
-- 对于两个clock：clock1和clock2，如果clock1和clock2上所有node对应的counter，counter1都小于counter2，那么clock1就是clock2的祖先，可以通过syntactic reconciliation来解决冲突。否则就需要semantic reconciliation。具体可以参照[Amazon Dynamo](https://levy5307.github.io/blog/Dynamo/)这篇文章
+- 对于两个clock：clock1和clock2，如果clock1和clock2上所有node对应的counter，counter1都小于counter2，那么clock1就是clock2的祖先，可以通过syntactic reconciliation来解决冲突。否则就需要semantic reconciliation。
+
+![](../images/dynamo-vector-clock.png)
+
+我们可以通过上图为例来展示vector clock是如何工作的。
+
+1. 客户端写入一个新的对象（object）。节点S<sub>x</sub>处理该写入，增加key的序列号，并用该序列号创建对象的vector clock。系统便有了一个对象D1和他的vector clock [S<sub>x</sub>, 1]。
+
+2. 同样的客户端更新该对象，假设同样的节点（即S<sub>x</sub>）处理了该请求。系统便拥有了对象D2和它对应的vector clock是[S<sub>x</sub>, 2]。由于D2是D1的后代，因此可以覆盖D1。然而，可能会有些副本还没有看到D2，而只有D1。
+
+3. 假设还是同一个客户端，更新了该对象，并且一个不同的server S<sub>y</sub>处理了该请求，系统中当前有了数据D3以及其对应的vector clock是[(S<sub>x</sub>,2), (S<sub>y</sub>,1)]。
+
+4. 接着假设一个其他的客户端，读取到了D2并尝试更新它，并且另外一个节点S<sub>z</sub>处理了该请求，当前系统中拥有了D4（继承自D2），它的vector clock是[(S<sub>x</sub>,2), (S<sub>z</sub>,1)]
+
+此时版本就有了不同的分支。
+
+- 当一个节点知道D1和D2，在它收到D4和它的vector clock后，可以断定D1和D2已经被新数据覆盖了，因此可以安全对D1和D2进行垃圾回收，这也就是syntatic reconciliatioin过程，不需要应用参与解决。
+
+- 当一个节点只知道D3，那它收到D4后就看不出D3和D4之间的版本关系，即：D3和D4的各自改动并没有反应在对方之中，因此这两个版本应当被保留，此时需要由应用来解决semantic reconciliation。
+
+现在，假设一些客户端把D3和D4都读到了（context显示在该read操作中，所有的value都被发现）。读操作返回的context综合了D3和D4的clock，即[(S<sub>x</sub>, 2), (S<sub>y</sub>, 1), (S<sub>z</sub>, 1)]。如果应用执行semantic reconciliation，并且节点Sx执行该写入，Sx会更新自己在vector clock中的序列号。最终新生成的数据D5的vector clock格式如下：[(S<sub>x</sub>, 3), (S<sub>y</sub>, 1), (S<sub>z</sub>, 1)]。***NOTE:*** 这里的行为是由应用来定义的（即最终写入[(S<sub>x</sub>, 3), (S<sub>y</sub>, 1), (S<sub>z</sub>, 1)]），正如前面讲到semantic reconciliation是交给客户端（即业务应用）来处理。
 
 ## Redis
 
