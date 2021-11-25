@@ -27,7 +27,7 @@ Here is the class diagram for user specified compaction.
 
 ```
           +---------------+                              +-----------------+
-          | compaction op +------------------------------+ compaction rule |
+          | compaction op <>-----------------------------+ compaction rule |
           +------^--------+                              +--------^--------+
                  |                                                |
         _________|_________                 ______________________|______________________
