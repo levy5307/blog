@@ -269,5 +269,5 @@ Percolator应用其实包含很少的观察者，Google索引系统大概有10�
 
 ### 开源实现
 
-[小米themis](git@github.com:XiaoMi/themis.git)
+[小米themis](https://github.com/XiaoMi/themis)
 
