@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 分布式系统中的弱一致性
+title: 弱一致性存储
 date: 2021-11-18
 Author: levy5307
 tags: []
