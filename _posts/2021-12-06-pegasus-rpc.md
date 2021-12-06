@@ -62,7 +62,6 @@ brpc存在的问题：
 
 不过总体来看，brpc还是很值得推荐的。
 
-
 ## Thrift
 
 thrift有如下优点：
