@@ -43,7 +43,7 @@ toc: true
 
 ## State Of The Art
 
-这一节介绍一些市面上常用的接触DBaaS系统。
+这一节介绍一些市面上常用的DBaaS系统。
 
 SQL DB是微软Azure上的一款DBaaS。其基于HADR来构建。HADR是基于日志复制的状态机实现，其拥有一个Primary用户处理所有的update事务，并将update log同步至所有的Secondary节点。日志复制是分布式数据库系统中保持副本一致性的标准做法。另外，Primary会周期性的备份数据到Azure的XStore存储服务上：
 
