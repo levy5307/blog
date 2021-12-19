@@ -43,7 +43,7 @@ toc: true
 
 ## State Of The Art
 
-这一节介绍一些市面上常用的接触DBaaS系统。
+这一节介绍一些市面上常用的DBaaS系统。
 
 SQL DB是微软Azure上的一款DBaaS。其基于HADR来构建。HADR是基于日志复制的状态机实现，其拥有一个Primary用户处理所有的update事务，并将update log同步至所有的Secondary节点。日志复制是分布式数据库系统中保持副本一致性的标准做法。另外，Primary会周期性的备份数据到Azure的XStore存储服务上：
 
@@ -191,7 +191,7 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 如同计算节点一样，Page Servers在内存和SSD中保存所有数据，以达到快速访问的目的。
 
-第四层是Azure Storage Service（XStore），它是由Azure提供的独立的服务。XStore是基于hard disk的高扩展、持久性和廉价的存储服务。数据访问是远程的，所以这限制了吞吐和延迟。将采用本地快速存储的Page Servers与持久化、可扩展的廉价存储进行分离是前面所讲到的设计原则。
+第四层是Azure Storage Service（XStore，Azure提供的对象存储服务），它是由Azure提供的独立的服务。XStore是基于hard disk的高扩展、持久性和廉价的存储服务。数据访问是远程的，所以这限制了吞吐和延迟。将采用本地快速存储的Page Servers与持久化、可扩展的廉价存储进行分离是前面所讲到的设计原则。
 
 ***计算节点和Page Servers是无状态的。***他们可以在任意时间宕机、而不会有任何的数据损失，***真正的数据保存在XStore和XLOG中***。XStore是高可靠的，在Azure服务了多年并从没导致过数据丢失，Socrates利用了这种健壮性。XLOG是我们为Socrates构建的新服务，它具有高性能、可扩展、价格可承受，并且不会有任何数据丢失。
 
