@@ -110,5 +110,5 @@ Redis采用的也是弱一致性系统，主要原因是其采用了异步复制
 
 [Amazon Dynamo](https://levy5307.github.io/blog/Dynamo/)
 
-Redis设计与实现
+[Redis设计与实现](https://book.douban.com/subject/25900156/)
 
