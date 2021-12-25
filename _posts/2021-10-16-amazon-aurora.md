@@ -94,6 +94,8 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 2. 故障恢复更快了。在故障恢复的时候，并不需要将所有的redo log都apply完才能提供服务，而是可以立即提供服务，当读取的时候进行lazy apply
 
+另外，Aurora之所以能够采用lazy materialization，是由于log is the database，而data page只不过是log的缓存罢了，所以什么时候apply log生成data page无所谓，不影响数据的正确性。
+
 ![](../images/aurora-network-io.jpg)
 
 经过实验对比，Aurora优化达成了其同一时间处理的事务量提高到了35倍，优化前每个事务处理的I/O数量是优化后的7.7倍，以及更多数据上的性能提高。性能的提高也意味着系统可用性的升级，降低了故障恢复时间。
