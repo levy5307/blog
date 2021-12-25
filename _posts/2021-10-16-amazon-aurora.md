@@ -90,7 +90,7 @@ Aurora的仲裁模型使用6个副本，跨越3个AZ，每个AZ有两个copies�
 
 - 其次，user operations将会导致很多不同的写入，而这些写入以不同的形式代表着相同的信息。例如，为避免page撕裂，而向double write buffer的写入。
 
-### Offloading Redo Processing to Storage
+### Redo Log下沉
 
 当传统的database修改一个data page时，其产生一个redo log record，并且唤醒log applicator来应用该log record，将其作用于before-image，以产生相应的after-image。事务提交需要log真正写入，但是data page的写入可以推迟。
 
