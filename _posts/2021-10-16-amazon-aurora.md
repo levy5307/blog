@@ -124,3 +124,10 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 为了降低前台操作的延迟，Aurora的storage service将大部分操作放在后台操作。如上图所示，只要在1和2执行完之后就可以返回，其他的操作全部在后台进行。
 
+## The Log Marches Forward
+
+在Aurora中，每个log record都拥有一个Log Sequence Number，即LSN。LSN是由database生成、且单调递增的。
+
+在storage层面，定义了Volume Complete LSN（VCL），表示通过quorum最新写入成功的log record LSN，在VCL之前的log都是写入成功的
+
+在database层面，定义了Consistency Point LSN（CPL），表示事务提交的最后一条log record LSN。
