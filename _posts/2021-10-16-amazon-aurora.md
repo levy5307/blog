@@ -101,3 +101,26 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 经过实验对比，Aurora优化达成了其同一时间处理的事务量提高到了35倍，优化前每个事务处理的I/O数量是优化后的7.7倍，以及更多数据上的性能提高。性能的提高也意味着系统可用性的升级，降低了故障恢复时间。
 
 ## Storage Service
+
+![](../images/aurora-storage.jpg)
+
+上图所示为Aurora Storage Service的工作步骤：
+
+1. 接收log record，并将其放入in-memory队列中
+
+2. 将其持久化到磁盘上。在这一步执行完之后，就可以返回ACK了，表示本次操作完成，剩下的操作在后台完成。
+
+3. 组织records，并且识别出由于丢失而导致的log中的gaps
+
+4. 与其他的storage节点通过gossip协议，对gap进行补足
+
+5. 将log records合并到新的data pages中。如前面讲到，这里是lazy materialization的
+
+6. 周期性将log和data page备份到S3
+
+7. 周期性对old version数据进行garbage
+
+8. 周期性进行CRC验证
+
+为了降低前台操作的延迟，Aurora的storage service将大部分操作放在后台操作。如上图所示，只要在1和2执行完之后就可以返回，其他的操作全部在后台进行。
+
