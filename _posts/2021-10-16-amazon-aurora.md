@@ -130,4 +130,18 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 在storage层面，定义了Volume Complete LSN（VCL），表示通过quorum最新写入成功的log record LSN，在VCL之前的log都是写入成功的
 
-在database层面，定义了Consistency Point LSN（CPL），表示事务提交的最后一条log record LSN。
+在database层面，定义了Consistency Point LSN（CPL），表示mini事务提交的最后一条log record LSN。每个mini事务对应一个CPL
+
+另外定义Volumn Durable LSN（VDL）为比VCL小的最大CPL。commin LSN小于VDL的事务都可以认为是完成的。例如，log文件如下所示：
+
+T1 LSN = 1000, T2 LSN = 1001, T3 LSN = 1002（commit), T2 LSN = 1003, T2 LSN = 1004, T2 LSN = 1005(commit), T1 LSN = 1006(commit), T4 LSN = 1007
+
+其中: 
+
+- VCL = 1007
+
+- CPL(T1) = 1006, CPL(T2) = 1005, CPL(T3) = 1002
+
+- VDL = 1006
+
+
