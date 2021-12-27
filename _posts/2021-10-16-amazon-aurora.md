@@ -160,3 +160,22 @@ Aurora对于提交的处理是异步的，当客户端提交事务时，处理�
 
 对于读操作，与传统数据库一样，会先去访问Cache，如果没有命中再去访问storage service，并置换page。不过，与传统数据库不同的是，传统数据库对于被驱除的dirty page，需要写回storage service。而Aurora无需写回，主要是基于Aurora的精髓思想***log is the database***，true data永远在log里。
 
+## 整体架构
+
+截止到2017年初，AWS全球有16个区域即Region，有42个可用区AZ，每个Region至少有2个AZ。而每个AZ由两到多个数据中心组成，数据中心不跨AZ，每个AZ内部的数据延迟低于0.25ms，AZ之间的延迟低于2ms通常小于1ms。其对应关系如下：
+
+```
+Region ------> AZ ------> 数据中心
+ 16个   2~n   42个 2~n
+```
+
+Aurora的计算节点和存储节点分离，分别位于不同的VPC（Virtual Private Cloud）中。如下图所示：
+
+- 用户的应用通过Customer VPC接入，然后可以读写位于不同AZ(Availability Zone)的database。
+
+- database的部署，是一主多从的集群架构，主从节点可以位于不同的AZ（最多位于3个VPC，需要3个AZ）但需要位于同一个Region内。节点通过RDS (Relational Database Service)来交互。RDS是由位于每个节点上的称为HM(HostManager)的agent服务，其提供主从节点的状态监控，以应对主节点fail over以便进行HA调度、以及某个从节点fail over需要被替换等问题。
+
+- storage服务，其与database进行分离，数据缓冲区和持久化的“数据”（对于Aurora实则是日志和由日志转化来的以page为单位的数据，而不是直接由数据缓冲区刷出的page存储的数据，还是那句话：log is the database）位于storage VPC中，这样和计算节点在物理层面隔离
+
+![](../images/aurora-arch.jpg)
+
