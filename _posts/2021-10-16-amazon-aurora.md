@@ -100,6 +100,16 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 经过实验对比，Aurora优化达成了其同一时间处理的事务量提高到了35倍，优化前每个事务处理的I/O数量是优化后的7.7倍，以及更多数据上的性能提高。性能的提高也意味着系统可用性的升级，降低了故障恢复时间。
 
+另外，在Aurora中，Primary Instance是可读可写的，而Replica Instance是只读的（Aurora中的副本数量最多可达15个）。
+
+从图中可以看出，日志不单发往存储节点，也发往只读database副本。如果日志记录指向cache中缓冲的一个页面，只读副本则将该redo log apply到该缓存页面上，否则直接忽略。当然，副本apply log也需要遵循以下两个规则：
+
+- 仅仅当该log record的LSN <= VDL时，才对其apply
+
+- 对于一个min事务的所有log records，需要原子地进行apply，以保证副本中的缓存提供一个consistent view
+
+从写入者的角度来说，只读副本是异步的消费这些日志记录的。这意味着，从只读副本中获取的数据，有可能不是最新的，因为同步是有一定延迟的(<=20ms)
+
 ## Storage Service
 
 ![](../images/aurora-storage.jpg)
@@ -141,4 +151,12 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 - SCL: Segment Complete LSN, 每一个存储节点对应的最大连续LSN，利用SCN与其它节点Gossip交互，填补丢失的日志记录。每个存储节点都会有其自己的SCL，如下图中所示，S1的SCL是LSN8，S4的SCL则是LSN7
 
 ![](../images/aurora-lsn.png)
+
+### Read & Write & Commit
+
+为了流控，会为写操作控制LSN上限，即：VDL + LAL。其中LAL代表LSN Allocation Limit，是一个常数。
+
+Aurora对于提交的处理是异步的，当客户端提交事务时，处理事务的线程将“commit LSN”放入待提交队列中，然后去处理其他工作。后台会有一个专门的线程处理真正的提交工作，当VDL > 某事务“commit LSN”时，变对该事务进行提交。
+
+对于读操作，与传统数据库一样，会先去访问Cache，如果没有命中再去访问storage service，并置换page。不过，与传统数据库不同的是，传统数据库对于被驱除的dirty page，需要写回storage service。而Aurora无需写回，主要是基于Aurora的精髓思想***log is the database***，true data永远在log里。
 
