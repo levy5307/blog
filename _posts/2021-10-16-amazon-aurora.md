@@ -126,22 +126,19 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 ## The Log Marches Forward
 
-在Aurora中，每个log record都拥有一个Log Sequence Number，即LSN。LSN是由database生成、且单调递增的。
+在Aurora中，每个log record都拥有一个Log Sequence Number，即LSN。LSN是由database生成、且单调递增的。另外还有几个与LSN有关的定义
 
-在storage层面，定义了Volume Complete LSN（VCL），表示通过quorum最新写入成功的log record LSN，在VCL之前的log都是写入成功的
+- CPLs: Consistency Point LSN, 表示mini事务产生的最后一条log record LSN。每个mini事务对应一个CPL。一个事务由多个mini事务组成，每个mini事务可有多个日志，同一个事务的日志未必相邻。但是每个mini事务的最后一个日志的LSN就是一个CPL。
 
-在database层面，定义了Consistency Point LSN（CPL），表示mini事务提交的最后一条log record LSN。每个mini事务对应一个CPL
+如下表所示，T1-min-t1是LSN3，表示T1事务的第一个min事务的一致性点。
 
-另外定义Volumn Durable LSN（VDL）为比VCL小的最大CPL。commin LSN小于VDL的事务都可以认为是完成的。例如，log文件如下所示：
+![](../images/aurora-mini-tran.png)
 
-T1 LSN = 1000, T2 LSN = 1001, T3 LSN = 1002（commit), T2 LSN = 1003, T2 LSN = 1004, T2 LSN = 1005(commit), T1 LSN = 1006(commit), T4 LSN = 1007
+- VCL: Volume Complete LSN，表示通过quorum最新写入成功的log record LSN，在VCL之前的log都是写入成功的。
 
-其中: 
+- VDL: Volume Complete LSN，比VCL小的最大CPL。commit LSN小于VDL的事务都可以认为是完成的
 
-- VCL = 1007
+- SCL: Segment Complete LSN, 每一个存储节点对应的最大连续LSN，利用SCN与其它节点Gossip交互，填补丢失的日志记录。每个存储节点都会有其自己的SCL，如下图中所示，S1的SCL是LSN8，S4的SCL则是LSN7
 
-- CPL(T1) = 1006, CPL(T2) = 1005, CPL(T3) = 1002
-
-- VDL = 1006
-
+![](../images/aurora-lsn.png)
 
