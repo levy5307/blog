@@ -8,6 +8,8 @@ comments: true
 toc: true
 ---
 
+Aurora是亚马逊开发的一款OLTP数据库，可以100%兼容MySQL协议。并采用存算分离、redo log下沉、减少数据传输、异步化处理等方式来大幅提高性能。其精髓是log is the database。
+
 ## Introduction
 
 在当前的分布式云服务中，存算分离提供了弹性和扩展性。但是仍然存在几个问题：
