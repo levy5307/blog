@@ -146,7 +146,7 @@ private:
 
 Builder模式也是一种创建型设计模式，其主要应用场景有如下两个：
 
-- 类的构造函数参数特别多，其中一部分是必要的，另外还有很多参数是可选的，这样会导致需要创建很多个构造函数。例如：
+- 类的构造函数参数特别多，其中一部分是必要的，另外还有很多参数是可选的。这样会导致需要创建很多个构造函数。例如：
 
 ```
 class Example {
@@ -201,9 +201,11 @@ private:
 
 2. 即使支持set函数，当调用完`new Example(int a)`之后，会获取一个“半成品” 对象。这样需要用户代码逻辑来保证不会错误的使用这种“半成品”对象，导致系统不够健壮的。
 
-- 对象的创建，需要对给出的参数进行合法检查，当检查失败时则不进行创建。 
+- 对象的创建需要对给出的参数进行合法性检查，当检查失败时不进行创建。 
 
 这种情况可以参考本人之前做Pegasus load balance重构时的[实现](https://github.com/XiaoMi/rdsn/pull/908/files?diff=unified&w=0#diff-c013463d4991b89fb5d5328eb8894552e0c655d1973fa800a0bb2a5e9d347c0aR98)
+
+其大致代码如下：
 
 ```
 std::unique_ptr<ford_fulkerson> build()
@@ -214,12 +216,11 @@ std::unique_ptr<ford_fulkerson> build()
     if (0 == higher_count && 0 == lower_count) {
         return nullptr;
     }
-    return dsn::make_unique<ford_fulkerson>(
-            _app, _nodes, _address_id, higher_count, lower_count, replicas_low);
+    return dsn::make_unique<ford_fulkerson>(higher_count, lower_count);
 }
 ```
 
-在build()函数中对一些参数进行了校验，当校验失败时不进行创建。而这些校验无法在构造函数中进行。很显然，在这种情况下使用set函数也是很不合理的，因为这会导致一些本不应该创建的对象，被作为半成品被创建出来。
+如上所示，在`build()`函数中对一些参数进行了校验，当校验失败时不进行创建。而这些校验无法在构造函数中进行。很显然，在这种情况下使用set函数也是很不合理的，因为这会导致一些本不应该创建的对象，被作为半成品被创建出来。
 
 ## Specific Way In C++ 
 
