@@ -142,3 +142,9 @@ private:
 
 ![](../images/abstract-factory.png)
 
+### Builder模式
+
+## Specific Way In C++ 
+
+## Others
+
