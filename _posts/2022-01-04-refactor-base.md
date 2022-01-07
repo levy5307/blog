@@ -222,6 +222,155 @@ std::unique_ptr<ford_fulkerson> build()
 
 如上所示，在`build()`函数中对一些参数进行了校验，当校验失败时不进行创建。而这些校验无法在构造函数中进行。很显然，在这种情况下使用set函数也是很不合理的，因为这会导致一些本不应该创建的对象，作为“半成品”被创建出来。
 
+### 原型模式
+
+最近在读西游记，里面有一个片段让人印象深刻：
+
+> 拔一把毫毛，丢在口中嚼碎，望空中喷去，叫一声“变”，即变做三二百个小猴，周围攒簇。
+
+原型模式就有类似的功效，即克隆复制。下面为代码示例：
+
+```
+class Monkey {
+public:
+    Monkey(uint32_t height, uint32_t weight) {
+        this->height = height;
+        this->weight = weight;
+    }
+    Monkey(const Monkey& monkey) {
+        this->height = monkey.height;
+        this->weight = monkey.weight;
+    }
+
+    Monkey* clone() {
+        return new Monkey(*this);
+    }
+
+private:
+    uint32_t height;
+    uint32_t weight;
+};
+```
+
+通过调用`monkey->clone()`，即可复制出与monkey一模一样的小猴子:
+
+```
+void doBussiness(Monkey *monkey) {
+    auto monkey1 = new Monkey(180, 80);
+    auto monkey2 = monkey1->clone();
+    auto monkey3 = monkey1->clone();
+}
+```
+
+可能有人会问，直接用new创建不行吗？比如下面这样：
+
+```
+void doBussiness(Monkey *monkey) {
+    auto monkey1 = new Monkey(180, 80);
+    auto monkey2 = new Monkey(180, 80);
+    auto monkey3 = new Monkey(180, 80);
+}
+```
+
+这样当然是不好的，因为有大量的重复代码，重复代码往往意味着bad smell，因为一旦修改，就要修改很多处地方，非常不优雅。
+
+另外clone函数最终调用的也是拷贝构造函数，那直接使用拷贝构造函数不可以吗？
+
+当然是不可以的。有两个原因：
+
+1. 因为clone函数可以实现多态，而拷贝构造函数不可以。使用多态可以自动识别出其具体类型，调用实际子类的clone函数 
+
+2. 使用拷贝构造函数需要知道具体类的类型，这样会带来耦合。比如Monkey有多个子类，需要知道其具体是属于哪个子类，然后去调用其拷贝构造函数，带来了耦合性。
+
+举个例子：
+
+猴子其实是一个大类，具体可以分为猕猴、金丝猴等等。
+
+```
+class Monkey {
+public:
+    Monkey(uint32_t height, uint32_t weight) {
+        this->height = height;
+        this->weight = weight;
+    }
+    Monkey(const Monkey& monkey) {
+        this->height = monkey.height;
+        this->weight = monkey.weight;
+    }
+    virtual ~Monkey() = 0;
+
+    virtual Monkey* clone() = 0;
+
+protected:
+    uint32_t height;
+    uint32_t weight;
+};
+```
+
+猕猴有一个特性，即有些猕猴是没有尾巴的，所以其多一个参数`hasTail`
+
+```
+class Macaque : public Monkey {
+public:
+    Macaque(uint32_t height, uint32_t weight, bool hasTail)
+    : Monkey(height, weight) {
+        this->hasTail = hasTail;
+    }
+    Macaque(const Macaque& monkey) : Monkey(monkey) {
+        this->hasTail = monkey.hasTail;
+    }
+
+    Monkey* clone() {
+        return new Macaque(*this);
+    }
+
+private:
+    bool hasTail;
+};
+```
+
+而金丝猴在某些公司特指比较重要的员工，一般都是领导层，所以有一个参数`officialRank`
+
+```
+class GoldenMonkey : public Monkey {
+public:
+    GoldenMonkey(uint32_t height, uint32_t weight, uint16_t officalRank)
+    : Monkey(height, weight) {
+        this->officalRank = officalRank;
+    }
+    GoldenMonkey(const GoldenMonkey& monkey) : Monkey(monkey) {
+        this->officalRank = monkey.officalRank;
+    }
+
+    Monkey* clone() {
+        return new GoldenMonkey(*this);
+    }
+
+private:
+    uint16_t officalRank;
+};
+```
+
+当我们使用拷贝构造函数进行复制时： 
+
+```
+void doBussiness(Monkey *monkey) { 		// monkey实际是猕猴 
+    // How to copy? 
+    // 1. 根本不知道monkey的类型，不知道该调GoldenMonkey拷贝构造函数还是Macaque的拷贝构造函数。
+    // 2. 即使知道是猕猴，也会带来对Macque的耦合
+}
+```
+
+而使用clone函数就比较简单了，它支持多态，可以自动根据实际类型来调用具体子类的clone函数，并且完全不会带来耦合： 
+
+```
+void doBussiness(Monkey *monkey) {
+    auto monkey1 = monkey->clone();
+    auto monkey2 = monkey->clone();
+    auto monkey3 = monkey->clone();
+}
+```
+
 ## Specific Way In C++ 
 
 ## Others
