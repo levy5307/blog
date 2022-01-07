@@ -203,7 +203,7 @@ private:
 
 - 对象的创建需要对给出的参数进行合法性检查，当检查失败时不进行创建。 
 
-这种情况可以参考本人之前做Pegasus load balance重构时的[实现](https://github.com/XiaoMi/rdsn/pull/908/files?diff=unified&w=0#diff-c013463d4991b89fb5d5328eb8894552e0c655d1973fa800a0bb2a5e9d347c0aR98)
+这种情况可以参考本人之前做[Pegasus load balance重构时的实现](https://github.com/XiaoMi/rdsn/pull/908/files?diff=unified&w=0#diff-c013463d4991b89fb5d5328eb8894552e0c655d1973fa800a0bb2a5e9d347c0aR98)
 
 其大致代码如下：
 
@@ -220,7 +220,7 @@ std::unique_ptr<ford_fulkerson> build()
 }
 ```
 
-如上所示，在`build()`函数中对一些参数进行了校验，当校验失败时不进行创建。而这些校验无法在构造函数中进行。很显然，在这种情况下使用set函数也是很不合理的，因为这会导致一些本不应该创建的对象，被作为半成品被创建出来。
+如上所示，在`build()`函数中对一些参数进行了校验，当校验失败时不进行创建。而这些校验无法在构造函数中进行。很显然，在这种情况下使用set函数也是很不合理的，因为这会导致一些本不应该创建的对象，作为“半成品”被创建出来。
 
 ## Specific Way In C++ 
 
