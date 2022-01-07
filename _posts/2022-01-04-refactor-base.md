@@ -570,6 +570,10 @@ class Dingfengzhu : public Decorator {
 
 ![](../images/decorator-model.jpg)
 
+那么让孙悟空去修炼能够定风的法力行不行呢？
+
+答案是不行，原因在于：如果孙悟空去修炼，那猪八戒也要去修炼，典型的重复实现。否则当孙悟空不在的时候，猪八戒也搞定不了铁扇公主。而采用Decorator，可以将公用的功能抽象出来以便复用。
+
 另外，我在设计[重构Pegasus负载均衡时](https://levy5307.github.io/blog/load-balance-refactor/)，也考虑过使用Decorator模式。
 
 ### 桥接模式
