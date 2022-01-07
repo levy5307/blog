@@ -299,7 +299,7 @@ public:
     }
     virtual ~Monkey() = 0;
 
-    virtual Monkey* clone() = 0;
+    virtual std::unique_ptr<Monkey> clone() = 0;
 
 protected:
     uint32_t height;
@@ -320,8 +320,8 @@ public:
         this->hasTail = monkey.hasTail;
     }
 
-    Monkey* clone() {
-        return new Macaque(*this);
+    std::unique_ptr<Monkey> clone() {
+	return std::make_unique<Macaque>(*this);
     }
 
 private:
@@ -342,8 +342,8 @@ public:
         this->officalRank = monkey.officalRank;
     }
 
-    Monkey* clone() {
-        return new GoldenMonkey(*this);
+    std::unique_ptr<Monkey> clone() {
+	return std::make_unique<GoldenMonkey>(*this);
     }
 
 private:
@@ -370,6 +370,211 @@ void doBussiness(Monkey *monkey) {
     auto monkey3 = monkey->clone();
 }
 ```
+
+### 享元模式
+
+享元，故名思议，就是分享元数据的意思。在讲享元模式前，还是先举一个西游记中的例子：
+
+> 玉帝大恼，即差四大天王，协同李天王并哪吒太子，点二十八宿、九曜星官、十二元辰、五方揭谛、四值功曹、东西星斗、南北二神、五岳四渎、普天星相，共十万天兵，布一十八架天罗地网，下界去花果山围困，定捉获那厮处治
+
+这里的十万天兵天将，不是先从老百姓中征兵、训练，然后再出征，等出征完后各回各家各找各妈，因为这样效率实在太低了。而是事先准备好的军队，等用的时候直接从军队中调遣。正所谓养兵千日用兵一时。
+
+这就是享元模式的基本思想。下面看一下具体的代码示例：
+
+```
+class Solider {
+public:
+    Solider(std::string name, std::string desc) {
+        this->name = name;
+        this->desc = desc;
+    }
+    virtual ~Solider() = 0;
+
+    virtual void fight() = 0;
+    const std::string& getName() const {
+        return this->name;
+    }
+
+private:
+    std::string name;
+    std::string desc;
+};
+
+// 天王
+class HeavenlyKing : public Solider {
+public:
+    HeavenlyKing(std::string name, std::string desc) : Solider(name, desc) {}
+
+    void fight() {
+        // 天王战斗逻辑
+    }
+};
+
+// 哪吒
+class Nezha : public Solider {
+public:
+    Nezha(std::string name, std::string desc) : Solider(name, desc) {}
+
+    void fight() {
+        // 哪吒战斗逻辑
+    }
+};
+
+```
+上面代码中实现了一个Solider的虚基类，其有天王和哪吒等几个子类。
+
+```
+class Army {
+public:
+    Army() {
+        Solider *liudehua = new HeavenlyKing("刘德华", "德艺双馨");
+        soliders[liudehua->getName()].reset(liudehua);
+
+        Solider *zhangxueyou = new HeavenlyKing("张学友", "歌神");
+        soliders[zhangxueyou->getName()].reset(zhangxueyou);
+
+        Solider *nezha = new Nezha("哪吒", "三太子");
+        soliders[nezha->getName()].reset(nezha);
+    }
+
+    Solider* getSolider(const std::string &name) {
+        const auto &iter = soliders.find(name);
+        if (iter != soliders.end()) {
+            return iter->second.get();
+        } else {
+            return nullptr;
+        }
+    }
+
+private:
+    std::unordered_map<std::string, std::unique_ptr<Solider>> soliders;
+};
+```
+
+上面创建了一个Army对象，代表军队。这里使用了享元模式，预先创建出了天王、哪吒等对象，放入其成员变量soliders中。当需要使用solider时，可以通过`getSolider`来获取具体的对象，而无需现场创建。
+
+### 装饰器模式
+
+装饰器模式主要用于现有的类的包装，向一个现有的对象添加新的功能，同时又不改变其结构、不作侵入式修改。
+
+下面还是以西游记为例，介绍一下Decorator的作用：
+
+```
+class Person {
+public:
+    virtual ~Person() = 0;
+
+    virtual bool abilityToShelter() const = 0;
+    virtual double combactValue() const = 0;
+};
+
+class Sunwukong : public Person {
+public:
+    Sunwukong() = default;
+
+    bool abilityToShelter() const {
+	return false;
+    }
+    double combactValue() const {
+	return 1e8;
+    }
+};
+
+class Zhubajie : public Person {
+public:
+    Zhubajie() = default;
+
+    bool abilityToShelter() const {
+	return false;
+    }
+    double combactValue() const {
+	return 1e5;
+    }
+};
+```
+
+最开始，孙悟空、猪八戒均是没有定风能力的，所以面对铁扇公主的芭蕉扇，应对的很吃力。
+
+后续随着剧情推进，开始出现了一种法宝：定风珠。持有定风珠的人，便可以拥有了定风能力。
+
+一个最简单的实现是修改孙悟空和猪八戒的实现，判断其是否有定风珠，具体如下所示：
+
+```
+class Person {
+public:
+    virtual ~Person() = 0;
+
+    virtual bool abilityToShelter() const = 0;
+    virtual double combactValue() const = 0;
+};
+
+class Sunwukong : public Person {
+    bool abilityToShelter() const {
+	if (有定风珠) {
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+    double combactValue() const {
+	return 1e8;
+    }
+};
+
+class Zhubajie : public Person {
+    bool abilityToShelter() const {
+	if (有定风珠) {
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+    double combactValue() const {
+	return 1e5;
+    }
+};
+```
+
+功能上来说，这样确实没什么问题。但是这样也有几个问题：
+
+1. 重复代码。前面讲过，重复代码往往意味着bad smell。
+
+2. 侵入式修改。将定风珠的逻辑嵌入到了孙悟空与猪八戒的实现中。当后续再出现不同的法宝时，还要持续的对孙悟空进行侵入式修改，非常不优雅。
+
+这里如果采用Decorator模式的话，效果就会好很多了，具体如下所示：
+
+```
+class Decorator : public Person {
+public:
+    Decorator(Person *person) {
+        this->person = person;
+    }
+    virtual ~Decorator() = 0;
+
+protected:
+    Person person;
+};
+
+class Dingfengzhu : public Decorator {
+    bool abilityToShelter() const {
+        return true;
+    }
+
+    double combactValue() const {
+        return person->combactValue();
+    }
+};
+```
+
+通过Decorator，增强了Person的定风能力，并且互相之间是松耦合的。当增加新的法宝时，只需要添加一个新的Decorator子类即可。如下图所示：
+
+![](../images/decorator-model.jpg)
+
+另外，我在设计[重构Pegasus负载均衡时](https://levy5307.github.io/blog/load-balance-refactor/)，也考虑过使用Decorator模式。
+
+### 桥接模式
+
+桥是用来将河的两岸联系起来的，而设计模式中的桥是用来将两个独立的结构联系起来，而这两个被联系起来的结构可以独立的变化。
 
 ## Specific Way In C++ 
 
