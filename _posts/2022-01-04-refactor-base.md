@@ -667,12 +667,12 @@ public:
     }
 };
 
-class Person {
+class Team {
 public:
-    virtual ~Person() = 0;
+    virtual ~Team() = 0;
 };
 
-class Lishimin : public Person {
+class Lishimin : public Team {
 public:
     Lishimin() {
     }
@@ -682,11 +682,11 @@ public:
     }
 };
 
-class TangSeng : public Person {
+class TangSeng : public Team {
 public:
-    TangSeng(Person *person) {
+    TangSeng(Team *team) {
         this->keeper.reset(new WestHeaven);
-        this->person.reset(person);
+        this->team.reset(team);
     }
 
     void getBook() {
@@ -700,15 +700,15 @@ private:
     void goBack();
 
     std::unique_ptr<BookKeeper> keeper;
-    std::unique_ptr<Person> person;
+    std::unique_ptr<Team> team;
 };
 ```
 
 当需要求取真经时，需要执行如下代码：
 
 ```
-Person *lishimin = new Lishimin();
-auto tangseng = std::make_unique<Person>(lishimin);
+Team *lishimin = new Lishimin();
+auto tangseng = std::make_unique<Team>(lishimin);
 tangseng->getBook();
 ```
 
@@ -731,7 +731,7 @@ private:
 
 通过对比，可以看出最明显的区别：
 
-- Decorator模式，是增强李世民求取真经的能力，而取经过程需要李世民和唐僧一起去，即“跟我来”
+- Decorator模式，是增强李世民求取真经的能力，而取经过程需要唐僧和李世民组成Team一起去，即“跟我来”
 
 - 而Proxy模式，是李世民将求取真经的事情委托给了唐僧，自己还在大唐主持国政，即“给我冲”
 
