@@ -591,12 +591,12 @@ class BookKeeper {
 public:
     virtual ~BookKeeper() = 0;
 
-    virtual void goForBook() = 0;
+    virtual void getBook() = 0;
 };
 
 class WestHeaven : public BookKeeper {
 public:
-    void goForBook() {
+    void getBook() {
         // 发放真经
     }
 };
@@ -607,9 +607,9 @@ public:
         keeper.reset(new WestHeaven);
     }
 
-    void goForBook() {
+    void getBook() {
         walkToWest();
-        keeper->goForBook();
+        keeper->getBook();
         goBack();
     }
 
@@ -619,14 +619,18 @@ private:
 
     std::unique_ptr<BookKeeper> keeper;
 };
+```
 
+而李世民，只要在想去求取真经的时候，委派代理（也就是唐僧）去就可以了。
+
+```
 class Lishimin {
 public:
     Lishimin() {
         keeper.reset(new TangSeng);
     }
-    void goForBook() {
-        keeper->goForBook();
+    void getBook() {
+        keeper->getBook();
     }
 
 private:
@@ -637,6 +641,99 @@ private:
 类图如下所示：
 
 ![](../images/proxy-model.jpg)
+
+### Decorator vs Proxy
+
+有很多人分不清Decorator和Proxy模式的区别，这里还是以西天取经为例讲一下。
+
+如果是采用Decorator模式的话，其类图应该是这样的：
+
+![](../images/decorator-goforbook.jpg)
+
+如下为具体代码实现：
+
+```
+class BookKeeper {
+public:
+    virtual ~BookKeeper() = 0;
+
+    virtual void getBook() = 0;
+};
+
+class WestHeaven : public BookKeeper {
+public:
+    void getBook() {
+        // 发放真经
+    }
+};
+
+class Person {
+public:
+    virtual ~Person() = 0;
+};
+
+class Lishimin : public Person {
+public:
+    Lishimin() {
+    }
+
+    void getBook() {
+        // do nothing
+    }
+};
+
+class TangSeng : public Person {
+public:
+    TangSeng(Person *person) {
+        this->keeper.reset(new WestHeaven);
+        this->person.reset(person);
+    }
+
+    void getBook() {
+        walkToWest();
+        keeper->getBook();
+        goBack();
+    }
+
+private:
+    void walkToWest();
+    void goBack();
+
+    std::unique_ptr<BookKeeper> keeper;
+    std::unique_ptr<Person> person;
+};
+```
+
+当需要求取真经时，需要执行如下代码：
+
+```
+Person *lishimin = new Lishimin();
+auto tangseng = std::make_unique<Person>(lishimin);
+tangseng->getBook();
+```
+
+如下所示为Proxy模式求取真经的代码： 
+
+```
+class Lishimin {
+public:
+    Lishimin() {
+        keeper.reset(new TangSeng);
+    }
+    void getBook() {
+        keeper->getBook();
+    }
+
+private:
+    std::unique_ptr<BookKeeper> keeper;
+};
+```
+
+通过对比，可以看出最明显的区别：
+
+- Decorator模式，是增强李世民求取真经的能力，而取经过程需要李世民和唐僧一起去，即“跟我来”
+
+- 而Proxy模式，是李世民将求取真经的事情委托给了唐僧，自己还在大唐主持国政，即“给我冲”
 
 ### 桥接模式
 
