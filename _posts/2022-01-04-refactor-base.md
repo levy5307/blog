@@ -580,6 +580,64 @@ class Dingfengzhu : public Decorator {
 
 另外，我在设计[重构Pegasus负载均衡时](https://levy5307.github.io/blog/load-balance-refactor/)，也考虑过使用Decorator模式。
 
+### 代理模式
+
+唐王李世民想要去西天取经，以普度众生。但是他身为一国之君，肯定不能亲自去啊，毕竟还有国家需要治理，而且去西天取经也要经历九九八十一难，实在没有精力（单一职责）。所以需要选择唐僧代替他去西天取经。这就是一个典型的代理模式，这里的唐僧就是李世民西天取经的代理。
+
+实例代码如下：
+
+```
+class BookKeeper {
+public:
+    virtual ~BookKeeper() = 0;
+
+    virtual void goForBook() = 0;
+};
+
+class WestHeaven : public BookKeeper {
+public:
+    void goForBook() {
+        // 发放真经
+    }
+};
+
+class TangSeng : public BookKeeper {
+public:
+    TangSeng() {
+        keeper.reset(new WestHeaven);
+    }
+
+    void goForBook() {
+        walkToWest();
+        keeper->goForBook();
+        goBack();
+    }
+
+private:
+    void walkToWest();
+    void goBack();
+
+    std::unique_ptr<BookKeeper> keeper;
+};
+
+class Lishimin {
+public:
+    Lishimin() {
+        keeper.reset(new TangSeng);
+    }
+    void goForBook() {
+        keeper->goForBook();
+    }
+
+private:
+    std::unique_ptr<BookKeeper> keeper;
+};
+```
+
+类图如下所示：
+
+![](../images/proxy-model.jpg)
+
 ### 桥接模式
 
 桥是用来将河的两岸联系起来的，而设计模式中的桥是用来将两个独立的结构联系起来，而这两个被联系起来的结构可以独立的变化。
