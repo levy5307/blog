@@ -605,6 +605,14 @@ private:
 
 桥是用来将河的两岸联系起来的，而设计模式中的桥是用来将两个独立的结构联系起来，而这两个被联系起来的结构可以独立的变化。
 
+我在实现Pegasus的用户自定义compaction策略的时候，曾经用过桥接模式。因为用户自定义策略有两个维度的变量：
+
+1. compaction operation会增多、减少或者修改
+
+2. compaction rule也会增多、减少或修改
+
+对于这种两个独立变化的维度的情况，使用桥接模式可以对其很好的解耦。具体可以参考我之前的[设计文档](https://levy5307.github.io/blog/user-specified-compaction/#%E5%90%8E%E6%9C%9F%E6%89%A9%E5%B1%95)。
+
 ## Specific Way In C++ 
 
 ### pImpl
