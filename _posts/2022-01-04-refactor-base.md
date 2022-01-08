@@ -460,123 +460,74 @@ private:
 下面还是以西游记为例，介绍一下Decorator的作用：
 
 ```
-class Person {
+class Team {
 public:
-    virtual ~Person() = 0;
+    virtual ~Team() = 0;
 
-    virtual bool abilityToShelter() const = 0;
-    virtual double combactValue() const = 0;
+    // 念经
+    virtual void chantScriptures() = 0;
+    // 打妖怪
+    virtual void killMonsters() = 0;
 };
 
-class Sunwukong : public Person {
+class Tangseng : public Team {
 public:
-    Sunwukong() = default;
+    void chantScriptures() {
+        sit();
+        sing();
+    }
+    void killMonsters() {
+        // do nothing
+    }
 
-    bool abilityToShelter() const {
-	return false;
-    }
-    double combactValue() const {
-	return 1e8;
-    }
-};
-
-class Zhubajie : public Person {
-public:
-    Zhubajie() = default;
-
-    bool abilityToShelter() const {
-	return false;
-    }
-    double combactValue() const {
-	return 1e5;
-    }
+private:
+    void sit();
+    void sing();
 };
 ```
 
-最开始，孙悟空、猪八戒均是没有定风能力的，所以面对铁扇公主的芭蕉扇，应对的很吃力。
+最开始，西游取经团队只有唐僧一人。唐僧路上需要不断念经来提高佛学造诣，但是有个问题是，他不会杀怪，所以总是有各种妖怪来骚扰，很难静下心来学习念经。
 
-后续随着剧情推进，开始出现了一种法宝：定风珠。持有定风珠的人，便可以拥有了定风能力。
-
-一个最简单的实现是修改孙悟空和猪八戒的实现，判断其是否有定风珠，具体如下所示：
+后续随着剧情推进，孙悟空出现了，这货法力高强可以杀怪。唐僧正好欠缺这部分能力，需要孙悟空来增强。这里，Decorator可以发挥作用了：
 
 ```
-class Person {
+class Sunwukong : public Team {
 public:
-    virtual ~Person() = 0;
+    Sunwukong(std::unique_ptr<Team> team) {
+        this->team = std::move(team);
+    }
 
-    virtual bool abilityToShelter() const = 0;
-    virtual double combactValue() const = 0;
-};
+    void chantScriptures() {
+        team->chantScriptures();
+    }
 
-class Sunwukong : public Person {
-    bool abilityToShelter() const {
-	if (有定风珠) {
-	    return true;
-	} else {
-	    return false;
-	}
+    void killMonsters() {
+        // kill monsters easily
     }
-    double combactValue() const {
-	return 1e8;
-    }
-};
 
-class Zhubajie : public Person {
-    bool abilityToShelter() const {
-	if (有定风珠) {
-	    return true;
-	} else {
-	    return false;
-	}
-    }
-    double combactValue() const {
-	return 1e5;
-    }
+private:
+    std::unique_ptr<Team> team;
 };
 ```
 
-功能上来说，这样确实没什么问题。但是这样也有几个问题：
-
-1. 重复代码。前面讲过，重复代码往往意味着bad smell。
-
-2. 侵入式修改。将定风珠的逻辑嵌入到了孙悟空与猪八戒的实现中。当后续再出现不同的法宝时，还要持续的对孙悟空进行侵入式修改，非常不优雅。
-
-这里如果采用Decorator模式的话，效果就会好很多了，具体如下所示：
+当唐僧需要念经时，先命令孙悟空扫清妖怪，然后便可以安心打坐念经了：
 
 ```
-class Decorator : public Person {
-public:
-    Decorator(Person *person) {
-        this->person = person;
-    }
-    virtual ~Decorator() = 0;
-
-protected:
-    Person person;
-};
-
-class Dingfengzhu : public Decorator {
-    bool abilityToShelter() const {
-        return true;
-    }
-
-    double combactValue() const {
-        return person->combactValue();
-    }
-};
+auto tangseng = std::make_unique<Team>();
+auto sunwukong = std::make_unique<Team>(std::move(tangseng));
+sunwukong->killMonsters();
+sunwukong->chantScriptures();
 ```
 
-通过Decorator，增强了Person的定风能力，并且互相之间是松耦合的。当增加新的法宝时，只需要添加一个新的Decorator子类即可。如下图所示：
+如下所示为相关类图：
 
 ![](../images/decorator-model.jpg)
 
-那么让孙悟空去修炼能够定风的法力行不行呢？答案是不行，原因在于：如果孙悟空去修炼，那猪八戒也要去修炼，典型的重复实现。否则当孙悟空不在的时候，猪八戒也搞定不了铁扇公主。
+可能有人会问，可不可以让唐僧自己获取打妖怪的能力？当然是不可以的，原因如下：
 
-而采用Decorator有如下好处：
+1. 唐僧就是一个和尚，就是念经用的，一个和尚打打杀杀像什么话。（单一职责）
 
-- 一方面可以防止Sunwukong及Zhubajie这两个类过于复杂，二者专注于修习除妖技能（单一职责原则）
-
-- 另一方面可以将公用的功能抽象出来以便复用
+2. 如果唐僧去完真经，李世民没玩够，又派了唐僧2号再去取一遍，那唐僧2号是不是也要修习杀妖怪的本领？显然这就是重复实现了。Decorator可以将一些功能独立抽象出来。
 
 另外，我在设计[重构Pegasus负载均衡时](https://levy5307.github.io/blog/load-balance-refactor/)，也考虑过使用Decorator模式。
 
@@ -644,96 +595,11 @@ private:
 
 ### Decorator vs Proxy
 
-有很多人分不清Decorator和Proxy模式的区别，这里还是以西天取经为例讲一下。
+有很多人分不清Decorator和Proxy模式的区别，其实通过前面讲的西天取经的例子就很容易分辨了：
 
-如果是采用Decorator模式的话，其类图应该是这样的：
+1. 对于Decorator模式，是孙悟空和唐僧一起去西天取经，以增强其杀怪能力，强调的是“跟我来”
 
-![](../images/decorator-goforbook.jpg)
-
-如下为具体代码实现：
-
-```
-class BookKeeper {
-public:
-    virtual ~BookKeeper() = 0;
-
-    virtual void getBook() = 0;
-};
-
-class WestHeaven : public BookKeeper {
-public:
-    void getBook() {
-        // 发放真经
-    }
-};
-
-class Team {
-public:
-    virtual ~Team() = 0;
-};
-
-class Lishimin : public Team {
-public:
-    Lishimin() {
-    }
-
-    void getBook() {
-        // do nothing
-    }
-};
-
-class TangSeng : public Team {
-public:
-    TangSeng(Team *team) {
-        this->keeper.reset(new WestHeaven);
-        this->team.reset(team);
-    }
-
-    void getBook() {
-        walkToWest();
-        keeper->getBook();
-        goBack();
-    }
-
-private:
-    void walkToWest();
-    void goBack();
-
-    std::unique_ptr<BookKeeper> keeper;
-    std::unique_ptr<Team> team;
-};
-```
-
-当需要求取真经时，需要执行如下代码：
-
-```
-Team *lishimin = new Lishimin();
-auto tangseng = std::make_unique<Team>(lishimin);
-tangseng->getBook();
-```
-
-如下所示为Proxy模式求取真经的代码： 
-
-```
-class Lishimin {
-public:
-    Lishimin() {
-        keeper.reset(new TangSeng);
-    }
-    void getBook() {
-        keeper->getBook();
-    }
-
-private:
-    std::unique_ptr<BookKeeper> keeper;
-};
-```
-
-通过对比，可以看出最明显的区别：
-
-- Decorator模式，是增强李世民求取真经的能力，而取经过程需要唐僧和李世民组成Team一起去，即“跟我来”
-
-- 而Proxy模式，是李世民将求取真经的事情委托给了唐僧，自己还在大唐主持国政，即“给我冲”
+2. 而Proxy模式，是李世民将西天取经的事情委托给了唐僧，强调的是“给我冲”
 
 ### 桥接模式
 
