@@ -574,7 +574,7 @@ class Dingfengzhu : public Decorator {
 
 而采用Decorator有如下好处：
 
-- 一方面可以防止Sunwukong及Zhubajie这两个类过于复杂，二者专注于休息除妖技能（单一职责原则）
+- 一方面可以防止Sunwukong及Zhubajie这两个类过于复杂，二者专注于修习除妖技能（单一职责原则）
 
 - 另一方面可以将公用的功能抽象出来以便复用
 
@@ -586,5 +586,17 @@ class Dingfengzhu : public Decorator {
 
 ## Specific Way In C++ 
 
+### pImpl
+
+### RAII
+
+### Class Trait
+
 ## Others
+
+### AOP
+
+### 代码自解释
+
+### 如何写注释
 
