@@ -615,6 +615,26 @@ private:
 
 对于这种两个独立变化的维度的情况，使用桥接模式可以对其很好的解耦。具体可以参考我之前的[设计文档](https://levy5307.github.io/blog/user-specified-compaction/#%E5%90%8E%E6%9C%9F%E6%89%A9%E5%B1%95)。
 
+### Adaptor模式
+
+### visitor模式
+
+### Facade模式
+
+### 组合模式
+
+### 策略模式
+
+### 观察者模式
+
+### 模板方法模式
+
+### 迭代器模式
+
+### 备忘录模式
+
+### 状态机模式
+
 ## Specific Way In C++ 
 
 ### pImpl
