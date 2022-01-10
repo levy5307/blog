@@ -460,129 +460,88 @@ private:
 下面还是以西游记为例，介绍一下Decorator的作用：
 
 ```
-class Person {
+class Team {
 public:
-    virtual ~Person() = 0;
+    virtual ~Team() = 0;
 
-    virtual bool abilityToShelter() const = 0;
-    virtual double combactValue() const = 0;
+    // 念经
+    virtual void chantScriptures() = 0;
+    // 打妖怪
+    virtual void killMonsters() = 0;
 };
 
-class Sunwukong : public Person {
+class Tangseng : public Team {
 public:
-    Sunwukong() = default;
+    void chantScriptures() {
+	// 打坐
+        sit();
+	// 念经
+        sing();
+    }
+    void killMonsters() {
+        // do nothing
+    }
 
-    bool abilityToShelter() const {
-	return false;
-    }
-    double combactValue() const {
-	return 1e8;
-    }
-};
-
-class Zhubajie : public Person {
-public:
-    Zhubajie() = default;
-
-    bool abilityToShelter() const {
-	return false;
-    }
-    double combactValue() const {
-	return 1e5;
-    }
+private:
+    void sit();
+    void sing();
 };
 ```
 
-最开始，孙悟空、猪八戒均是没有定风能力的，所以面对铁扇公主的芭蕉扇，应对的很吃力。
+最开始，西游取经队伍只有唐僧一人。唐僧路上需要不断念经来提高佛学造诣，但是有个问题是，他不会杀怪，所以总是有各种妖怪来骚扰，很难静下心来学习念经。
 
-后续随着剧情推进，开始出现了一种法宝：定风珠。持有定风珠的人，便可以拥有了定风能力。
-
-一个最简单的实现是修改孙悟空和猪八戒的实现，判断其是否有定风珠，具体如下所示：
+后续随着剧情推进，孙悟空出现了，这货法力高强可以杀怪。唐僧正好欠缺这部分能力，需要孙悟空来增强。这里，Decorator可以发挥作用了：
 
 ```
-class Person {
+class Sunwukong : public Team {
 public:
-    virtual ~Person() = 0;
+    Sunwukong(std::unique_ptr<Team> team) {
+        this->team = std::move(team);
+    }
 
-    virtual bool abilityToShelter() const = 0;
-    virtual double combactValue() const = 0;
-};
+    void chantScriptures() {
+        team->chantScriptures();
+    }
 
-class Sunwukong : public Person {
-    bool abilityToShelter() const {
-	if (有定风珠) {
-	    return true;
-	} else {
-	    return false;
-	}
+    void killMonsters() {
+        // kill monsters easily
     }
-    double combactValue() const {
-	return 1e8;
-    }
-};
 
-class Zhubajie : public Person {
-    bool abilityToShelter() const {
-	if (有定风珠) {
-	    return true;
-	} else {
-	    return false;
-	}
-    }
-    double combactValue() const {
-	return 1e5;
-    }
+private:
+    std::unique_ptr<Team> team;
 };
 ```
 
-功能上来说，这样确实没什么问题。但是这样也有几个问题：
-
-1. 重复代码。前面讲过，重复代码往往意味着bad smell。
-
-2. 侵入式修改。将定风珠的逻辑嵌入到了孙悟空与猪八戒的实现中。当后续再出现不同的法宝时，还要持续的对孙悟空进行侵入式修改，非常不优雅。
-
-这里如果采用Decorator模式的话，效果就会好很多了，具体如下所示：
+当唐僧需要念经时，先命令孙悟空扫清妖怪，然后便可以安心打坐念经了：
 
 ```
-class Decorator : public Person {
-public:
-    Decorator(Person *person) {
-        this->person = person;
-    }
-    virtual ~Decorator() = 0;
-
-protected:
-    Person person;
-};
-
-class Dingfengzhu : public Decorator {
-    bool abilityToShelter() const {
-        return true;
-    }
-
-    double combactValue() const {
-        return person->combactValue();
-    }
-};
+auto tangseng = std::make_unique<Team>();
+auto sunwukong = std::make_unique<Team>(std::move(tangseng));
+sunwukong->killMonsters();
+sunwukong->chantScriptures();
 ```
 
-通过Decorator，增强了Person的定风能力，并且互相之间是松耦合的。当增加新的法宝时，只需要添加一个新的Decorator子类即可。如下图所示：
+如下所示为相关类图：
 
 ![](../images/decorator-model.jpg)
 
-那么让孙悟空去修炼能够定风的法力行不行呢？答案是不行，原因在于：如果孙悟空去修炼，那猪八戒也要去修炼，典型的重复实现。否则当孙悟空不在的时候，猪八戒也搞定不了铁扇公主。
+可能有人会问，可不可以让唐僧自己获取打妖怪的能力？当然是不可以的，原因如下：
 
-而采用Decorator有如下好处：
+1. 唐僧就是一个和尚，就是念经用的，一个和尚打打杀杀像什么话。（单一职责）
 
-- 一方面可以防止Sunwukong及Zhubajie这两个类过于复杂，二者专注于修习除妖技能（单一职责原则）
-
-- 另一方面可以将公用的功能抽象出来以便复用
+2. 如果唐僧去完真经，李世民没玩够，又派了唐僧2号再去取一遍，那唐僧2号是不是也要修习杀妖怪的本领？显然这就是重复实现了。Decorator可以将一些功能独立抽象出来。
 
 另外，我在设计[重构Pegasus负载均衡时](https://levy5307.github.io/blog/load-balance-refactor/)，也考虑过使用Decorator模式。
 
 ### 代理模式
 
-唐王李世民想要去西天取经，以普度众生。但是他身为一国之君，肯定不能亲自去啊，毕竟还有国家需要治理，而且去西天取经也要经历九九八十一难，实在没有精力（单一职责）。所以需要选择唐僧代替他去西天取经。这就是一个典型的代理模式，这里的唐僧就是李世民西天取经的代理。
+唐王李世民想要去西天取经，以普度众生。但现实中有两个问题：
+
+1. 李世民身为一国之君，肯定不能亲自去啊，毕竟还有国家需要治理，而且去西天取经也要经历九九八十一难，实在没有精力（单一职责）。
+
+2. 李世民又不是佛教众人，人家如来佛也不愿意给你（隐藏被代理对象）
+
+所以最终李世民选择唐僧代替他去西天取经。这就是一个典型的代理模式，而唐僧就是李世民西天取经的代理。
 
 实例代码如下：
 
@@ -591,12 +550,12 @@ class BookKeeper {
 public:
     virtual ~BookKeeper() = 0;
 
-    virtual void goForBook() = 0;
+    virtual void getBook() = 0;
 };
 
 class WestHeaven : public BookKeeper {
 public:
-    void goForBook() {
+    void getBook() {
         // 发放真经
     }
 };
@@ -607,9 +566,9 @@ public:
         keeper.reset(new WestHeaven);
     }
 
-    void goForBook() {
+    void getBook() {
         walkToWest();
-        keeper->goForBook();
+        keeper->getBook();
         goBack();
     }
 
@@ -619,14 +578,18 @@ private:
 
     std::unique_ptr<BookKeeper> keeper;
 };
+```
 
+而李世民，只要在想去求取真经的时候，委派代理（也就是唐僧）去就可以了。
+
+```
 class Lishimin {
 public:
     Lishimin() {
         keeper.reset(new TangSeng);
     }
-    void goForBook() {
-        keeper->goForBook();
+    void getBook() {
+        keeper->getBook();
     }
 
 private:
@@ -638,9 +601,47 @@ private:
 
 ![](../images/proxy-model.jpg)
 
+### 装饰器模式 vs 代理模式
+
+有很多人分不清装饰器模式和代理模式的区别，其实通过前面讲的西天取经的例子就很容易分辨了：
+
+1. 对于装饰器模式，是孙悟空和唐僧一起去西天取经，以增强其杀怪能力，强调的是“跟我来”
+
+2. 而代理模式，是李世民将西天取经的事情委托给了唐僧，强调的是“给我冲”
+
+装饰器模式关注于在一个对象上动态的添加功能与方法，然而代理模式关注于控制对对象的访问。换句话说，用代理模式，代理类（proxy class）可以对它的客户隐藏一个对象的具体信息。因此，当使用代理模式的时候，我们常常在一个代理类中创建一个对象的实例，毕竟代理类代理的是谁自己应该知道。并且，当我们使用装饰器模式的时候，我们通常的做法是将原始对象作为一个参数传给装饰者的构造函数（参见装饰器模式的Class Sunwukong和代理模式的Class Tangseng），因为装饰类可以装饰不同的对象，例如孙悟空可以保唐僧取经，也可以保唐僧2号。这就带来另外一个区别：使用代理模式，代理和真实对象之间的的关系通常在编译时就已经确定了，而装饰者能够在运行时递归地被构造。
+
 ### 桥接模式
 
 桥是用来将河的两岸联系起来的，而设计模式中的桥是用来将两个独立的结构联系起来，而这两个被联系起来的结构可以独立的变化。
+
+我在实现Pegasus的用户自定义compaction策略的时候，曾经用过桥接模式。因为用户自定义策略有两个维度的变量：
+
+1. compaction operation会增多、减少或者修改
+
+2. compaction rule也会增多、减少或修改
+
+对于这种两个独立变化的维度的情况，使用桥接模式可以对其很好的解耦。具体可以参考我之前的[设计文档](https://levy5307.github.io/blog/user-specified-compaction/#%E5%90%8E%E6%9C%9F%E6%89%A9%E5%B1%95)。
+
+### Adaptor模式
+
+### visitor模式
+
+### Facade模式
+
+### 组合模式
+
+### 策略模式
+
+### 观察者模式
+
+### 模板方法模式
+
+### 迭代器模式
+
+### 备忘录模式
+
+### 状态机模式
 
 ## Specific Way In C++ 
 
@@ -654,7 +655,7 @@ private:
 
 ### AOP
 
-### 代码自解释
+### 代码的自解释
 
 ### 如何写注释
 
