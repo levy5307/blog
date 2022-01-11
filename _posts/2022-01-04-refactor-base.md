@@ -623,11 +623,69 @@ private:
 
 对于这种两个独立变化的维度的情况，使用桥接模式可以对其很好的解耦。具体可以参考我之前的[设计文档](https://levy5307.github.io/blog/user-specified-compaction/#%E5%90%8E%E6%9C%9F%E6%89%A9%E5%B1%95)。
 
+### Facade模式
+
+Facade模式是一个很常用的设计模式，其主要用于隐藏系统的复杂性，向客户端提供一个易于访问的接口。
+
+例如，厨房里有面粉、鸡蛋、水和牛奶。根据不同的配比可以做出面包、蛋糕、馒头等等。但是记住这些不同的配比对用户来说太复杂了，所以可以给用户提供一系列的配料表，例如面包配料表，给出了制作面包所需要的原料配比，蛋糕和馒头同理。这里的配料表就是Facade。
+
+具体代码如下：
+
+```
+class Water {
+public:
+    static std::string get(uint32_t num) {
+        return fmt::format("水：{}克", num);
+    }
+};
+
+class Flour {
+public:
+    static std::string get(uint32_t num) {
+        return fmt::format("面粉：{}克", num);
+    }
+};
+
+class Egg {
+public:
+    static std::string get(uint32_t num) {
+        return fmt::format("鸡蛋：{}个", num);
+    }
+};
+
+class Milk {
+public:
+    static std::string get(uint32_t num) {
+        return fmt::format("牛奶：{}克", num);
+    }
+};
+
+class BurdenSheetFacade {
+    std::string bread() {
+        std::string burden;
+        burden = Flour::get(100) + Egg::get(1) + Water::get(50) + Water::get(20);
+        return burden;
+    }
+
+    std::string cake() {
+        std::string burden;
+        burden = Flour::get(100) + Egg::get(3) + Water::get(30) + Milk::get(30);
+        return burden;
+    }
+
+    std::string maddo() {
+        std::string burden;
+        burden = Flour::get(100) + Water::get(80);
+        return burden;
+    }
+};
+```
+
+通过`BurdenSheetFacade`，可以轻松获取各种不同的配料表，用户操作起来就简单了很多，无需自己去记忆或者查找配料表。这就是Facade的精髓，给客户端提供便利、易操作的接口，屏蔽底层的复杂实现。
+
 ### Adaptor模式
 
 ### visitor模式
-
-### Facade模式
 
 ### 组合模式
 
