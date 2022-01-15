@@ -711,7 +711,7 @@ Pegasus原本有app级别的load balance功能，其认为，只要每个表在�
 
 这里希望能够通过逐步分析，帮助了解命令模式最终形态的演进过程。
 
-有这么一个熟悉的场景：小明在操作操作word，输入一些命令，word文件便会进行不同的操作。例如：输入字符'h'即是普通的输出，而输入Ctrl+C则是复制操作。这里的大概结构如下图：
+有这么一个熟悉的场景：小明在操作word，输入一些命令，word文件便会进行不同的操作。例如：输入字符'h'即是普通的输出，而输入Ctrl+C则是复制操作。这里的大概结构如下图：
 
 ![](../images/cmd-model-example.jpg)
 
@@ -725,16 +725,16 @@ public:
     void handInput(const std::string& input) {
         switch (input) {
             case "J":
-		   std::cout << input << std::endl;
-		   break;
-            case "L":
-		 std::cout << input << std::endl;
-		 break;
+		// write "J" to currentFile
+		break;
             case "Ctrl+C":
-		 // do copy operation
-		 break;
+		// do copy operation in currentFile
+		break;
         }
     }
+
+private:
+    std::string currentFile;
 }
 ```
 
@@ -747,18 +747,18 @@ public:
 
     void process() {
         Word word;
-        char c = 'J';
-        word.handInput(c);
+        std::string str = 'J';
+        word.handInput(str);
 
-        char c = 'K';
-        word.handInput(c);
+        str = "Ctrl+C";
+        word.handInput(str);
     }
 };
 ```
 
-对于当前的简单的功能需求，上述代码是可以满足了。但是它有一个很严重的问题：OperationSystem和具体的命令耦合。当我们需要新添加命令时，需要修改OperationSystem实现，可维护性太差了。并且，我们知道很多操作系统是支持自定义按键的，那么当用户修改按键对应的命令时，handleInput的代码也需要修改。
+对于当前的简单的功能需求，上述代码是可以满足了。但是它有一个很严重的问题：Word类和具体的命令耦合。当我们需要新添加命令时，需要修改Word实现，可维护性太差了。并且，我们知道很多操作系统是支持自定义按键的，那么当用户修改按键对应的命令时，handleInput的代码也需要修改。
 
-对于耦合，解耦最好的方式就是抽象出来。这里我们可以实现一个虚拟的Command类，其有很多不同的子类，代表着不同的命令，以便将OperationSystem与命令解耦。
+对于耦合，解耦最好的方式就是抽象出来。这里我们可以实现一个虚拟的Command类，其有很多不同的子类，代表着不同的命令，以便将Word类与命令解耦。
 
 ```
 class File {
@@ -870,7 +870,7 @@ public:
 };
 ```
 
-答案当然是不可以了，用过Word的人都知道，其内部有很多各种各样的功能，比如命令回退、重做等。我们可以给Word增加诸如这样的功能，这些功能不应该属于File（因为有很多操作是跨File的），通过直接操纵File文件是很难实现这些复杂功能的。具体如下所示：
+答案当然是不可以了，用过Word的人都知道，其内部有很多各种各样的功能，比如命令回退、重做、信息统计等。有些功能不应该属于File（因为有很多操作是跨File的），通过直接操纵File文件是很难实现这些复杂功能的。例如，我们要增加一个记录Word中所有文件的命令执行记录统计，具体如下所示：
 
 ```
 class Word {
@@ -883,7 +883,9 @@ public:
     void handInput(char input) {
         auto command = getCommand(input);
         command->execute(currentFile);
-        histories.push_back(command);
+
+	// 统计文件操作命令记录
+        commandHistory[currentFile].push_back(command);
     }
 
     void selectFile(File *file) {
@@ -896,9 +898,11 @@ public:
         return files.rend()->get();
     }
 
-    void replay() {
-        for (const auto &iter : histories) {
-            iter.execute(currentFile);
+    void statistic() {
+        for (const auto &file : histories) {
+	    for (const auto &command : file) {
+		// print command to a statistic file
+	    }
         }
     }
 
@@ -915,11 +919,11 @@ private:
     File *currentFile;
     std::map<char, std::unique_ptr<Command>> commands;
     std::vector<std::unique_ptr<File>> files;
-    std::vector<Command*> histories;
+    std::map<File*, std::vector<Command*>> commandHistory;
 };
 ```
 
-另外一个例子，在游戏中的回放功能，回放功能也不应该放在游戏角色（Actor）上，因为回放不只回放这一个游戏角色的执行命令，而应该是所有人的命令。
+另外举一个例子，在游戏中的回放功能，回放功能也不应该放在游戏角色（Actor）上，因为回放不只回放这一个游戏角色的执行命令，而应该是所有角色的命令。
 
 ### Adaptor模式
 
