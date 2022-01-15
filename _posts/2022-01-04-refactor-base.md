@@ -683,13 +683,33 @@ class BurdenSheetFacade {
 
 通过`BurdenSheetFacade`，可以轻松获取各种不同的配料表，用户操作起来就简单了很多，无需自己去记忆或者查找配料表。这就是Facade的精髓，给客户端提供便利、易操作的接口，屏蔽底层的复杂实现。
 
+### 策略模式
+
+在《设计模式之禅》中，对策略模式的定义如下：
+
+> 定义一组算法，将每个算法都封装起来，并且使他们之间可以互相交换
+
+其类图如下所示：
+
+![](../images/strategy-model.jpg)
+
+其中class Context用于屏蔽具体的ConcreteStrategy。而前面定义中的"算法之间互相交换"是通过将算法抽象化（Strategy）以利用多态来实现的。
+
+在重构Pegasus的load balance代码时，我曾经使用过策略模式。其背景如下：
+
+Pegasus原本有app级别的load balance功能，其认为，只要每个表在集群中负载均衡，那整个集群就是负载均衡的。然而实际线上运维中，我们发现现实情况往往不是这样。因此想要开发集群级别负载均衡功能。最终通过设计选型，我将这部分功能实现如下：
+
+![](../images/images/balancer-strategy-model.jpg)
+
+图中的`greedy_load_balancer`就是class Context，其向上层屏蔽了具体的policy细节，并通过配置来切换使用`app_balance_policy`或者`cluster_balance_policy`
+
+关于load balance重构，可以参考[Pegasus load balance重构](levy5307.github.io/blog/load-balance-refactor/#strategy)
+
 ### Adaptor模式
 
 ### visitor模式
 
 ### 组合模式
-
-### 策略模式
 
 ### 观察者模式
 
