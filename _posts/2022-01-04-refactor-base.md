@@ -705,6 +705,222 @@ Pegasus原本有app级别的load balance功能，其认为，只要每个表在�
 
 关于load balance重构，可以参考[Pegasus load balance重构](levy5307.github.io/blog/load-balance-refactor/#strategy)
 
+### 命令模式
+
+很多资料中都会讲到，命令模式是一种将命令的请求和命令的执行解耦的模式，并列举出一些例子。很多没有实际工程经验的人，看完其实理解的并不深刻。其实这也是设计模式所面临的问题：学生时期有大把的时间学习、确没有实际经验相结合的精力；工作了以后，很多岗位对代码质量要求也不高，也就很少有人再去深入研究了。
+
+这里希望能够通过逐步分析，帮助了解命令模式最终形态的演进过程。
+
+有这么一个熟悉的场景：小明在操作操作word，输入一些命令，word文件便会进行不同的操作。例如：输入字符'h'即是普通的输出，而输入Ctrl+C则是复制操作。这里的大概结构如下图：
+
+![](../images/cmd-model-example.jpg)
+
+如图中所示，用户将一些输入数据传递给Computer，Computer根据用户输入，转化成具体的操作系统内部可识别的command信号，并发送给对应的软件（vim或者word）。一个简单的实现如下：
+
+```
+class Word {
+public:
+    Word() = default;
+
+    void handInput(const std::string& input) {
+        switch (input) {
+            case "J":
+		   std::cout << input << std::endl;
+		   break;
+            case "L":
+		 std::cout << input << std::endl;
+		 break;
+            case "Ctrl+C":
+		 // do copy operation
+		 break;
+        }
+    }
+}
+```
+
+而小明，在这个例子里也就是客户端，通过直接调用Word类的handleInput来操作文件：
+
+```
+class Client {
+public:
+    Client() = default;
+
+    void process() {
+        Word word;
+        char c = 'J';
+        word.handInput(c);
+
+        char c = 'K';
+        word.handInput(c);
+    }
+};
+```
+
+对于当前的简单的功能需求，上述代码是可以满足了。但是它有一个很严重的问题：OperationSystem和具体的命令耦合。当我们需要新添加命令时，需要修改OperationSystem实现，可维护性太差了。并且，我们知道很多操作系统是支持自定义按键的，那么当用户修改按键对应的命令时，handleInput的代码也需要修改。
+
+对于耦合，解耦最好的方式就是抽象出来。这里我们可以实现一个虚拟的Command类，其有很多不同的子类，代表着不同的命令，以便将OperationSystem与命令解耦。
+
+```
+class File {
+public:
+    void executeCtrlC() {
+        // do copy operation
+    }
+
+    void executeJ() {
+        std::cout << "J" << std::endl;
+    }
+};
+
+class Command {
+public:
+    virtual ~Command() = 0;
+
+    virtual void execute()  = 0
+};
+
+class CommandJ : public Command {
+public:
+    void execute(File *file) {
+        file->executeJ();
+    }
+};
+
+class CommandCtrlC : public Command {
+public:
+    void execute(File *file) {
+        file->executeCtrlC();
+    }
+};
+```
+
+我们再看Word类的实现：
+
+```
+class Word {
+public:
+    Word() {
+        // 这里可以采用从配置文件加载的方式来获取input和command的具体对应，以满足用户的自定义按键功能
+        // init commands
+    }
+
+    void handInput(char input) {
+        auto command = getCommand(input);
+        command->execute(currentFile);
+    }
+
+    void selectFile(File *file) {
+        // 这里应该先判断文件是否存在
+        currentFile = file;
+    }
+
+    File* createFile() {
+        files.push_back(new File());
+        return files.rend()->get();
+    }
+
+private:
+    Command* getCommand(char input) const {
+        const auto &iter = commands.find(input);
+        if (iter != commands.end()) {
+            return iter->second->get();
+        } else {
+            return nullptr;
+        }
+    }
+
+    File *currentFile;
+    std::map<char, std::unique_ptr<Command>> commands;
+    std::vector<std::unique_ptr<File>> files;
+};
+```
+
+客户端代码如下：
+
+```
+class Client {
+public:
+    Client() = default;
+
+    void process() {
+        Word word;
+        auto file = word.createFile();
+        word.selectFile(file);
+        word.handInput("J");
+        word.handInput("Ctrl+C")
+    }
+};
+```
+
+这里的Word已经不和任何其他实l现耦合了，通过实现Command类，我们将命令的请求者（Word）和命令的执行者（File）隔离开了。这样当我们增加/修改命令时，可以做到不修改class Word实现。
+
+这里可能有人会问，让Client直接操纵File文件不可以吗？如下所示：
+
+```
+class Client {
+public:
+    Client() = default;
+
+    void process() {
+        Word word;
+        auto file = word.createFile();
+        file->executeJ();
+        file->executeCtrlC();
+    }
+};
+```
+
+答案当然是不可以了，用过Word的人都知道，其内部有很多各种各样的功能，比如命令回退、重做等。我们可以给Word增加诸如这样的功能，这些功能不应该属于File（因为有很多操作是跨File的），通过直接操纵File文件是很难实现这些复杂功能的。具体如下所示：
+
+```
+class Word {
+public:
+    Word() {
+        // 这里可以采用从配置文件加载的方式来获取input和command的具体对应，以满足用户的自定义按键功能
+        // init commands
+    }
+
+    void handInput(char input) {
+        auto command = getCommand(input);
+        command->execute(currentFile);
+        histories.push_back(command);
+    }
+
+    void selectFile(File *file) {
+        // 这里应该先判断文件是否存在
+        currentFile = file;
+    }
+
+    File* createFile() {
+        files.push_back(new File());
+        return files.rend()->get();
+    }
+
+    void replay() {
+        for (const auto &iter : histories) {
+            iter.execute(currentFile);
+        }
+    }
+
+private:
+    Command* getCommand(char input) const {
+        const auto &iter = commands.find(input);
+        if (iter != commands.end()) {
+            return iter->second->get();
+        } else {
+            return nullptr;
+        }
+    }
+
+    File *currentFile;
+    std::map<char, std::unique_ptr<Command>> commands;
+    std::vector<std::unique_ptr<File>> files;
+    std::vector<Command*> histories;
+};
+```
+
+另外一个例子，在游戏中的回放功能，回放功能也不应该放在游戏角色（Actor）上，因为回放不只回放这一个游戏角色的执行命令，而应该是所有人的命令。
+
 ### Adaptor模式
 
 ### visitor模式
@@ -726,8 +942,6 @@ Pegasus原本有app级别的load balance功能，其认为，只要每个表在�
 ### 中介模式
 
 ### 解释器模式
-
-### 命令模式
 
 ## 六大设计原则
 
