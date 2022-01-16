@@ -931,6 +931,20 @@ private:
 
 另外举一个例子，在游戏中的回放功能，其实现也不应该放在游戏角色（Actor）上，因为回放功能不只回放这一个游戏角色的执行命令，而应该是所有角色的命令。
 
+### 模板方法模式
+
+模板方法模式的意图是：定义一个操作中算法的骨架，而将一些步骤延迟到子类中。不改变算法的结构而重新定义它的步骤。
+
+看起来比较晦涩，这里举一个本人重构load balance的例子。
+
+在Pegasus的表级负载均衡实现中，分为move primary、copy primary和copy secondary三个步骤。其中copy primary和copy secondary的主要逻辑骨架都是一样的，只是有些细微处不同，比如一些条件判断等等。如果我们分别为copy primary和copy secondary都实现一套逻辑骨架的话，显然会有很多重复实现（当然之前的实现就是这样的）。
+
+在文章的前面讲到过，重复代码往往意味着bad smell。因此，这种场景可以使用模板方法模式：在父类（copy_replica_operation）中实现逻辑骨架，子类（copy_primary_operation和copy_secondary_operation）中实现一些针对copy primary和copy secondary的细节实现。这样就可以避免了重复代码。类图如下：
+
+![](../images/method-template.jpg)
+
+具体情况可以参考[代码实现](https://github.com/XiaoMi/rdsn/blob/master/src/meta/load_balance_policy.h#L220)
+
 ### Adaptor模式
 
 ### visitor模式
@@ -938,8 +952,6 @@ private:
 ### 组合模式
 
 ### 观察者模式
-
-### 模板方法模式
 
 ### 迭代器模式
 
