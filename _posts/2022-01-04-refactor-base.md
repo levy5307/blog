@@ -949,6 +949,199 @@ private:
 
 具体情况可以参考[代码实现](https://github.com/XiaoMi/rdsn/blob/master/src/meta/load_balance_policy.h#L220)
 
+### 责任链模式
+
+责任链模式是指，将处理请求的对象形成一条链，使链上多个对象都有机会处理请求。如果某个节点处理完了可以根据实际需求传递给下一个节点、或者返回处理完毕。
+
+这里举一个例子：在某保密单位，打印文件需要根据文件的不同密级，去获得不同等级的领导审批，具体如下表所示：
+
+|   -   | Leader | Manager |  Boss  |
+|-------|--------|---------|--------|
+| 秘密级 |    ✔️   |    ✔️    |    ✔️   |
+| 机密级 |    ×   |    ✔️    |    ✔️   |
+| 绝密级 |    ×   |    ×    |    ✔️   |
+
+当打印秘密级文件时，只需要直属Leader审批就可以了；机密级文件，则只需要经过Manager审批；而绝密级文件，则必须经过老板审批。
+
+针对这个场景，可以使用责任链模式，将Leader、Manager和Boss的处理逻辑链接起来。具体代码如下：
+
+```
+class SecretHandler {
+public:
+    virtual ~SecretHandler() = 0;
+
+    SecretHandler* setNext(SecretHandler *next) {
+        this->next = next;
+        return next;
+    }
+    virtual bool handle(const enum FileSecret fileSecret) = 0;
+
+protected:
+    SecretHandler *next;
+};
+
+class Leader : public SecretHandler {
+public:
+    bool handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= MIMI) {
+            std::cout << "Leader审批通过" << std::endl;
+            return true;
+        }
+
+        if (next != nullptr) {
+            return next->handle(fileSecret);
+        } else {
+            std::cout << "Leader审批拒绝" << std::endl;
+	    return false;
+        }
+    }
+};
+
+class Manager : public SecretHandler {
+public:
+    void handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= JIMI) {
+            std::cout << "Manager审批通过" << std::endl;
+            return true;
+        }
+
+        if (next != nullptr) {
+            return next->handle(fileSecret);
+        } else {
+            std::cout << "Manager审批拒绝" << std::endl;
+	    return false;
+        }
+    }
+};
+
+class Boss : public SecretHandler {
+public:
+    void handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= JUEMI) {
+            std::cout << "Boss审批通过" << std::endl;
+            return true;
+        }
+
+        if (next != nullptr) {
+            return next->handle(fileSecret);
+        } else {
+            std::cout << "Boss审批拒绝" << std::endl;
+	    return false;
+        }
+    }
+};
+```
+
+客户端代码执行如下：
+
+```
+void main() {
+    auto leader = std::make_unique<Leader>();
+    auto manager = std::make_unique<Manager>();
+    auto boss = std::make_unique<Boss>();
+    leader->setNext(manager.get())->setNext(boss.get());
+
+    FileSecret fileSecret = JIMI;
+    if (leader->handle(fileSecret)) {
+	std::cout << "审核完成" << std::endl;
+    } else {
+	std::cout << "审核失败" << std::endl;
+    }
+}
+```
+
+如上，可以看出，责任链模式还是比较容易理解的。但是有些人可能会问，将各个SecretHandler放入一个vector中，然后利用for循环去依次进行判断不可以吗？如下所示：
+
+```
+class SecretHandler {
+public:
+    virtual ~SecretHandler() = 0;
+
+    virtual bool handle(const enum FileSecret fileSecret) = 0;
+
+protected:
+    SecretHandler *next;
+};
+
+class Leader : public SecretHandler {
+public:
+    bool handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= MIMI) {
+            std::cout << "Leader审批通过" << std::endl;
+            return true;
+        }
+        return false;
+    }
+};
+
+class Manager : public SecretHandler {
+public:
+    bool handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= JIMI) {
+            std::cout << "Manager审批通过" << std::endl;
+            return true;
+        }
+        return false;
+    }
+};
+
+class Boss : public SecretHandler {
+public:
+    bool handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= JUEMI) {
+            std::cout << "Boss审批通过" << std::endl;
+            return true;
+        }
+        return false;
+    }
+};
+```
+
+而客户端代码如下：
+
+```
+void main() {
+    auto leader = std::make_unique<Leader>();
+    auto manager = std::make_unique<Manager>();
+    auto boss = std::make_unique<Boss>();
+    std::vector<SecretHandler*> handlers;
+    handlers.push_back(leader);
+    handlers.push_back(manager);
+    handlers.push_back(boss);
+
+    FileSecret fileSecret = JIMI;
+    for (const auto &iter : handlers) {
+        if (iter.handle(fileSecret)) {
+	    std::cout << "审核完成" << std::endl;
+	    return;
+        }
+    }
+    std::cout << "审核失败" << std::endl;
+}
+```
+
+我的答案是不可以。因为从上面的代码可以看出来，责任是否继续沿链传递，是由客户端来控制的。也就是说，不管是Leader、Manager还是Boss，是否继续向下传递的逻辑都耦合在了main函数这里。这里举一个例子，来说明这种耦合的危害。考虑如下一个新的需求：由于公司保密要求升级，所有的秘密级文件都必须经过Leader和Manager的双重审批。对于如上的实现中，则很难优雅的实现，其根本原因还在于如上所述的耦合。而对于责任链模式，只需要修改`Leader`类实现就可以了，具体如下：
+
+```
+class Leader : public SecretHandler {
+public:
+    bool handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= MIMI) {
+            std::cout << "Leader审批通过" << std::endl;
+        }
+
+        if (next != nullptr) {
+            return next->handle(fileSecret);
+        } else {
+            std::cout << "Leader审批拒绝" << std::endl;
+	    return false;
+        }
+    }
+};
+```
+
+短短一行代码就可以实现需求了。
+
 ### Adaptor模式
 
 ### visitor模式
@@ -962,8 +1155,6 @@ private:
 ### 备忘录模式
 
 ### 状态模式
-
-### 责任链模式
 
 ### 中介模式
 
