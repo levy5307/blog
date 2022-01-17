@@ -1120,9 +1120,30 @@ void main() {
 }
 ```
 
-我的答案是不可以。因为从上面的代码可以看出来，责任是否继续沿链传递，是由客户端来控制的。也就是说，不管是Leader、Manager还是Boss，是否继续向下传递的逻辑都耦合在了main函数这里。
+我的答案是不可以。因为责任链模式，每个类（Leader/Manager/Boss）不但负责审批逻辑，还要负责责任的传递。而从上面的代码可以看出来，责任是否继续沿链传递，是由客户端来控制的。也就是说，不管是Leader、Manager还是Boss，是否继续向下传递的逻辑都耦合在了main函数这里。
 
-这里举一个例子来说明这种耦合的危害。考虑如下一个新的需求：由于公司保密要求升级，所有的秘密级文件都必须经过Leader和Manager的双重审批。对于如上的实现中，则很难优雅的实现，其根本原因还在于如上所述的耦合。而对于责任链模式，只需要修改`Leader`类实现就可以了，具体如下：
+这里举一个例子来说明这种耦合的危害。考虑如下一个新的需求：由于公司保密要求升级，所有的秘密级文件都必须经过Leader和Manager的双重审批。对于如上的实现中，则很难优雅的完成这个需求，具体如下所示：
+
+```
+class Leader : public SecretHandler {
+public:
+    bool handle(const enum FileSecret fileSecret) {
+        if (fileSecret <= MIMI) {
+            std::cout << "Leader审批通过" << std::endl;
+            return false;
+        }
+        return false;
+    }
+};
+```
+
+这样实现有两个问题：
+
+1. `Leader::handle`函数的返回值代表的意思应该是Leader是否审批了。而这里即使审批了，也必须返回false。导致返回值的语义不明。
+
+2. 是否向下传递的逻辑在main函数，按理这个需求应该修改main函数的实现，而这里却需要修改Leader类的实现，实现起来就比较奇怪。
+
+而对于责任链模式，实现起来则优雅的多，具体如下：
 
 ```
 class Leader : public SecretHandler {
@@ -1141,7 +1162,7 @@ public:
 };
 ```
 
-仅仅需要修改一两行代码就可以了，并且不会影响到其他类的逻辑。
+因为Leader不但负责审批，还负责责任是否向下传递。所以当是否传递责任这种需求修改时，只需要修改Leader实现就可以了。
 
 ### Adaptor模式
 
