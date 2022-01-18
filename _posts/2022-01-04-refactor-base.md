@@ -1292,6 +1292,32 @@ private:
 --Device 2
 ```
 
+当设备种类不分桥设备和普通设备、只有一种设备时，该结构就退化了普通的多叉树：
+
+```
+class Device {
+public:
+    Device(const std::string &name) : name(name) {
+    }
+
+    void visit(uint32_t depth = 1) {
+        for (uint32_t i = 0; i < depth; i++) {
+            std::cout << "-";
+        }
+        std::cout << this->name << std::endl;
+    }
+
+    Device* addSub(Device *device) {
+        subDevices.push_back(device);
+        return this;
+    }
+
+private:
+    std::string name;
+    std::vector<Device*> subDevices;
+};
+```
+
 ### Adaptor模式
 
 ### visitor模式
