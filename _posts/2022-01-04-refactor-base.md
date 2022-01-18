@@ -1166,11 +1166,135 @@ public:
 
 因为Leader不但负责审批，还负责责任是否向下传递。所以当是否传递责任这种需求修改时，只需要修改Leader实现就可以了。
 
+### 组合模式
+
+组合模式是将对象组合成树形结构以表示“部分-整体”的层次结构，使得用户对单个对象和组合对象的使用具有一致性。其依据树形结构来组合对象，用来表示部分以及整体层次。
+
+类图如下所示：
+
+![](../images/composite.jpeg)
+
+之前在开发操作系统内核和BIOS的时候，曾经做过设备树相关的工作。在设备树中，设备可以分为两种：
+
+- 桥设备
+
+用于扩展外接多个子设备，子设备可以是桥设备，也可以是普通设备。
+
+- 普通设备
+
+可以是显卡、硬盘等设备。
+
+具体形态如下图：
+
+![](../images/device-tree.jpg)
+
+这种情况下，就可以采用组合模式来实现。其中：
+
+- 实现一个抽象类Dev，对应上述类图中的Component类
+
+- Device和Bridge作为其具体子类，对应上述类图中的Leaf和Composite
+
+![](../images/device-tree-class.jpg)
+
+代码实现如下：
+
+```
+class Dev {
+public:
+    Dev(const std::string &name) : name(name) {
+    }
+    virtual ~Dev() = 0;
+
+    virtual void visit(uint32_t depth) = 0;
+    virtual void addSub(Dev *device) {
+       assert(false);
+    }
+
+protected:
+    std::string name;
+};
+
+class Device : public Dev {
+public:
+    Device(const std::string &name) : Dev(name) {
+    }
+
+    void visit(uint32_t depth = 1) {
+        for (uint32_t i = 0; i < depth; i++) {
+            std::cout << "-";
+        }
+        std::cout << this->name << std::endl;
+    }
+};
+
+class Bridge : public Dev {
+public:
+    Bridge(const std::string &name) : Dev(name) {
+    }
+
+    void visit(uint32_t depth = 1) {
+        for (uint32_t i = 0; i < depth; i++) {
+            std::cout << "-";
+        }
+        std::cout << this->name << std::endl;
+
+        for (const auto &iter : subDevices) {
+            iter.visit(++depth);
+        }
+    }
+    
+    void addSub(Dev *device) {
+        subDevices.push_back(device);
+    }
+
+private:
+    std::vector<Dev*> subDevices;
+};
+```
+
+设备树构造及遍历代码如下：
+
+```
+    // level 1
+    auto rootBridge = std::make_unique<Bridge *>("RootBridge");
+
+    // level 2
+    auto dev1 = std::make_unique<Device *>("Device 1");
+    auto dev2 = std::make_unique<Device *>("Device 2");
+    auto bridge1 = std::make_unique<Bridge *>("Bridge 1");
+    rootBridge->addSub(dev1)->addSub(bridge1)->addSub(dev2);
+
+    // level 3
+    auto dev3 = std::make_unique<Device *>("Device 3");
+    auto dev4 = std::make_unique<Device *>("Device 4");
+    auto bridge2 = std::make_unique<Bridge *>("Bridge 2");
+    bridge1->addSub(dev3)->addSub(dev4)->addSub(bridge2);
+
+    // level4
+    auto dev5 = std::make_unique<Device *>("Device 5");
+    auto dev6 = std::make_unique<Device *>("Device 6");
+    bridge2->addSub(dev5)->addSub(dev6);
+
+    rootBridge->visit();
+```
+
+最后输出结果如下：
+
+```
+-RootBridge
+--Device 1
+--Bridge 1
+---Device 3
+---Device 4
+---Bridge 2
+----Device 5
+----Device 6
+--Device 2
+```
+
 ### Adaptor模式
 
 ### visitor模式
-
-### 组合模式
 
 ### 观察者模式
 
