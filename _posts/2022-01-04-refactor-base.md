@@ -1318,6 +1318,26 @@ private:
 };
 ```
 
+构建和遍历树的代码如下：
+
+```
+    // level 1
+    auto root = std::make_unique<Device *>("RootDevice");
+
+    // level 2
+    auto dev1 = std::make_unique<Device *>("Device 1");
+    auto dev2 = std::make_unique<Device *>("Device 2");
+    auto dev3 = std::make_unique<Device *>("Device 3");
+    root->addSub(dev1)->addSub(dev2)->addSub(dev3);
+
+    // level 3
+    auto dev4 = std::make_unique<Device *>("Device 4");
+    auto dev5 = std::make_unique<Device *>("Device 5");
+    dev2->addSub(dev4)->addSub(dev5);
+
+    root->visit();
+```
+
 ### Adaptor模式
 
 ### visitor模式
