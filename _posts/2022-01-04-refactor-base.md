@@ -1338,6 +1338,156 @@ private:
     root->visit();
 ```
 
+### 备忘录模式
+
+备忘录模式的定义为：在不破坏封装性的前提下，捕获一个对象的内部状态，并在该对象之外保存这个状态。这样以后就可将该对象恢复到原先保存的状态
+
+通俗地说，备忘录模式就是一个对象的备份模式，提供了一种程序数据的备份方法，其类图如下图所示：
+
+![](../images/memento.jpg)
+
+其中：
+
+- Originator代表发起人，其负责创建并在Memento对象中存储状态及通过Memento恢复状态，同时负责定义哪些属于备份范围的状态
+
+- Memento代表备忘录，负责存储Originator发起人对象的内部状态，在需要的时候提供发起人需要的内部状态。
+
+- Caretaker代表备忘录管理员，对备忘录进行管理、保存和提供备忘录
+
+记得小学时玩《封神榜》，在过难关之前一定会先存档，这样如果失败了，可以从存档点恢复重新开始。这就是一个典型的备忘录模式的应用场景。如下是代码示例：
+
+```
+class Memento {
+public:
+    Memento(uint32_t blood, uint32_t energy) {
+        this->blood = blood;
+        this->energy = energy;
+    }
+
+    uint32_t getBlood() const {
+        return blood;
+    }
+
+    uint32_t getEnergy() const {
+        return energy;
+    }
+
+private:
+    uint32_t blood;
+    uint32_t energy;
+};
+
+class Player {
+public:
+    Player(const std::string &name) : name(name) {
+        this->energy = 100;
+        this->blood = 100;
+    }
+
+    std::unique_ptr<Memento> saveState() {
+        return std::unique_ptr<Memento>(new Memento(blood, energy));
+    }
+
+    void setState(Memento* memento) {
+        this->blood = memento->getBlood();
+        this->energy = memento->getEnergy();
+    }
+
+    void fight() {
+        blood -= 20;
+        energy -= 10;
+    }
+
+    void print() {
+        std::cout << name << ": ";
+        std::cout << "[energy=" << energy << ", blood=" << blood << "]" << std::endl;
+    }
+
+private:
+    // 姓名不需要通过备忘录保存
+    std::string name;
+
+    // 以下内部状态会通过备忘录保存
+    uint32_t blood;
+    uint32_t energy;
+};
+
+class Caretaker {
+public:
+    void addMemento(std::unique_ptr<Memento> memento) {
+        this->mementos.emplace_back(std::move(memento));
+    }
+
+    static Caretaker& getInstance() {
+        static Caretaker caretaker;
+        return caretaker;
+    }
+
+    Memento* getMemento(uint32_t index) {
+        if (index >= this->mementos.size()) {
+            return nullptr;
+        }
+        return this->mementos[index].get();
+    }
+
+private:
+    std::vector<std::unique_ptr<Memento>> mementos;
+};
+```
+
+上述代码是备忘录模式的简单例子，这里的Player即是类图中的Originator。下述代码为使用备忘录的示例：
+
+```
+int main() {
+    Player player("哪吒");
+    std::cout << "----------------开始游戏-----------------" << std::endl;
+    player.print();
+
+    auto mementoStart = player.saveState();
+    Caretaker::getInstance().addMemento(std::move(mementoStart));
+
+    std::cout << "-------------Fight Round 1-------------" << std::endl;
+    player.fight();
+    player.print();
+
+    auto mementoRound1 = player.saveState();
+    Caretaker::getInstance().addMemento(std::move(mementoRound1));
+
+    std::cout << "-------------Fight Round 2-------------" << std::endl;
+    player.fight();
+    player.print();
+
+    std::cout << "--------恢复状态到Fight Round 2之前--------" << std::endl;
+    auto mementoResvRound1 = Caretaker::getInstance().getMemento(1);
+    player.setState(mementoResvRound1);
+    player.print();
+
+    std::cout << "------------恢复状态到游戏开始------------" << std::endl;
+    auto mementoResvStart = Caretaker::getInstance().getMemento(0);
+    player.setState(mementoResvStart);
+    player.print();
+}
+```
+
+根据该代码，可获得输出如下：
+
+```
+----------------开始游戏-----------------
+哪吒: [energy=100, blood=100]
+-------------Fight Round 1-------------
+哪吒: [energy=90, blood=80]
+-------------Fight Round 2-------------
+哪吒: [energy=80, blood=60]
+--------恢复状态到Fight Round 2之前--------
+哪吒: [energy=90, blood=80]
+------------恢复状态到游戏开始------------
+哪吒: [energy=100, blood=100]
+```
+
+由输出可见，状态分别再Round1和Round2战斗之前获得了保存，并可根据实际进行恢复。
+
+另外需要指出的是，Player类指定了需要保存的状态信息，例如：name就不需要保存，而energy和blood则需要。
+
 ### Adaptor模式
 
 ### visitor模式
@@ -1345,8 +1495,6 @@ private:
 ### 观察者模式
 
 ### 迭代器模式
-
-### 备忘录模式
 
 ### 状态模式
 
