@@ -1488,13 +1488,174 @@ int main() {
 
 另外需要指出的是，Player类指定了需要保存的状态信息，例如：name就不需要保存，而energy和blood则需要。
 
-### Adaptor模式
+备忘录模式的优点：实现了信息的封装，使得用户不需要关心状态的保存细节。并且给用户提供了一种可以恢复状态的机制，可以使用户能够比较方便的回到某个历史状态。
 
-### visitor模式
-
-### 观察者模式
+备忘录模式的缺点：如果需要保存的状态信息过多，势必会占用比较大的资源。
 
 ### 迭代器模式
+
+迭代器模式提供了一种方法访问容器对象中的各个元素，而又不暴露该容器对象的内部细节。其类图如下：
+
+![](../images/iterator-model.jpg)
+
+其中：
+
+- Iterator抽象迭代器
+
+抽象迭代器负责定义访问和遍历元素的接口。
+
+- ConcreteIterator具体迭代器
+
+具体迭代器角色要实现迭代器接口，完成容器元素的遍历。
+
+- Aggregate抽象容器
+
+容器角色负责提供创建具体迭代器角色的接口
+
+- Concrete Aggregate具体容器
+
+具体容器实现容器接口定义的方法，创建出容纳迭代器的对象。
+
+代码示例如下：
+
+```
+template<class Item>
+class Iterator {
+public:
+    virtual ~Iterator() = 0;
+
+    virtual void next() = 0;
+    virtual void prev() = 0;
+    virtual const Item* get() = 0;
+};
+
+template<class Item>
+class Aggregate {
+public:
+    virtual ~Aggregate() = 0;
+
+    virtual Iterator<Item>* begin() = 0;
+    virtual const Item* get(uint32_t index) const = 0;
+    virtual void add(const Item &item) = 0;
+    virtual uint32_t getSize() const = 0;
+};
+
+template<class Item>
+class ConcreteAggregate;
+
+template<class Item>
+class ConcreteIterator : public Iterator<Item> {
+public:
+    ConcreteIterator(ConcreteAggregate<Item> *aggregate) {
+        currentIndex = 0;
+        maxSize = aggregate->getSize();
+    }
+    ~ConcreteIterator() = default;
+
+    void next() {
+        if (currentIndex < maxSize - 1) {
+            currentIndex++;
+        }
+    }
+
+    void prev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+        }
+    }
+
+    const Item* get() {
+        return aggregate->get(currentIndex);
+    }
+
+private:
+    ConcreteAggregate<Item> *aggregate;
+    uint32_t currentIndex;
+    uint32_t maxSize;
+};
+
+template<class Item>
+class ConcreteAggregate : public Aggregate<Item> {
+public:
+    ~ConcreteAggregate() = default;
+
+    Iterator<Item>* begin() {
+        return new ConcreteIterator<Item>(this);
+    }
+
+    const Item* get(uint32_t index) const {
+        if (index < items.size()) {
+            return &items[index];
+        }
+        return nullptr;
+    }
+
+    void add(const Item &item) {
+        items.push_back(item);
+    }
+
+    uint32_t getSize() const  {
+        return items.size();
+    }
+
+private:
+    std::vector<Item> items;
+};
+```
+
+调用代码如下：
+
+```
+ ConcreteAggregate<int> aggregate;
+    aggregate.add(1);
+    aggregate.add(2);
+    aggregate.add(3);
+    aggregate.add(4);
+    aggregate.add(5);
+
+    auto iter = aggregate.begin();
+    std::cout << "当前iter指向: " << *iter->get() << std::endl;
+
+    std::cout << "iter前移" << std::endl;
+    iter->next();
+    std::cout << "当前iter指向: " << *iter->get() << std::endl;
+
+    std::cout << "iter前移" << std::endl;
+    iter->next();
+    std::cout << "当前iter指向: " << *iter->get() << std::endl;
+
+    std::cout << "iter前移" << std::endl;
+    iter->next();
+    std::cout << "当前iter指向: " << *iter->get() << std::endl;
+
+    std::cout << "iter后移" << std::endl;
+    iter->prev();
+    std::cout << "当前iter指向: " << *iter->get() << std::endl;
+
+    std::cout << "iter后移" << std::endl;
+    iter->prev();
+    std::cout << "当前iter指向: " << *iter->get() << std::endl;
+```
+
+由此可得输出结果如下：
+
+```
+当前iter指向：1
+iter前移
+当前iter指向：2
+iter前移
+当前iter指向：3
+iter后移
+当前iter指向：2
+iter后移
+当前iter指向：1
+```
+
+### Adaptor模式
+
+### Visitor模式
+
+### 观察者模式
 
 ### 状态模式
 
