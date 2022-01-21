@@ -1524,8 +1524,6 @@ int main() {
 template<class Item>
 class Iterator {
 public:
-    virtual ~Iterator() = 0;
-
     virtual void next() = 0;
     virtual void prev() = 0;
     virtual const Item* get() = 0;
@@ -1534,8 +1532,6 @@ public:
 template<class Item>
 class Aggregate {
 public:
-    virtual ~Aggregate() = 0;
-
     virtual Iterator<Item>* begin() = 0;
     virtual const Item* get(uint32_t index) const = 0;
     virtual void add(const Item &item) = 0;
@@ -1548,11 +1544,10 @@ class ConcreteAggregate;
 template<class Item>
 class ConcreteIterator : public Iterator<Item> {
 public:
-    ConcreteIterator(ConcreteAggregate<Item> *aggregate) {
+    ConcreteIterator(ConcreteAggregate<Item> *aggregate) : aggregate(aggregate) {
         currentIndex = 0;
         maxSize = aggregate->getSize();
     }
-    ~ConcreteIterator() = default;
 
     void next() {
         if (currentIndex < maxSize - 1) {
@@ -1579,8 +1574,6 @@ private:
 template<class Item>
 class ConcreteAggregate : public Aggregate<Item> {
 public:
-    ~ConcreteAggregate() = default;
-
     Iterator<Item>* begin() {
         return new ConcreteIterator<Item>(this);
     }
@@ -1642,15 +1635,17 @@ private:
 由此可得输出结果如下：
 
 ```
-当前iter指向：1
+当前iter指向: 1
 iter前移
-当前iter指向：2
+当前iter指向: 2
 iter前移
-当前iter指向：3
+当前iter指向: 3
+iter前移
+当前iter指向: 4
 iter后移
-当前iter指向：2
+当前iter指向: 3
 iter后移
-当前iter指向：1
+当前iter指向: 2
 ```
 
 当然，这里实现的迭代器是比较简单的，只是为了讲解而已。如果对其深入实现感兴趣，可以去看看std实现。
