@@ -852,7 +852,11 @@ public:
 };
 ```
 
-这里的Word已经不和任何其他实l现耦合了，通过实现Command类，我们将命令的请求者（Word）和命令的执行者（File）隔离开了。这样当我们增加/修改命令时，可以做到不修改class Word实现。
+其对应类图如下：
+
+![](../images/command-pattern.jpg)
+
+这里的Word类已经不和任何其他实现耦合了，通过实现Command类，我们将命令的请求者（Word）和命令的执行者（File）隔离开了。这样当我们增加/修改命令时，可以做到不修改class Word实现。
 
 这里可能有人会问，让Client直接操纵File文件不可以吗？如下所示：
 
