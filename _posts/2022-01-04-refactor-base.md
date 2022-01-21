@@ -1601,7 +1601,7 @@ private:
 调用代码如下：
 
 ```
- ConcreteAggregate<int> aggregate;
+    ConcreteAggregate<int> aggregate;
     aggregate.add(1);
     aggregate.add(2);
     aggregate.add(3);
@@ -1730,7 +1730,7 @@ private:
 };
 ```
 
-这样虽然可以实现功能，但是会有如下几个问题：
+这样虽然可以正确实现功能，但是会有如下几个问题：
 
 - 违反单一职责原则 。数据转换代码与Pegasus类实现耦合，Pegasus应该聚焦在其自己逻辑实现上，不应该与数据转换逻辑耦合。
 
@@ -1806,6 +1806,23 @@ public:
 private:
     std::unique_ptr<Adapter> rocksdb;
 };
+```
+
+客户端调用代码如下：
+
+```
+    PegasusServer server;
+
+    std::string hash = "hash";
+    std::string sort = "sort";
+    std::string value = "value";
+    std::cout << "insert into Pegasus: "
+                 "[hashKey=" << hash << ", sortKey=" << sort << ", value=" << value << "]" << std::endl;
+    server.set(hash, sort, value);
+
+    value = server.get(hash, sort);
+    std::cout << "get from Pegasus: "
+                 "[hashKey=" << hash << ", sortKey=" << sort << ", value=" << value << "]" << std::endl;
 ```
 
 通过使用Adapter模式，我们把接口和数据转换的工作放在了Adapter里，使得Pegasus能够专注于实现其自身逻辑。并且当我们支持其他存储引擎时，只需要实现一个Adapter子类就可以了，避免了侵入式修改Pegasus类。
