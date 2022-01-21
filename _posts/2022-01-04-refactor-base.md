@@ -1652,6 +1652,164 @@ iter后移
 
 ### Adaptor模式
 
+Adapter模式的定义：将一个类的接口变换成客户端所期待的另一种接口，从而使原本因接口不匹配而无法在一起工作的两个类能够在一起工作。Adapter模式又称作包装模式（Wrapper）
+
+其类图如下：
+
+![](../images/adapter-pattern.jpg)
+
+其实Adapter模式有两种用法，分别为：类Adapter模式和对象Adapter模式。上图所示为对象Adapter模式。类Adapter模式的类图如下：
+
+![](../images/class-adapter-pattern.jpg)
+
+通过类图可以看出：
+
+- 类Adapter通过继承Adaptee并实现目标接口，这样的话会使得Adaptee完全对Adapter暴露，使得Adapter具有Adaptee的全部功能，破坏了封装性。此外从逻辑上来说也准确，Adapter和Adaptee的功能并不是is-a关系、而是has-a关系，用组合更合适。
+
+- 对象Adapter持有Adaptee的一个实例，并扩展其功能及实现目标接口。相比类Adapter方式，其封装性更好，且更符合逻辑。因此个人更加推荐使用对象Adapter方式。
+
+其实提到Adapter模式，最先想到的就是我们生活中常用的插座转接口，如下图所示：
+
+![](../images/adapter-example.jpeg)
+
+这里另外举一个实际工作中的例子。
+
+在Pegasus的实现中，采用了Hash分片的实现方式进行数据分片，并且为了支持范围查询，因此采用了HashKey + SortKey的二级key存储方式。其中HashKey用于数据分片，同一个HashKey下支持基于SortKey的范围查询。
+
+另外，Pegasus底层存储引擎使用了RocksDB。众所周知，RocksDB是不支持二级key索引的。因此，在Pegasus内部需要对HashKey + SortKey的二级索引转换成RocksDB支持的Key格式。
+
+转换逻辑如下：
+
+```
+rocksdb key = [hash_key_len(uint16_t)] [hash_key(bytes)] [sort_key(bytes)]
+```
+
+一个常规的实现如下：
+
+```
+class RocksDB {
+public:
+    void set(const std::string &key, const std::string &value) {
+        kvs[key] = value;
+    }
+
+    const std::string get(const std::string &key) const {
+        const auto &iter = kvs.find(key);
+        if (iter != kvs.end()) {
+            return iter->second;
+        }
+        return "";
+    }
+
+private:
+    std::map<std::string, std::string> kvs;
+};
+
+class PegasusServer {
+public:
+    PegasusServer() {
+        rocksdb.reset(new RocksDB());
+    }
+
+    void set(const std::string &hashKey, const std::string &sortKey, const std::string &value) {
+        std::string key = toRocksDBKey(hashKey, sortKey);
+        rocksdb->set(key, value);
+    }
+
+    std::string get(const std::string &hashKey, const std::string &sortKey) {
+        std::string key = toRocksDBKey(hashKey, sortKey);
+        return rocksdb->get(key);
+    }
+
+private:
+    std::string toRocksDBKey(const std::string &hashKey, const std::string &sortKey) {
+        return std::to_string(hashKey.size()) + hashKey + sortKey;
+    }
+
+    std::unique_ptr<RocksDB> rocksdb;
+};
+```
+
+这样虽然可以实现功能，但是会有如下几个问题：
+
+- 违反单一职责原则 。数据转换代码与Pegasus类实现耦合，Pegasus应该聚焦在其自己逻辑实现上，不应该与数据转换逻辑耦合。
+
+- 违反开闭原则。如果后续Pegasus支持新的存储引擎时，假如该存储引擎与Pegasus和RocksDB的接口都不相同，那么就需要对Pegasus实现进行修改，违反开闭原则。 
+
+下面我们看一下使用Adapter模式的实现：
+
+```
+class RocksDB {
+public:
+    void set(const std::string &key, const std::string &value) {
+        kvs[key] = value;
+    }
+
+    const std::string get(const std::string &key) const {
+        const auto &iter = kvs.find(key);
+        if (iter != kvs.end()) {
+            return iter->second;
+        }
+        return "";
+    }
+
+private:
+    std::map<std::string, std::string> kvs;
+};
+
+class Adapter {
+public:
+    virtual ~Adapter() = 0;
+
+    virtual void set(const std::string &hashKey, const std::string &sortKey, const std::string &value) = 0;
+    virtual std::string get(const std::string &hashKey, const std::string &sortKey);
+};
+
+class RocksDBAdapter : public Adapter {
+public:
+    RocksDBAdapter() {
+        rocksdb.reset(new RocksDB);
+    }
+
+    void set(const std::string &hashKey, const std::string &sortKey, const std::string &value) {
+        std::string key = toRocksDBKey(hashKey, sortKey);
+        rocksdb->set(key, value);
+    }
+
+    std::string get(const std::string &hashKey, const std::string &sortKey) {
+        std::string key = toRocksDBKey(hashKey, sortKey);
+        return rocksdb->get(key);
+    }
+
+private:
+    std::string toRocksDBKey(const std::string &hashKey, const std::string &sortKey) {
+        return std::to_string(hashKey.size()) + hashKey + sortKey;
+    }
+
+    std::unique_ptr<RocksDB> rocksdb;
+};
+
+class PegasusServer {
+public:
+    PegasusServer() {
+        rocksdb.reset(new RocksDBAdapter());
+    }
+
+    void set(const std::string &hashKey, const std::string &sortKey, const std::string &value) {
+        rocksdb->set(hashKey, sortKey, value);
+    }
+
+    std::string get(const std::string &hashKey, const std::string &sortKey) {
+        return rocksdb->get(hashKey, sortKey);
+    }
+
+private:
+    std::unique_ptr<Adapter> rocksdb;
+};
+```
+
+通过使用Adapter模式，我们把接口和数据转换的工作放在了Adapter里，使得Pegasus能够专注于实现其自身逻辑。并且当我们支持其他存储引擎时，只需要实现一个Adapter子类就可以了，避免了侵入式修改Pegasus类。
+
 ### Visitor模式
 
 ### 观察者模式
