@@ -1841,6 +1841,114 @@ private:
 
 ### 观察者模式
 
+观察者模式是指，定义对象间一种一对多的依赖关系，使得当一个对象改变状态时，所有依赖于它的对象都会得到通知并被自动更新。其类图如下所示：
+
+![](../images/observer-pattern.jpg)
+
+图中的Subject是被观察者，而Observer则是观察者。这里还是 举一个例子来说明具体用法。
+
+在西游记九头怪这一难，由于其府邸在水中，猪八戒又比较精通水性，因此孙悟空和二郎神令猪八戒去水中引怪，待其回到水面，孙悟空和二郎神则合力将其捉拿。代码实现如下：
+
+```
+class Observer {
+public:
+    virtual ~Observer() = 0;
+
+    virtual void update() = 0;
+};
+
+class Subject {
+public:
+    virtual ~Subject() = 0;
+
+    void attach(Observer *observer) {
+        this->observers.push_back(observer);
+    }
+
+protected:
+    void notify() {
+        for (const auto &iter: observers) {
+            iter->update();
+        }
+    }
+
+    std::vector<Observer*> observers;
+};
+
+// 潜伏者
+class Luker : public Observer {
+public:
+    Luker(const std::string &name) : name(name) {
+    }
+
+    void update() {
+        std::cout << name << "发现妖怪浮出水面" << std::endl;
+        this->fight();
+    }
+
+    void fight() {
+        std::cout << name <<  "与妖怪战斗" << std::endl;
+    }
+
+private:
+    std::string name;
+};
+
+// 引导者
+class Guider : public Subject {
+public:
+    Guider(const std::string &name) : name(name) {
+    }
+
+    void action() {
+        this->findMonster();
+        this->runAway();
+        this->emerge();
+    }
+
+private:
+    void findMonster() {
+        std::cout << name << "寻找怪物" << std::endl;
+    }
+
+    void runAway() {
+        std::cout << name << "引导怪物跑向水面" << std::endl;
+    }
+
+    void emerge() {
+        std::cout << name << "露出水面" << std::endl;
+        this->notify();
+    }
+
+    std::string name;
+};
+```
+
+调用代码如下：
+
+```
+    Guider zhubajie("猪八戒");
+    Luker sunwukong("孙悟空");
+    Luker erlangshen("二郎神");
+
+    zhubajie.attach(&sunwukong);
+    zhubajie.attach(&erlangshen);
+
+    zhubajie.action();
+```
+
+执行结果：
+
+```
+猪八戒寻找怪物
+猪八戒引导怪物跑向水面
+猪八戒露出水面
+孙悟空发现妖怪浮出水面
+孙悟空与妖怪战斗
+二郎神发现妖怪浮出水面
+二郎神与妖怪战斗
+```
+
 ## 其他常用模式
 
 ### AOP
