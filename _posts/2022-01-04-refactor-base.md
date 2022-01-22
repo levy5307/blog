@@ -1957,6 +1957,10 @@ private:
 
 ### Pub/Sub v.s. 观察者
 
+### 生产者消费者模式
+
+### 过滤器模式
+
 ### 空对象模式
 
 ### 雇工模式
@@ -1989,7 +1993,63 @@ private:
 
 ## Others
 
-### 代码的自解释
+### 代码的自我解释
+
+这里专门拿出一节来讲代码的自我解释，主要是在review团队代码的时候，发现很多人都不真正了解这一块的知识，导致每次我都会提出一些雷同的意见，被review的同学也觉得不理解，导致下次还会犯相同的错误。这里举几个常见的例子：
+
+1. 多余的注释
+
+```
+double getTax() {
+    uint32_t base = 1e4;
+    uint32_t bonus = 5e3;
+    // 工资收入 = 基本工资 + 奖金
+    auto salary = base + bonus;
+
+    // 税收 = 工资收入 * 20%
+    auto tax = salary * 0.2;
+}
+```
+
+其实这里的注释是完全没有必要的，因为通过代码的自我解释功能，可以很容易的看出工资和税收的计算公式。加上注释不但起不到什么效果，反而会导致以后修改税收方式的时候，修改了代码而没修改注释，导致注释和代码意思不一致，代码就很难维护了。
+
+2. 不会提炼函数
+
+这里使用《重构》这本书给出的例子：
+
+```
+void printOwing(const std::string &name) {
+    printBanner();
+    uint32_t oustanding = caculateOutstanding();
+    
+    // print details
+    std::cout << "name: " << name << std::endl;
+    std::cout << "amount: " << oustanding << std::endl;
+}
+```
+
+在这个例子里，由于print details部分代码比较晦涩，不容易看清是做什么的，因此在上面加上了一行注释用以解释代码。还是上面所说问题，如果这里的逻辑修改了，不再是print detail，那如果只修改了代码而没修改注释的话，会导致注释内容和代码的意思相违背，代码就比较难以维护了。所以可以修改如下：
+
+```
+void printDetails(const std::string &name, uint32_t outstanding) {
+    // print details
+    std::cout << "name: " << name << std::endl;
+    std::cout << "amount: " << outsanding << std::endl;
+}
+
+void printOwing(const std::string &name) {
+    printBanner();
+    uint32_t outsanding = caculateOutstanding();
+
+    printDetails(name, outsanding);
+}
+```
+
+即将代码封装到一个函数里，通过函数名字来解释这段代码到底是做什么的。这样就可以避免上面所说的问题。
+
+上面列举的例子中，我们可以看出，代码是有一定的自我解释功能的，它完全可以解释What：即这段代码是做什么的。
+
+当然代码的自我解释是无法解释Why的：即为什么要这样写。因此要学会利用这一点，去合理的写注释，具体请参考下一节。
 
 ### 如何写注释
 
