@@ -1845,9 +1845,71 @@ private:
 
 ![](../images/observer-pattern.jpg)
 
-图中的Subject是被观察者，而Observer则是观察者。这里还是 举一个例子来说明具体用法。
+图中的Subject是被观察者，而Observer则是观察者。这里还是举一个例子来说明具体用法。
 
-在西游记九头怪这一难，由于其府邸在水中，猪八戒又比较精通水性，因此孙悟空和二郎神令猪八戒去水中引怪，待其回到水面，孙悟空和二郎神则合力将其捉拿。代码实现如下：
+在西游记九头怪这一难，由于其府邸在水中，猪八戒又比较精通水性，因此孙悟空和二郎神令猪八戒去水中引怪，待其回到水面，孙悟空和二郎神则合力将其捉拿。一个简单的实现方法如下：
+
+```
+// 潜伏者
+class Luker : public Observer {
+public:
+    Luker(const std::string &name) : name(name) {
+    }
+
+    void update() {
+        std::cout << name << "发现妖怪浮出水面" << std::endl;
+        this->fight();
+    }
+
+    void fight() {
+        std::cout << name <<  "与妖怪战斗" << std::endl;
+    }
+
+private:
+    std::string name;
+};
+
+// 引导者
+class Guider {
+public:
+    Guider(const std::string &name, Luker *sunwukong, Luker *erlangshen) : name(name) {
+        this->sunwukong = sunwukong;
+        this->erlangshen = erlangshen;
+    }
+
+    void action() {
+        this->findMonster();
+        this->runAway();
+        this->emerge();
+    }
+
+private:
+    void findMonster() {
+        std::cout << name << "寻找怪物" << std::endl;
+    }
+
+    void runAway() {
+        std::cout << name << "引导怪物跑向水面" << std::endl;
+    }
+
+    void emerge() {
+        std::cout << name << "露出水面" << std::endl;
+        this->notify();
+    }
+
+    void notify() {
+        sunwukong->update();
+        erlangshen->update();
+    }
+
+    std::string name;
+    Luker *sunwukong;
+    Luker *erlangshen;
+};
+
+不过这里有一个很显著的问题：如果后续哪吒也需要在发现妖怪浮出水面的时候加入战斗，那必须通过侵入式修改的方法来实现，显然不符合开闭原则。
+
+采用观察者模式的实现如下：
 
 ```
 class Observer {
