@@ -2172,3 +2172,13 @@ void printOwing(const std::string &name) {
 
 2. 20-80原则。大部分的代码都不是处于系统的关键路径上，不必过多担心性能问题。
 
+## Reference
+
+《重构》
+
+《Effective C++》
+
+《More Effective C++》
+
+《设计模式之禅》
+
