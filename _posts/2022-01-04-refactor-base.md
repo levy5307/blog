@@ -1963,6 +1963,47 @@ private:
 
 ### 空对象模式
 
+空对象模式通过实现一个默认的无意义对象来避免null值出现，简单地说，就是为了避免在程序中出现null值判断而诞生的一种常用设计方法。
+
+举个例子：
+
+```
+class Object {
+public:
+    virtual ~Object() = 0;
+
+    virtual void print() = 0;
+};
+
+class ConcreteObject : public Object {
+public:
+    void print() {
+        std::cout << "This is ConcreteObject" << std::endl;
+    }
+};
+
+void dealWithObject(ConcreteObject *object) {
+    if (object != nullptr) {
+        object->print();
+    }
+}
+```
+
+如上述代码中的`dealWithObject`函数，在操作object对象前需要先对其进行空值判断。我们在实际工作中经常会遇到这种问题。
+
+空对象模式的思想是：控制空对象的产生，那么就可以免去这些控制判断了。在这个例子中，我们可以增加一个NullObject类：
+
+```
+class NullObject: public Object {
+public:
+    void print() {
+        // do nothing
+    }
+};
+```
+
+这样，我们每次在创建一个Object指针的时候，都默认给其一个NullObject对象，这样可以在不影响程序运行状态的情况下避免纷乱的空值判断，提高代码的可读性。
+
 ### 雇工模式
 
 ### 对象池模式
