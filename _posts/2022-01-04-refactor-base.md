@@ -2452,9 +2452,13 @@ void printOwing(const std::string &name) {
 
 《重构》
 
+《设计模式之禅》
+
+《设计模式解析》
+
 《Effective C++》
 
 《More Effective C++》
 
-《设计模式之禅》
+《Redis设计与实现》
 
