@@ -1839,6 +1839,184 @@ private:
 
 ### 解释器模式
 
+解释器模式是一个很少使用到的设计模式，其主要用于按照规定语法进行解析。其通用类图如下所示：
+
+![](../images/interpreter-pattern.jpg)
+
+其中：
+
+- AbstractExpression代表抽象解释器。具体的解释任务由各个实现类完成，即TerminalExpression和NonTerminalExpression。
+
+- TerminalExpression代表终结符表达式
+
+TerminalExpression实现了与文法中的终结符相关联的解释操作，在句子中的每一个终结符都是该类的一个实例。通常在一个解释器模式中只有少数几个终结符表达式类，它们的实例可以通过非终结符表达式组成较为复杂的句子。
+
+在计算器的例子中，数字即是终结符表达式
+
+- NonterminalExpression代表非终结符表达式
+
+非终结符表达式也是抽象表达式的子类，它实现了文法中非终结符的解释操作。一般会有多个非终结符表达式，文法中的每条规则对应于一个非终结表达式。另外，在非终结符表达式中可以包含终结符表达式，也可以继续包含非终结符表达式
+
+在计算器的例子中，加法和减法分别代表不同的非终结符表达式。
+
+- Context代表环境上下文
+
+通常包含各个解释器需要的数据或是公共的功能，一般用来传递被所有解释器共享的数据，后面的解释器可以从这里获取这些值。
+
+下面就举例说明一下。
+
+假设我们要实现一个计算器（不考虑运算符优先级），一个简单直观的实现如下：
+
+```
+void split(std::string input, std::vector<std::string> &outputs) {
+    std::istringstream f(input);
+    std::string s;
+    while (getline(f, s, ' ')) {
+        outputs.push_back(s);
+    }
+}
+
+class Caculator {
+public:
+    uint32_t compute(std::string input) {
+        std::vector<std::string> statements;
+        split(input, statements);
+
+        std::stack<uint32_t> s;
+        for (auto i = 0; i < statements.size(); i++) {
+            if (statements[i] == "*") {
+                auto left = s.top();
+                s.pop();
+                auto right = std::stoi(statements[++i]);
+                s.push(left * right);
+            } else if (statements[i] == "+") {
+                auto left = s.top();
+                s.pop();
+                auto right = std::stoi(statements[++i]);
+                s.push(left + right);
+            } else {
+                // terminal expression
+                s.push(std::stoi(statements[i]));
+            }
+        }
+        return s.top();
+    }
+};
+```
+
+客户端调用如下：
+
+```
+int main()
+{
+    Caculator caculator;
+    auto result = caculator.compute("1 + 2");
+    std::cout << "result = " << result << std::endl;
+}
+```
+
+这样做的问题是，代码的耦合性太高，所有的逻辑都耦合在Caculator里。日后我们添加新的非终结符、或者是修改非终结符逻辑，都需要修改Caculator实现，不符合开闭原则。
+
+使用解释器模式的话，就可以解决这个问题，实现如下：
+
+```
+class Expression {
+public:
+    virtual ~Expression() = 0;
+
+    virtual uint32_t interpreter() = 0;
+};
+
+class VarExpression : public Expression
+{
+public:
+    VarExpression(const std::string &statement) {
+        this->statement = statement;
+    }
+
+    uint32_t interpreter() {
+        return std::stoi(statement);
+    }
+
+private:
+    std::string statement;
+};
+
+class OperatorExpression : public Expression {
+public:
+    //virtual ~OperatorExpression() = 0;
+};
+
+class AddOperator : public OperatorExpression {
+public:
+    AddOperator(std::shared_ptr<Expression> left,
+                std::shared_ptr<Expression> right) {
+        this->left = left;
+        this->right = right;
+    }
+
+    uint32_t interpreter() {
+        return left->interpreter() + right->interpreter();
+    }
+
+private:
+    std::shared_ptr<Expression> left, right;
+};
+
+class MulOperator : public OperatorExpression {
+public:
+    MulOperator(std::shared_ptr<Expression> left,
+                std::shared_ptr<Expression> right) {
+        this->left = left;
+        this->right = right;
+    }
+
+    uint32_t interpreter() {
+        return left->interpreter() * right->interpreter();
+    }
+
+private:
+    std::shared_ptr<Expression> left, right;
+};
+
+void split(std::string input, std::vector<std::string> &outputs) {
+    std::istringstream f(input);
+    std::string s;
+    while (getline(f, s, ' ')) {
+        outputs.push_back(s);
+    }
+}
+
+class Caculator {
+public:
+    uint32_t compute(std::string input) {
+        std::vector<std::string> statements;
+        split(input, statements);
+
+        std::stack<std::shared_ptr<Expression>> s;
+        for (auto i = 0; i < statements.size(); i++) {
+            if (statements[i] == "*") {
+                auto left = s.top();
+                s.pop();
+                auto right = std::make_shared<VarExpression>(statements[++i]);
+                s.push(std::make_shared<MulOperator>(left, right));
+            } else if (statements[i] == "+") {
+                auto left = s.top();
+                s.pop();
+                auto right = std::make_shared<VarExpression>(statements[++i]);
+                s.push(std::make_shared<AddOperator>(left, right));
+            } else {
+                // terminal expression
+                s.push(std::make_shared<VarExpression>(statements[i]));
+            }
+        }
+        return s.top()->interpreter();
+    }
+};
+```
+
+这样，当我们需要修改运算符逻辑时，只需要修改具体的类就可以了，而不用像前述例子中每次都需要修改Caculator代码，降低了代码的耦合性，符合单一职责原则。
+
 ### 观察者模式
 
 观察者模式是指，定义对象间一种一对多的依赖关系，使得当一个对象改变状态时，所有依赖于它的对象都会得到通知并被自动更新。其类图如下所示：
