@@ -2212,7 +2212,82 @@ Pub/Sub模式是一个我们在日常生活中经常遇到的场景。比如，�
 下面实现一个具体例子：
 
 ```
+class Publisher {
+public:
+    Publisher(Broker *broker) : broker(broker) {}
+    virtual ~Publisher() = 0;
+
+    void publish(const std::string &topic, const std::string &message) {
+        broker->publish(topic, message);
+    }
+
+private:
+    Broker *broker;
+};
+
+class Subscriber {
+public:
+    Subscriber(Broker *broker) : broker(broker) {}
+    virtual ~Subscriber() = 0;
+
+    void subscribe(const std::string &topic) {
+        broker->subscribe(topic, this);
+    }
+    virtual void handle(const std::string &message) = 0;
+
+private:
+    Broker *broker;
+};
+
+class Broker {
+public:
+    void publish(const std::string &topic, const std::string &message) {
+        const auto &iter = topicSubsMap.find(topic);
+        if (iter != topicSubsMap.end()) {
+            for (auto &subscriber : iter->second) {
+                subscriber->handle(message);
+            }
+        }
+    }
+
+    void subscribe(const std::string &topic, Subscriber *subscriber) {
+        const auto &iter = topicSubsMap.find(topic);
+        iter->second.push_back(subscriber);
+    }
+
+private:
+    std::map<std::string, std::vector<Subscriber*>> topicSubsMap;
+};
+
+class ConcretePublisher : public Publisher {
+public:
+    ConcretePublisher(Broker *broker) : Publisher(broker) {
+    }
+
+    void doSomething() {
+	// do something and get some message;
+	std::string message = ...
+	
+	broker->publish(topic, message);
+    }
+};
+
+class ConcreteSubscriber : public Subscriber {
+public:
+    ConcreteSubscriber(Broker *broker) : Subscriber(broker) {
+    }
+
+    void handle(const std::string &message) {
+        std::cout << "subscriber get message: " << message << std::endl;
+
+	// deal with message
+    }
+};
 ```
+
+这里的实现是在一个软件服务内，可以将Publisher、Broker和Subscriber分布在不同的微服务内，这样就成了一个简单的消息系统架构图，具体如下图所示：
+
+![](../images/pubsub-pattern-network.jpg)
 
 ### Pub/Sub v.s. 观察者模式
 
