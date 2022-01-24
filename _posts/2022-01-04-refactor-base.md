@@ -2256,6 +2256,10 @@ public:
     }
 
 private:
+    void doSomething(const std::string &topic, const std::string &message) {
+	// 这里可以实现消息的存储、排序、重复发送、消息优先级、消息过期、以及模式匹配等功能
+    }
+
     std::map<std::string, std::vector<Subscriber*>> topicSubsMap;
 };
 
