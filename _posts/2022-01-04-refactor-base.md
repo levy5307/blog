@@ -2295,6 +2295,16 @@ public:
 
 ### Pub/Sub v.s. 观察者模式
 
+其实通过类图可以看出来，观察者只有两个角色（观察者和被观察者），而Pub/Sub却有三个，多了一个Broker角色。多出来的Broker角色会导致：
+
+- Publisher和Subscriber完全不耦合（而在观察者模式两者是松耦合的）
+
+因此，Publisher只需要告诉Broker其要发送消息对应的topic；而订阅者只需要告诉Broker，其要订阅的topic；当Broker收到Publisher发送过来的消息时，根据其topic将消息转发给对应的Subscriber
+
+- Broker中可以实现很多功能，例如消息的存储、排序、重复发送、消息优先级、消息过期、以及模式匹配等。因此很多消息系统使用Pub/Sub模式
+
+这里有一个文档进行了更详细的论述：[Observers vs Pub-Sub pattern](https://hackernoon.com/observer-vs-pub-sub-pattern-50d3b27f838c)。
+
 ### 生产者消费者模式
 
 ### 过滤器模式
