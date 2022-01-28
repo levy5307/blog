@@ -1879,6 +1879,9 @@ public:
                 this->doSomethingTimesliceExhausted();
                 this->state = State::READY;
                 break;
+            default:
+                // do nothing
+                break;
         }
     }
 
@@ -1895,6 +1898,9 @@ public:
                 this->doSomethingWaitingEvent();
                 this->state = State::BLOCKED;
                 break;
+            default:
+                // do nothing
+                break;
         }
     }
 
@@ -1909,6 +1915,9 @@ public:
                 break;
             case State::RUNNING:
                 // do nothing;
+                break;
+            default:
+                // do nothing
                 break;
         }
     }
@@ -1938,9 +1947,97 @@ private:
 代码实现如下：
 
 ```
+class Context;
+class State {
+public:
+    virtual ~State() = 0;
+
+    virtual void run(Context *context) {
+        // do nothing in default
+    }
+    virtual void block(Context *context) {
+        // do nothing in default
+    }
+    virtual void getReady(Context *context) {
+        // do nothing in default
+    }
+};
+
+class Context {
+public:
+    Context() {
+        this->state = std::make_shared<ReadyState>();
+    }
+
+    void setState(std::shared_ptr<State> state) {
+        this->state = state;
+    }
+    void run() {
+        this->state->run(this);
+    }
+    void block() {
+        this->state->block(this);
+    }
+    void getReady() {
+        this->state->getReady(this);
+    }
+
+private:
+    std::shared_ptr<State> state;
+};
+
+class RunningState : public State {
+public:
+    void block(Context &context) {
+        std::cout << "Wait for event to occur" << std::endl;
+        this->doSomethingWaitingEvent();
+        context.setState(std::make_shared<BlockedState>());
+    }
+    void getReady(Context &context) {
+        std::cout << "Time slice exhausted" << std::endl;
+        this->doSomethingTimesliceExhausted();
+        context.setState(std::make_shared<ReadyState>());
+    }
+
+private:
+    void doSomethingTimesliceExhausted() { /** TBD **/ }
+    void doSomethingWaitingEvent() { /** TBD **/ }
+};
+
+class BlockedState : public State {
+public:
+    void getReady(Context &context) {
+        std::cout << "The waiting event occurs" << std::endl;
+        this->doSomethingEventOccurs();
+        context.setState(std::make_shared<ReadyState>());
+    }
+
+private:
+    void doSomethingEventOccurs() { /** TBD **/ }
+};
+
+class ReadyState : public State {
+public:
+    void run(Context &context) {
+        this->doSomethingToRun();
+        context.setState(std::make_shared<RunningState>());
+    }
+
+private:
+    void doSomethingToRun() { /** TBD **/ }
+};
 ```
 
-使用state模式，解决了上述几个问题，降低了代码耦合性，提高了扩展性。这样当我们需要添加进程状态时，只需要添加响应的状态类就可以了：
+调用代码示例：
+
+```
+Context context;
+
+context.run();
+context.block();
+```
+
+从上面例子可以看出，使用state模式解决了上述几个问题，降低了代码耦合性，提高了扩展性。并且当我们需要添加进程状态时，只需要添加响应的状态类就可以了：
 
 ![](../images/process-state-class-new.jpg)
 
