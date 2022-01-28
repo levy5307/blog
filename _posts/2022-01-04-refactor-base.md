@@ -1837,7 +1837,7 @@ private:
 
 状态模式主要解决的问题是对象的行为依赖于它的状态，并且可以根据其状态改变而改变其行为。其类图如下：
 
-![](../images/state-pattern.jpg)
+![](../images/state-pattern.jpeg)
 
 其中：
 
@@ -1856,18 +1856,93 @@ private:
 如果我们不使用状态模式，则实现代码如下：
 
 ```
+enum class State {
+    READY,
+    BLOCKED,
+    RUNNING,
+};
+
+class Process {
+public:
+    void getReady() {
+        switch(state) {
+            case State::READY:
+                // do nothing
+                break;
+            case State::BLOCKED:
+                std::cout << "The waiting event occurs" << std::endl;
+                this->doSomethingEventOccurs();
+                this->state = State::READY;
+                break;
+            case State::RUNNING:
+                std::cout << "Time slice exhausted" << std::endl;
+                this->doSomethingTimesliceExhausted();
+                this->state = State::READY;
+                break;
+        }
+    }
+
+    void block() {
+        switch(state) {
+            case State::READY:
+                // do nothing;
+                break;
+            case State::BLOCKED:
+                // do nothing;
+                break;
+            case State::RUNNING:
+                std::cout << "Wait for event to occur" << std::endl;
+                this->doSomethingWaitingEvent();
+                this->state = State::BLOCKED;
+                break;
+        }
+    }
+
+    void run() {
+        switch(state) {
+            case State::READY:
+                this->doSomethingToRun();
+                this->state = State::RUNNING;
+                break;
+            case State::BLOCKED:
+                // do nothing;
+                break;
+            case State::RUNNING:
+                // do nothing;
+                break;
+        }
+    }
+
+private:
+    void doSomethingToRun() { /** TBD **/ }
+    void doSomethingWaitingEvent() { /** TBD **/ }
+    void doSomethingEventOccurs() { /** TBD **/ }
+    void doSomethingTimesliceExhausted() { /** TBD **/ }
+
+    State state;
+};
 ```
 
 但是这样实现有几个问题：
 
-- 耦合性高
+- 重复代码多。每个函数都包含一个switch(state)，之前我一直强调过，重复代码往往是bad smell，因为当修改逻辑时，会修改很多处地方，很容易遗漏。
 
-- 可扩展性差
+- 耦合性高。所有状态的代码都耦合到class Process类里，这样导致任何状态逻辑的修改，都需要修改Process类
 
-下面我们看一下使用state模式的实现：
+- 可扩展性差。如果我们需要添加一个新的状态，需要侵入式修改Process类。例如，线程其实还有个初始状态和结束状态，这时如果我们要添加这两个状态，需要修改Process类的多个函数。
+
+使用state模式的话，则要也优雅的多，首先看一下类图：
+
+![](../images/process-state-class.jpg)
+
+代码实现如下：
 
 ```
 ```
+
+使用state模式，解决了上述几个问题，降低了代码耦合性，提高了扩展性。这样当我们需要添加进程状态时，只需要添加响应的状态类就可以了：
+
+![](../images/process-state-class-new.jpg)
 
 ### 中介模式
 
