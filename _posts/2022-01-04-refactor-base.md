@@ -2043,6 +2043,100 @@ context.block();
 
 ### 中介模式
 
+中介模式是一个相对比较容易理解的设计模式，其定义为：用一个中介对象封装一系列的对象交互，中介者使各对象不需要显示地相互作用，从而使其耦合松散，而且可以独立地改变它们之间的交互
+
+提到中介，我们首先想到的是链家，因此这一部分就以租房中介来举例。
+
+大家应该都知道，买房会设计到多个部门之间的协作，例如：买方、卖方、税务局、住建委、银行等。因此，如果没有中介存在的话，买房需要独自跑通多个部门，并且多个部门之间都需要有协作，会导致类耦合非常严重，具体如下图所示：
+
+![](../images/mediator-mess.jpg)
+
+很显然，这是一个网状的拓扑结构，互相之间的耦合是非常严重的。
+
+我们只看一下Buyer的实现，会发现其需要严重依赖其他各个class的实现：
+
+```
+class Buyer {
+public:
+    void buyHouse() {
+        std::vector<House *> houses = findHouses();
+	House *house = select(houses);
+
+        Seller *seller = house->owner();
+        bank->applyForLoan(house, this, seller);
+        revenue->payTax(house, this);
+        builder->transfer(house, this, seller);
+    }
+
+private:
+    House* select(const std::vector<House*> &houses) { /** TBD **/ }
+
+    Bank *bank;
+    Builder *builder;
+    Revenue *revenue;
+}
+```
+
+中介模式是用来将该网状拓扑结构改造成形状拓扑的，以减少互相之间的耦合。
+
+![](../images/mediator-pattern.jpg)
+
+还是以Buyer为例，可以看出，class Buyer只需要依赖Mediator类就可以了，无需依赖其他类。
+
+```
+class Mediator {
+public:
+    Mediator(Bank *bank, Revenue *revenue, Builder *builder) {
+        this->bank = bank;
+        this->revenue = revenue;
+        this->builder = builder;
+    }
+
+    void applyForLoan(House *house, Buyer *buyer) {
+        Seller *seller = house->owner();
+        /** TBD **/
+    }
+
+    void payTax(House house, Buyer *buyer) {
+        /** TBD **/
+    }
+
+    void transfer(House house, Buyer *buyer) {
+        Seller *seller = house->owner();
+        /** TBD **/
+    }
+
+    std::vector<House*> findHouses() { /** TBD **/ }
+
+private:
+    Bank *bank;
+    Revenue *revenue;
+    Builder *builder;
+};
+
+class Buyer {
+public:
+    Buyer(Mediator *mediator) {
+        this->mediator = mediator;
+    }
+
+    void buyHouse() {
+        std::vector<House *> houses = mediator->findHouses();
+        auto house = select(houses);
+
+        mediator->applyForLoan(house, this);
+        mediator->payTax(house, this);
+        mediator->transfer(house, this);
+    }
+
+private:
+    House* select(const std::vector<House*> &houses) { /**TBD**/ }
+    Mediator *mediator;
+}
+```
+
+当然，中介模式的缺点也很明显，即：Mediator类会与所有其他类耦合，当系统中类过多时，Mediator类将会变的过于复杂。
+
 ### 解释器模式
 
 解释器模式是一个很少使用到的设计模式，其主要用于按照规定语法进行解析。其通用类图如下所示：
@@ -2758,14 +2852,9 @@ void printOwing(const std::string &name) {
 ## Reference
 
 《重构》
-
 《设计模式之禅》
-
 《设计模式解析》
-
 《Effective C++》
-
 《More Effective C++》
-
 《Redis设计与实现》
 
