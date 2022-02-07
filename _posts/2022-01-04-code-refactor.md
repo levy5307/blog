@@ -1835,7 +1835,7 @@ private:
 
 Visitor模式是一个相对比较难理解的设计模式，本人阅读了很多讲解Visitor的文章，很多都将重点聚焦在将数据数据持有者和数据访问者分离，这会令很多人很疑惑：为什么要把本来在元素内部实现的、关于元素自身行为的逻辑抽取到访问者上。下面我们来逐层分析，以理解Visitor模式的核心思想。
 
-还是以西天取经为例，最开始取经队伍中只有唐僧和几个其他和尚，这几块货也就是会念念经，所以取经路上也不能指望他干点啥，也就是念经。另外需要说明的是，这里假设唐僧念经和普通和尚不一样，要做一些特殊的操作，因此需要将唐僧实现为一个独立的类。其简单类图如下：
+还是以西天取经为例，最开始取经队伍中只有唐僧和几个其他和尚，这几块货也就是会念念经，所以如来佛祖也没指望他们取经路上干点啥，也就是念经、睡觉、吃饭、赶路。需要说明的是，这里假设唐僧念经和普通和尚不一样，要做一些特殊的操作，因此需要将唐僧实现为一个独立的类。其简单类图如下：
 
 !()[../images/visitor-graph-1.jpg]
 
@@ -1848,6 +1848,9 @@ public:
     virtual ~Monk() = 0;
 
     virtual void chant() = 0;
+    virtual void eat() = 0;
+    virtual void sleep(uint32_t hour) = 0;
+    virtual void walk(uint32_t distance) = 0;
 
 protected:
     std::string name;
@@ -1860,9 +1863,20 @@ public:
     Tangseng() : Monk("唐僧") {}
 
     void chant() {
-        // do some special action
-
+        // TBD: do some special action
         std::cout << this->name << "念经" << std::endl;
+    }
+    void eat() {
+        // TBD: do some special action
+        std::cout << this->name << "吃饭" << std::endl;
+    }
+    void sleep(uint32_t hour) {
+        // TBD: do some special action
+        std::cout << this->name << "睡觉" << hour << "小时" << std::endl;
+    }
+    void walk(uint32_t distance) {
+        // TBD: do some special action
+        std::cout << this->name << "赶路" << distance << "里" << std::endl;
     }
 };
 
@@ -1871,40 +1885,74 @@ public:
     CommonMonk(const std::string &name) : Monk(name) {}
 
     void chant() {
-        // do some special action
-
+        // TBD: do some special action
         std::cout << this->name << "念经" << std::endl;
     }
+    void eat() {
+        // TBD: do some special action
+        std::cout << this->name << "吃饭" << std::endl;
+    }
+    void sleep(uint32_t hour) {
+        // TBD: do some special action
+        std::cout << this->name << "睡觉" << hour << "小时" << std::endl;
+    }
+    void walk(uint32_t distance) {
+        // TBD: do some special action
+        std::cout << this->name << "赶路" << distance << "里" << std::endl;
+    }
+};
+
+class Buddha {
+public:
+    Buddha() {
+        monks.emplace_back(new Tangseng);
+        monks.emplace_back(new CommonMonk("赵钱孙"));
+        monks.emplace_back(new CommonMonk("周吴郑"));
+    }
+
+    void buddhistScriptures() {
+        for (const auto &monk : monks) {
+            monk->eat();
+            monk->walk(100);
+            monk->chant();
+            monk->sleep(8);
+        }
+    }
+
+private:
+    std::vector<std::unique_ptr<Monk>> monks;
 };
 ```
 
 客户端代码如下：
 
 ```
-int main()
-{
-    std::vector<std::unique_ptr<Monk>> monks;
-    monks.emplace_back(new Tangseng);
-    monks.emplace_back(new CommonMonk("赵钱孙"));
-    monks.emplace_back(new CommonMonk("周吴郑"));
-
-    for (const auto &monk : monks) {
-        monk->chant();
-    }
+int main() {
+    Buddha buddha;
+    buddha.buddhistScriptures();
 }
 ```
 
 执行结果如下：
 
 ```
+唐僧吃饭
+唐僧赶路100里
 唐僧念经
+唐僧睡觉8小时
+赵钱孙吃饭
+赵钱孙赶路100里
 赵钱孙念经
+赵钱孙睡觉8小时
+周吴郑吃饭
+周吴郑赶路100里
 周吴郑念经
+周吴郑睡觉8小时
 ```
 
 ***这里使用了一次动态分派（即多态）***。
 
-后来随着剧情推进，孙悟空、猪八戒和沙僧加入了队伍。然而他们的职责并不是念经，而是降妖除魔。如下所示：
+后来随着剧情推进，孙悟空、猪八戒和沙僧加入了队伍。然而他们的主要职责并不是念经，而是降妖除魔。如下所示：
 
 !()[../images/visitor-graph-2.jpg]
 
