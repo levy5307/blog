@@ -1837,7 +1837,7 @@ Visitor模式是一个相对比较难理解的设计模式，本人阅读了很�
 
 还是以西天取经为例，最开始取经队伍中只有唐僧和几个其他和尚，这几块货也就是会念念经，所以如来佛祖也没指望他们取经路上干点啥，也就是念经、睡觉、吃饭、赶路。需要说明的是，这里假设唐僧念经和普通和尚不一样，要做一些特殊的操作，因此需要将唐僧实现为一个独立的类。其简单类图如下：
 
-!()[../images/visitor-graph-1.jpg]
+![](../images/visitor-graph-1.jpg)
 
 据此可以实现代码如下：
 
@@ -1952,19 +1952,19 @@ int main() {
 
 后来随着剧情推进，孙悟空、猪八戒和沙僧加入了队伍。然而他们的主要职责并不是念经，而是降妖除魔。如下所示：
 
-!()[../images/visitor-graph-2.jpg]
+![](../images/visitor-graph-2.jpg)
 
 因此，通过上面的一次动态分派就很难解决问题了。这里有两种解决办法：
 
 - 将killMonster和chant函数抽象成action，如下所示：
 
-!()[../images/visitor-graph-3.jpg]
+![](../images/visitor-graph-3.jpg)
 
 这带来一个问题，action方法太过抽象，通过名字很难判断到底是做什么的。
 
 - 根据不同的类型调用对应的函数。例如，是Immortal类型则调用killMonster，是Monk类型则调用chant函数。
 
-!()[../images/visitor-graph-4.jpg]
+![](../images/visitor-graph-4.jpg)
 
 ### 状态模式
 
