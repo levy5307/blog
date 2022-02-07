@@ -2018,7 +2018,48 @@ public:
 
 不过，这里还有一个问题：如来佛祖希望取经团队按照如上实现去做，而取经路上的女儿国国王却非如此，她希望唐僧留下来不要去取经了，也别当和尚念经了，直接留女儿国当国王。而孙悟空几个徒弟去代替唐僧取经。因此，***这里需要引入一次动态分派（多态）***，以抽象如来佛祖和女儿国国王，具体的实现方式是实现一个如来佛祖和女儿国国王的公共父类Visitor。看到这里大家应该也就明白了，这里的如来佛祖和女儿国国王就是访问者模式中的访问者。
 
-总结来看，Visitor模式就是通过两次动态分派+一次静态分派，来实现代码的解耦。
+```
+class Buddha : public Visitor {
+public:
+    Buddha() = default;
+
+    void buddhistScriptures(Monk* person) {
+        person->eat();
+        person->walk(100);
+        person->chant(2);
+        person->sleep();
+    }
+
+    void buddhistScriptures(Immortal* person) {
+        person->eat();
+        person->walk(100);
+        person->killMonster("白骨精");
+        person->sleep();
+    }
+};
+
+class Queen : public Visitor {
+public:
+    Queen () = default;
+
+    void buddhistScriptures(Monk* person) {
+        // 不取经了，也不念经了，就在女儿国吃了睡、睡了吃 :)
+        person->eat();
+        person->sleep();
+    }
+
+    void buddhistScriptures(Immortal* person) {
+        // 其他人该干啥干啥
+        person->eat();
+        person->walk(100);
+        person->killMonster("白骨精");
+        person->sleep();
+    }
+
+};
+```
+
+总结来看，***Visitor模式就是通过两次动态分派+一次静态分派，来实现代码的解耦。***
 
 另外，这里还有一篇对Visitor讲的比较好的[文章](https://www.zhihu.com/question/37236639/answer/218204649)
 
