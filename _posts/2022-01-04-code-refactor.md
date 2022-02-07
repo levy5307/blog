@@ -1833,6 +1833,93 @@ private:
 
 ### Visitor模式
 
+Visitor模式是一个相对比较难理解的设计模式，本人阅读了很多讲解Visitor的文章，很多都将重点聚焦在将数据数据持有者和数据访问者分离，这会令很多人很疑惑：为什么要把本来在元素内部实现的、关于元素自身行为的逻辑抽取到访问者上。下面我们来逐层分析，以理解Visitor模式的核心思想。
+
+还是以西天取经为例，最开始取经队伍中只有唐僧和几个其他和尚，这几块货也就是会念念经，所以取经路上也不能指望他干点啥，也就是念经。另外需要说明的是，这里假设唐僧念经和普通和尚不一样，要做一些特殊的操作，因此需要将唐僧实现为一个独立的类。其简单类图如下：
+
+!()[../images/visitor-graph-1.jpg]
+
+据此可以实现代码如下：
+
+```
+class Monk {
+public:
+    Monk(const std::string &name) : name(name) {}
+    virtual ~Monk() = 0;
+
+    virtual void chant() = 0;
+
+protected:
+    std::string name;
+};
+
+Monk::~Monk() = default;
+
+class Tangseng : public Monk {
+public:
+    Tangseng() : Monk("唐僧") {}
+
+    void chant() {
+        // do some special action
+
+        std::cout << this->name << "念经" << std::endl;
+    }
+};
+
+class CommonMonk : public Monk {
+public:
+    CommonMonk(const std::string &name) : Monk(name) {}
+
+    void chant() {
+        // do some special action
+
+        std::cout << this->name << "念经" << std::endl;
+    }
+};
+```
+
+客户端代码如下：
+
+```
+int main()
+{
+    std::vector<std::unique_ptr<Monk>> monks;
+    monks.emplace_back(new Tangseng);
+    monks.emplace_back(new CommonMonk("赵钱孙"));
+    monks.emplace_back(new CommonMonk("周吴郑"));
+
+    for (const auto &monk : monks) {
+        monk->chant();
+    }
+}
+```
+
+执行结果如下：
+
+```
+唐僧念经
+赵钱孙念经
+周吴郑念经
+```
+
+***这里使用了一次动态分派（即多态）***。
+
+后来随着剧情推进，孙悟空、猪八戒和沙僧加入了队伍。然而他们的职责并不是念经，而是降妖除魔。如下所示：
+
+!()[../images/visitor-graph-2.jpg]
+
+因此，通过上面的一次动态分派就很难解决问题了。这里有两种解决办法：
+
+- 将killMonster和chant函数抽象成action，如下所示：
+
+!()[../images/visitor-graph-3.jpg]
+
+这带来一个问题，action方法太过抽象，通过名字很难判断到底是做什么的。
+
+- 加入一个类用来区分不同的类型，并调用其对应的函数。例如，是Immortal类型则调用killMonster，是Monk类型则调用chant函数。
+
+!()[../images/visitor-graph-4.jpg]
+
 ### 状态模式
 
 状态模式主要解决的问题是对象的行为依赖于它的状态，并且可以根据其状态改变而改变其行为。其类图如下：
