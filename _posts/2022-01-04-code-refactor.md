@@ -1904,23 +1904,14 @@ public:
 
 class Buddha {
 public:
-    Buddha() {
-        monks.emplace_back(new Tangseng);
-        monks.emplace_back(new CommonMonk("赵钱孙"));
-        monks.emplace_back(new CommonMonk("周吴郑"));
-    }
+    Buddha() = default;
 
-    void buddhistScriptures() {
-        for (const auto &monk : monks) {
-            monk->eat();
-            monk->walk(100);
-            monk->chant(2);
-            monk->sleep();
-        }
+    void buddhistScriptures(Monk* monk) {
+        monk->eat();
+        monk->walk(100);
+        monk->chant(2);
+        monk->sleep();
     }
-
-private:
-    std::vector<std::unique_ptr<Monk>> monks;
 };
 ```
 
@@ -1928,8 +1919,15 @@ private:
 
 ```
 int main() {
+    std::vector<std::unique_ptr<Monk>> monks;
+    monks.emplace_back(new Tangseng);
+    monks.emplace_back(new CommonMonk("赵钱孙"));
+    monks.emplace_back(new CommonMonk("周吴郑"));
+
     Buddha buddha;
-    buddha.buddhistScriptures();
+    for (const auto &monk : monks) {
+        buddha.buddhistScriptures(monk.get());
+    }
 }
 ```
 
