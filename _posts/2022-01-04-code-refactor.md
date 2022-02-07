@@ -1960,11 +1960,65 @@ int main() {
 
 ![](../images/visitor-graph-3.jpg)
 
-这带来一个问题，action方法太过抽象，通过名字很难判断到底是做什么的。
+这带来几个问题：
 
-- 根据不同的类型调用对应的函数。例如，是Immortal类型则调用killMonster，是Monk类型则调用chant函数。
+1. action方法太过抽象，通过名字很难判断到底是做什么的
 
-![](../images/visitor-graph-4.jpg)
+2. 由于chant函数和killMonster函数需要不同的参数，因此当将其二者抽象之后，需要一个struct将二者所需要的所有参数都封装到一起，或者是定义成不同的类型，在接收参数处将其进行显示的转换，实现起来不太优雅。
+
+- 根据不同的类型调用对应的函数。例如，是Immortal类型则调用killMonster，是Monk类型则调用chant函数。例如：
+
+```
+class Buddha {
+public:
+    Buddha() = default;
+
+    void buddhistScriptures(Person* person) {
+        if (person->type() == "Monk") {
+            person->eat();
+            person->walk(100);
+            person->chant(2);
+            person->sleep();
+        } else if (person->type() == "Immortal") {
+            person->eat();
+            person->walk(100);
+            person->killMonster("白骨精");
+            person->sleep();
+        }
+    }
+};
+```
+
+这样也会带来一个问题：buddhistScriptures函数需要针对不同的person类型有不同的实现。这样导致了某种程度上的耦合，即：不管我们是要修改针对Monk类型的操作，还是修改针对Immortal的操作，都需要修改buddhistScriptures函数。
+
+为了解决这个问题，这里引入了一次静态分派，实现如下:
+
+```
+class Buddha {
+public:
+    Buddha() = default;
+
+    void buddhistScriptures(Monk* person) {
+        person->eat();
+        person->walk(100);
+        person->chant(2);
+        person->sleep();
+    }
+
+    void buddhistScriptures(Immortal* person) {
+        person->eat();
+        person->walk(100);
+        person->killMonster("白骨精");
+        person->sleep();
+    }
+};
+```
+
+这里通过函数重载引入了一次静态分派，当调用buddhistScriptures函数时，会根据具体是Monk类型还是Immortal类型，来调用不同的重载函数。
+
+不过，这里还有一个问题：如来佛祖希望取经团队按照如上实现去做，而取经路上的女儿国国王却非如此，她希望唐僧留下来不要去取经了，也别当和尚念经了，直接留女儿国当国王。而孙悟空几个徒弟去代替唐僧取经。因此，这里还需要引入一次动态分派（多态），以区分如来佛祖和女儿国国王。这里的如来佛祖和女儿国国王就是访问者。
+
+所以，总结来看，Visitor模式就是通过两次动态分派+一次静态分派，来实现代码的解耦。
 
 ### 状态模式
 
