@@ -1847,9 +1847,9 @@ public:
     Monk(const std::string &name) : name(name) {}
     virtual ~Monk() = 0;
 
-    virtual void chant() = 0;
+    virtual void chant(uint32_t hour) = 0;
     virtual void eat() = 0;
-    virtual void sleep(uint32_t hour) = 0;
+    virtual void sleep() = 0;
     virtual void walk(uint32_t distance) = 0;
 
 protected:
@@ -1862,17 +1862,17 @@ class Tangseng : public Monk {
 public:
     Tangseng() : Monk("唐僧") {}
 
-    void chant() {
+    void chant(uint32_t hour) {
         // TBD: do some special action
-        std::cout << this->name << "念经" << std::endl;
+        std::cout << this->name << "念经" << hour << "小时" << std::endl;
     }
     void eat() {
         // TBD: do some special action
         std::cout << this->name << "吃饭" << std::endl;
     }
-    void sleep(uint32_t hour) {
+    void sleep() {
         // TBD: do some special action
-        std::cout << this->name << "睡觉" << hour << "小时" << std::endl;
+        std::cout << this->name << "睡觉" << std::endl;
     }
     void walk(uint32_t distance) {
         // TBD: do some special action
@@ -1884,17 +1884,17 @@ class CommonMonk : public Monk {
 public:
     CommonMonk(const std::string &name) : Monk(name) {}
 
-    void chant() {
+    void chant(uint32_t hour) {
         // TBD: do some special action
-        std::cout << this->name << "念经" << std::endl;
+        std::cout << this->name << "念经" << hour << "小时" << std::endl;
     }
     void eat() {
         // TBD: do some special action
         std::cout << this->name << "吃饭" << std::endl;
     }
-    void sleep(uint32_t hour) {
+    void sleep() {
         // TBD: do some special action
-        std::cout << this->name << "睡觉" << hour << "小时" << std::endl;
+        std::cout << this->name << "睡觉" << std::endl;
     }
     void walk(uint32_t distance) {
         // TBD: do some special action
@@ -1914,8 +1914,8 @@ public:
         for (const auto &monk : monks) {
             monk->eat();
             monk->walk(100);
-            monk->chant();
-            monk->sleep(8);
+            monk->chant(2);
+            monk->sleep();
         }
     }
 
@@ -1938,16 +1938,16 @@ int main() {
 ```
 唐僧吃饭
 唐僧赶路100里
-唐僧念经
-唐僧睡觉8小时
+唐僧念经2小时
+唐僧睡觉
 赵钱孙吃饭
 赵钱孙赶路100里
-赵钱孙念经
-赵钱孙睡觉8小时
+赵钱孙念经2小时
+赵钱孙睡觉
 周吴郑吃饭
 周吴郑赶路100里
-周吴郑念经
-周吴郑睡觉8小时
+周吴郑念经2小时
+周吴郑睡觉
 ```
 
 ***这里使用了一次动态分派（即多态）***。
