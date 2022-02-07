@@ -1998,18 +1998,18 @@ class Buddha {
 public:
     Buddha() = default;
 
-    void buddhistScriptures(Monk* person) {
-        person->eat();
-        person->walk(100);
-        person->chant(2);
-        person->sleep();
+    void buddhistScriptures(Monk* monk) {
+        monk->eat();
+        monk->walk(100);
+        monk->chant(2);
+        monk->sleep();
     }
 
-    void buddhistScriptures(Immortal* person) {
-        person->eat();
-        person->walk(100);
-        person->killMonster("白骨精");
-        person->sleep();
+    void buddhistScriptures(Immortal* immortal) {
+        immortal->eat();
+        immortal->walk(100);
+        immortal->killMonster("白骨精");
+        immortal->sleep();
     }
 };
 ```
@@ -2019,22 +2019,31 @@ public:
 不过，这里还有一个问题：如来佛祖希望取经团队按照如上实现去做，而取经路上的女儿国国王却非如此，她希望唐僧留下来不要去取经了，也别当和尚念经了，直接留女儿国当国王。而孙悟空几个徒弟去代替唐僧取经。因此，***这里需要引入一次动态分派（多态）***，以抽象如来佛祖和女儿国国王，具体的实现方式是实现一个如来佛祖和女儿国国王的公共父类Visitor。看到这里大家应该也就明白了，这里的如来佛祖和女儿国国王就是访问者模式中的访问者。
 
 ```
+class Visitor {
+public:
+    virtual ~Visitor() = 0;
+
+    virtual void buddhistScriptures(Monk* monk) = 0;
+    virtual void buddhistScriptures(Immortal* immortal) = 0;
+};
+Visitor::~Visitor() = default;
+
 class Buddha : public Visitor {
 public:
     Buddha() = default;
 
-    void buddhistScriptures(Monk* person) {
-        person->eat();
-        person->walk(100);
-        person->chant(2);
-        person->sleep();
+    void buddhistScriptures(Monk* monk) {
+        monk->eat();
+        monk->walk(100);
+        monk->chant(2);
+        monk->sleep();
     }
 
-    void buddhistScriptures(Immortal* person) {
-        person->eat();
-        person->walk(100);
-        person->killMonster("白骨精");
-        person->sleep();
+    void buddhistScriptures(Immortal* immortal) {
+        immortal->eat();
+        immortal->walk(100);
+        immortal->killMonster("白骨精");
+        immortal->sleep();
     }
 };
 
@@ -2042,20 +2051,19 @@ class Queen : public Visitor {
 public:
     Queen () = default;
 
-    void buddhistScriptures(Monk* person) {
+    void buddhistScriptures(Monk* monk) {
         // 不取经了，也不念经了，就在女儿国吃了睡、睡了吃 :)
-        person->eat();
-        person->sleep();
+        monk->eat();
+        monk->sleep();
     }
 
-    void buddhistScriptures(Immortal* person) {
+    void buddhistScriptures(Immortal* immortal) {
         // 其他人该干啥干啥
-        person->eat();
-        person->walk(100);
-        person->killMonster("白骨精");
-        person->sleep();
+        immortal->eat();
+        immortal->walk(100);
+        immortal->killMonster("白骨精");
+        immortal->sleep();
     }
-
 };
 ```
 
