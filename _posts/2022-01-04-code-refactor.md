@@ -1916,7 +1916,7 @@ int main()
 
 这带来一个问题，action方法太过抽象，通过名字很难判断到底是做什么的。
 
-- 加入一个类用来区分不同的类型，并调用其对应的函数。例如，是Immortal类型则调用killMonster，是Monk类型则调用chant函数。
+- 根据不同的类型调用对应的函数。例如，是Immortal类型则调用killMonster，是Monk类型则调用chant函数。
 
 !()[../images/visitor-graph-4.jpg]
 
