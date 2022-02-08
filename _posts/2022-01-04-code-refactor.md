@@ -2058,7 +2058,9 @@ public:
 
 ![](../images/visitor-graph-4.jpg)
 
-总结来看，***Visitor模式就是通过两次动态分派+一次静态分派，来实现代码的解耦。*** 当然，Visitor模式也是有缺点的，最显著的在于，当我们增加GoWestPerson的顶层子类时，会导致侵入式修改Visitor的实现。
+总结来看，***Visitor模式就是通过两次动态分派+一次静态分派，来实现代码的解耦。*** 
+
+Visitor模式优点在于，其符合通过三次分派，提高了扩展性，并且符合单一职责原则。当然缺点也是比较明显的：当我们增加GoWestPerson的顶层子类时，会导致侵入式修改Visitor的实现。不过当扩展下层子类时，却不会对Visitor造成侵入式修改。
 
 另外，这里还有一篇对Visitor讲的比较好的[文章](https://www.zhihu.com/question/37236639/answer/218204649)
 
