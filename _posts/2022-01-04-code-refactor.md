@@ -1835,7 +1835,7 @@ private:
 
 Visitor模式是一个相对比较难理解的设计模式，本人阅读了很多讲解Visitor的文章，很多都将重点聚焦在将数据数据持有者和数据访问者分离，这会令很多人很疑惑：为什么要把本来在元素内部实现的、关于元素自身行为的逻辑抽取到访问者上。下面我们来逐层分析，以理解Visitor模式的核心思想。
 
-还是以西天取经为例，最开始取经队伍中只有唐僧和几个其他和尚，这几块货也就是会念念经，所以如来佛祖也没指望他们取经路上干点啥，也就是念经、睡觉、吃饭、赶路。需要说明的是，这里假设唐僧念经和普通和尚不一样，要做一些特殊的操作，因此需要将唐僧实现为一个独立的类。其简单类图如下：
+还是以西天取经为例，最开始取经队伍中只有唐僧和几个其他和尚，这几块货也就是会念念经，所以如来佛祖也没指望他们取经路上干点啥，也就是念念经。需要说明的是，这里假设唐僧念经和普通和尚不一样，要做一些特殊的操作，因此需要将唐僧实现为一个独立的类。其简单类图如下：
 
 ![](../images/visitor-graph-1.jpg)
 
@@ -1847,6 +1847,14 @@ public:
     Monk(const std::string &name) : name(name) {}
     virtual ~Monk() = 0;
 
+    void buddhistScriptures(Buddha &buddha) {
+        this->eat();
+        this->walk(100);
+        buddha.visit(this);
+        this->sleep();
+    }
+
+private:
     virtual void chant(uint32_t hour) = 0;
     virtual void eat() = 0;
     virtual void sleep() = 0;
@@ -1854,6 +1862,8 @@ public:
 
 protected:
     std::string name;
+
+    friend class Buddha;
 };
 
 Monk::~Monk() = default;
@@ -1862,6 +1872,7 @@ class Tangseng : public Monk {
 public:
     Tangseng() : Monk("唐僧") {}
 
+private:
     void chant(uint32_t hour) {
         // TBD: do some special action
         std::cout << this->name << "念经" << hour << "小时" << std::endl;
@@ -1884,6 +1895,7 @@ class CommonMonk : public Monk {
 public:
     CommonMonk(const std::string &name) : Monk(name) {}
 
+private:
     void chant(uint32_t hour) {
         // TBD: do some special action
         std::cout << this->name << "念经" << hour << "小时" << std::endl;
@@ -1906,11 +1918,8 @@ class Buddha {
 public:
     Buddha() = default;
 
-    void buddhistScriptures(Monk* monk) {
-        monk->eat();
-        monk->walk(100);
+    void visit(Monk* monk) {
         monk->chant(2);
-        monk->sleep();
     }
 };
 ```
@@ -1926,7 +1935,7 @@ int main() {
 
     Buddha buddha;
     for (const auto &monk : monks) {
-        buddha.buddhistScriptures(monk.get());
+        monk->buddhistScriptures(buddha);
     }
 }
 ```
@@ -1950,11 +1959,11 @@ int main() {
 
 ***这里使用了一次动态分派（即多态）***。
 
-后来随着剧情推进，孙悟空、猪八戒和沙僧加入了队伍。然而他们的主要职责并不是念经，而是降妖除魔。如下所示：
+后来随着剧情推进，孙悟空、猪八戒和沙僧加入了队伍。然而如来佛祖希望他们取经路上的职责是降妖除魔，而不是念经。如下所示：
 
 ![](../images/visitor-graph-2.jpg)
 
-因此，通过上面的一次动态分派就很难解决问题了。这里有两种解决办法：
+由于不同的角色需要执行不同的操作，因此通过上面的一次动态分派就很难解决问题了。这里有两种解决办法：
 
 - 将killMonster和chant函数抽象成action，如下所示：
 
@@ -1975,15 +1984,9 @@ public:
 
     void buddhistScriptures(Person* person) {
         if (person->type() == "Monk") {
-            person->eat();
-            person->walk(100);
             person->chant(2);
-            person->sleep();
         } else if (person->type() == "Immortal") {
-            person->eat();
-            person->walk(100);
             person->killMonster("白骨精");
-            person->sleep();
         }
     }
 };
@@ -1999,24 +2002,20 @@ public:
     Buddha() = default;
 
     void buddhistScriptures(Monk* monk) {
-        monk->eat();
-        monk->walk(100);
         monk->chant(2);
-        monk->sleep();
     }
 
     void buddhistScriptures(Immortal* immortal) {
-        immortal->eat();
-        immortal->walk(100);
         immortal->killMonster("白骨精");
-        immortal->sleep();
     }
 };
 ```
 
 这里***通过函数重载引入了一次静态分派***，当调用buddhistScriptures函数时，会根据具体是Monk类型还是Immortal类型，来调用不同的重载函数。
 
-不过，这里还有一个问题：如来佛祖希望取经团队按照如上实现去做，而取经路上的女儿国国王却非如此，她希望唐僧留下来不要去取经了，也别当和尚念经了，直接留女儿国当国王。而孙悟空几个徒弟去代替唐僧取经。因此，***这里需要引入一次动态分派（多态）***，以抽象如来佛祖和女儿国国王，具体的实现方式是实现一个如来佛祖和女儿国国王的公共父类Visitor。看到这里大家应该也就明白了，这里的如来佛祖和女儿国国王就是访问者模式中的访问者。
+不过，这里还有一个问题：如来佛祖希望取经团队按照如上实现去做，而李世民却并非如此。他要求唐僧和其他普通和尚能够收集沿途的地理人文信息，以便大唐治理国家需要。要求孙悟空猪八戒等沿途大力宣扬大唐武力充沛，以防止他国来犯。
+
+。因此，***这里需要引入一次动态分派（多态）***，以抽象如来佛祖和李世民，具体的实现方式是实现一个如来佛祖和李世民的公共父类Visitor。看到这里大家应该也就明白了，这里的如来佛祖和李世民就是访问者模式中的访问者。
 
 ```
 class Visitor {
@@ -2032,42 +2031,34 @@ class Buddha : public Visitor {
 public:
     Buddha() = default;
 
-    void buddhistScriptures(Monk* monk) {
-        monk->eat();
-        monk->walk(100);
+    void visit(Monk* monk) {
         monk->chant(2);
-        monk->sleep();
     }
 
-    void buddhistScriptures(Immortal* immortal) {
-        immortal->eat();
-        immortal->walk(100);
+    void visit(Immortal* immortal) {
         immortal->killMonster("白骨精");
-        immortal->sleep();
     }
 };
 
-class Queen : public Visitor {
+class Lishimin : public Visitor {
 public:
     Queen () = default;
 
-    void buddhistScriptures(Monk* monk) {
-        // 不取经了，也不念经了，就在女儿国吃了睡、睡了吃 :)
-        monk->eat();
-        monk->sleep();
+    void visit(Monk* monk) {
+	monk->collectInfo();
     }
 
-    void buddhistScriptures(Immortal* immortal) {
-        // 其他人该干啥干啥
-        immortal->eat();
-        immortal->walk(100);
-        immortal->killMonster("白骨精");
-        immortal->sleep();
+    void visit(Immortal* immortal) {
+	immortal->showStrength();
     }
 };
 ```
 
-总结来看，***Visitor模式就是通过两次动态分派+一次静态分派，来实现代码的解耦。***
+其最终类图如下:
+
+![](../images/visitor-graph-4.jpg)
+
+总结来看，***Visitor模式就是通过两次动态分派+一次静态分派，来实现代码的解耦。*** 当然，Visitor模式也是有缺点的，最显著的在于，当我们增加GoWestPerson的顶层子类时，会导致侵入式修改Visitor的实现。
 
 另外，这里还有一篇对Visitor讲的比较好的[文章](https://www.zhihu.com/question/37236639/answer/218204649)
 
