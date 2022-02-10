@@ -2722,101 +2722,6 @@ private:
 
 ## 其他常用模式
 
-### AOP
-
-AOP即Aspect Oriented Programming（面向切面编程），其要实现的是在原来代码的基础上，设计一些切面，使得外部可以插入一些切入点，以对原来的代码进行一定的包装，例如拦截或者增强处理。其中的拦截即是常说的***filter模式***。通过使用AOP，使得原来的代码聚焦于其自身核心逻辑之上，符合单一职责原则，而这些切入点通常是一些通用逻辑，例如权限认证、限流等等。
-
-![](../images/aop-pattern.jpg)
-
-现在我们举一个Filter模式的例子（增强处理也是类似的，只是将类名字改一下而已）
-
-假设公司在女人节当天会给所有女性员工发放礼物，因此我们可以根据AOP实现一个过滤器，筛选出所有的女性员工并发放礼物。
-
-```
-enum class Sexual {
-    MALE = 0,
-    FEMALE,
-};
-
-struct Person {
-    Person(const std::string &name, Sexual sexual) {
-        this->name = name;
-        this->sexual = sexual;
-    }
-
-    std::string name;
-    Sexual sexual;
-};
-
-class Filter {
-public:
-    virtual bool doFilter(const Person &person) = 0;
-};
-
-class PersonManager {
-public:
-    PersonManager() {
-        persons.emplace_back("张三", Sexual::FEMALE);
-        persons.emplace_back("李逵", Sexual::MALE);
-        persons.emplace_back("孙悟空", Sexual::MALE);
-        persons.emplace_back("李四", Sexual::FEMALE);
-    }
-
-    void onHoliday() {
-        for (const auto &person : persons) {
-            if (doFilter(person)) {
-                continue;
-            }
-
-            std::cout << "send gift to " << person.name << std::endl;
-        }
-    }
-
-    void addFilter(std::shared_ptr<Filter> filter) {
-        filters.push_back(filter);
-    }
-
-private:
-    bool doFilter(const Person &person) {
-        for (const auto &filter : filters) {
-            if (filter->doFilter(person)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    std::vector<Person> persons;
-    std::vector<std::shared_ptr<Filter>> filters;
-};
-
-class SexualFilter : public Filter {
-public:
-    bool doFilter(const Person &person) {
-        return person.sexual != Sexual::FEMALE;
-    }
-};
-
-int main()
-{
-    auto filter = std::make_shared<SexualFilter>();
-    PersonManager manager;
-    manager.addFilter(filter);
-    manager.onHoliday();
-}
-```
-
-通过上例中，通过添加的过滤器，在没有更改原有逻辑的情况下将所有男员工都过滤掉了。其执行结果如下：
-
-```
-send gift to 张三
-send gift to 李四
-```
-
-需要说明的是，这里可以将Filter实现为模板，使其更具有通用性。这里只是为了阐述简单，因此并没有这样实现。
-
-另外，Pegasus中也有一个关于切面的实现，具体可以参考[Pegasus join point](https://github.com/XiaoMi/rdsn/blob/master/include/dsn/utility/join_point.h)
-
 ### Pub/Sub模式
 
 Pub/Sub模式是一个我们在日常生活中经常遇到的场景。比如，我们可以订阅喜马拉雅上的某个评书栏目，这样当该评书更新时，所有参与订阅的人就可以收到推送。另外，redis的发布订阅功能也是通过Pub/Sub模式实现的。
@@ -2929,7 +2834,100 @@ public:
 
 这里有一个文档进行了更详细的论述：[Observers vs Pub-Sub pattern](https://hackernoon.com/observer-vs-pub-sub-pattern-50d3b27f838c)。
 
-### 生产者消费者模式
+### AOP
+
+AOP即Aspect Oriented Programming（面向切面编程），其要实现的是在原来代码的基础上，设计一些切面，使得外部可以插入一些切入点，以对原来的代码进行一定的包装，例如拦截或者增强处理。其中的拦截即是常说的***filter模式***。通过使用AOP，使得原来的代码聚焦于其自身核心逻辑之上，符合单一职责原则，而这些切入点通常是一些通用逻辑，例如权限认证、限流等等。
+
+![](../images/aop-pattern.jpg)
+
+现在我们举一个Filter模式的例子（增强处理也是类似的，只是将类名字改一下而已）
+
+假设公司在女人节当天会给所有女性员工发放礼物，因此我们可以根据AOP实现一个过滤器，筛选出所有的女性员工并发放礼物。
+
+```
+enum class Sexual {
+    MALE = 0,
+    FEMALE,
+};
+
+struct Person {
+    Person(const std::string &name, Sexual sexual) {
+        this->name = name;
+        this->sexual = sexual;
+    }
+
+    std::string name;
+    Sexual sexual;
+};
+
+class Filter {
+public:
+    virtual bool doFilter(const Person &person) = 0;
+};
+
+class PersonManager {
+public:
+    PersonManager() {
+        persons.emplace_back("张三", Sexual::FEMALE);
+        persons.emplace_back("李逵", Sexual::MALE);
+        persons.emplace_back("孙悟空", Sexual::MALE);
+        persons.emplace_back("李四", Sexual::FEMALE);
+    }
+
+    void onHoliday() {
+        for (const auto &person : persons) {
+            if (doFilter(person)) {
+                continue;
+            }
+
+            std::cout << "send gift to " << person.name << std::endl;
+        }
+    }
+
+    void addFilter(std::shared_ptr<Filter> filter) {
+        filters.push_back(filter);
+    }
+
+private:
+    bool doFilter(const Person &person) {
+        for (const auto &filter : filters) {
+            if (filter->doFilter(person)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::vector<Person> persons;
+    std::vector<std::shared_ptr<Filter>> filters;
+};
+
+class SexualFilter : public Filter {
+public:
+    bool doFilter(const Person &person) {
+        return person.sexual != Sexual::FEMALE;
+    }
+};
+
+int main()
+{
+    auto filter = std::make_shared<SexualFilter>();
+    PersonManager manager;
+    manager.addFilter(filter);
+    manager.onHoliday();
+}
+```
+
+通过上例中，通过添加的过滤器，在没有更改原有逻辑的情况下将所有男员工都过滤掉了。其执行结果如下：
+
+```
+send gift to 张三
+send gift to 李四
+```
+
+需要说明的是，这里可以将Filter实现为模板，使其更具有通用性。这里只是为了阐述简单，因此并没有这样实现。
+
+另外，Pegasus中也有一个关于切面的实现，具体可以参考[Pegasus join point](https://github.com/XiaoMi/rdsn/blob/master/include/dsn/utility/join_point.h)
 
 ### 空对象模式
 
@@ -2973,10 +2971,6 @@ public:
 ```
 
 这样，我们每次在创建一个Object指针的时候，都默认给其一个NullObject对象，这样可以在不影响程序运行状态的情况下避免纷乱的空值判断，提高代码的可读性。
-
-### 雇工模式
-
-### 对象池模式
 
 ### 规格模式
 
