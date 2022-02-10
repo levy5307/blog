@@ -3124,7 +3124,7 @@ void printOwing(const std::string &name) {
 ## Reference
 
 《重构》
-《设计模式之禅》
+[《设计模式之禅》](https://www.kancloud.cn/sstd521/design/193489)
 《设计模式解析》
 《Effective C++》
 《More Effective C++》
