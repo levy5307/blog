@@ -3129,5 +3129,3 @@ void printOwing(const std::string &name) {
 
 《More Effective C++》
 
-《Redis设计与实现》
-
