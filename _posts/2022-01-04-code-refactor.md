@@ -2992,8 +2992,6 @@ public:
 
 ## Specific Way In C++ 
 
-### pImpl
-
 ### RAII
 
 RAII全称Resource Acquisition Is Initialization，中文翻译为资源获取即初始化。其核心思想是使用对象来管理资源，主要应用场景包括资源销毁以及锁释放等。
@@ -3038,6 +3036,183 @@ void func() {
 这样，当离开`{}`的作用域时，便会执行AutoLock的析构函数，在该析构函数中执行解锁操作。
 
 ### Class Trait
+
+### 减轻文件间依赖
+
+考虑如下代码：
+
+```cpp
+// bed.h
+
+#include "pillow.h"
+#include "quilt.h"
+
+class Bed {
+public:
+    Bed() = default;
+
+    uint32_t length() const;
+    uint32_t width() const;
+    uint32_t pillowCount() const;
+    uint32_t quiltCount() const;
+
+private:
+    uint32_t length;
+    uint32_t width;
+    std::vector<Pillow> pillow;
+    std::vector<Quilt> quilt;
+};
+
+```
+
+```cpp
+// house.h
+
+#include "bed.h"
+
+class House {
+public:
+    House() = default;
+
+private:
+    Bed bed;
+};
+```
+
+如上所示，`bed.h`依赖了`pillow.h`和`quilt.h`，`house.h`依赖了`bed.h`，会导致无论那个文件修改，都会重新编译`house.h`。
+
+这其实是C++饱受诟病的一点：接口和实现未完全分离。从而导致实现细节暴露出去。具体到上面的例子就是，`house.h`知道了`bed.h`的实现细节，从而间接依赖了`pillow.h`和`quilt.h`
+
+要解决这种文件间过度依赖的问题，有如下几种方法。
+
+#### forward declare
+
+forward declare就是借助前置声明+指针（引用）来解决依赖的问题。如上例中的`bed.h`，可以修改为如下：
+
+```cpp
+// bed.h
+
+class Pillow;
+class Quilt;
+class Bed {
+public:
+    Bed() = default;
+
+    uint32_t length() const;
+    uint32_t width() const;
+    uint32_t pillowCount() const;
+    uint32_t quiltCount() const;
+
+private:
+    uint32_t length;
+    uint32_t width;
+    std::vector<std::unique_ptr<Pillow>> pillow;
+    std::vector<std::unique_ptr<Quilt>> quilt;
+};
+```
+
+同样，在`house.h`中也采用相同的方法，这样便可以减轻文件间的依赖。
+
+如果当相关前置声明需要在多个文件中使用，会导致过多的重复前置声明代码。那么可以将这些声明放在一个头文件中(例如创建一个`bed_fwd.h`文件，专门存放`bed.h`对应的前置声明)，必要时include该头文件即可。该方法叫做***为声明式和定义式提供不同的头文件***
+
+#### pImpl
+
+另外一个比较常用的解决方法是将接口和实现分离。最常用的就是pImpl和virtual class。首先来看一下pImpl，还是以`bed.h`为例：
+
+```
+// bed.h
+
+class BedImpl;
+class Bed {
+public:
+    Bed() = default;
+
+    uint32_t length() const;
+    uint32_t width() const;
+    uint32_t pillowCount() const;
+    uint32_t quiltCount() const;
+
+private:
+    BedImpl *impl;
+};
+
+// bed.cpp
+uint32_t Bed::length() const { return impl->length(); }
+uint32_t Bed::width() const { return impl->width(); }
+uint32_t Bed::pillowCount() const { return impl->pillowCount(); }
+uint32_t Bed::quiltCount() const {return impl->quiltCount(); }
+```
+
+```
+// bedImpl.h
+
+class BedImpl {
+public:
+    BedImpl() = default;
+
+    uint32_t length() const;
+    uint32_t width() const;
+    uint32_t pillowCount() const;
+    uint32_t quiltCount() const;
+private:
+    uint32_t length;
+    uint32_t width;
+    std::vector<std::unique_ptr<Pillow>> pillow;
+    std::vector<std::unique_ptr<Quilt>> quilt;
+};
+```
+
+通过Impl，***真正实现了接口和实现的完全分离***，这样`Bed`的实现细节完全不会暴露给客户代码，降低了文件之间的依赖。在此例中，`house.h`由于不知道Bed的实现细节，因此不会依赖`pillow.h`和`quilt.h`。
+
+不过pImpl也有个问题，即：每次调用都需要经过一次传递。另外吹毛求疵的讲，pImpl导致增加了一个指针的内存消耗。
+
+#### virtual class
+
+另外一个减轻文件间解耦的方式是将Bed声明为virtual class。如下所示：
+
+```
+// bed.h
+
+class Bed {
+public:
+    virtual ~Bed() = 0;
+
+    virtual uint32_t length() const = 0;
+    virtual uint32_t width() const = 0;
+    virtual uint32_t pillowCount() const = 0;
+    virtual uint32_t quiltCount() const = 0;
+};
+
+// bedImpl.h
+class BedImpl : public Bed {
+public:
+    BedImpl() = default;
+
+    uint32_t length() const;
+    uint32_t width() const;
+    uint32_t pillowCount() const;
+    uint32_t quiltCount() const;
+private:
+    uint32_t length;
+    uint32_t width;
+    std::vector<std::unique_ptr<Pillow>> pillow;
+    std::vector<std::unique_ptr<Quilt>> quilt;
+};
+```
+
+在House类的实现中，只需要持有一个指向virtual class的指针即可，这样变可以利用C++的多态：
+
+```
+class House {
+public:
+    House(std::shared_ptr<Bed> bed);
+
+private:
+    std::shared_ptr<Bed> bed;
+};
+```
+
+这样也做到了接口和实现的完全分离。不过这样做也是有缺点的，即：每次调用都需要付出一次间接跳跃的成本，产生虚表的存在也会导致对象产生额外的内存消耗。
 
 ## Others
 
