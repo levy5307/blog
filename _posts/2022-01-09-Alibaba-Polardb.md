@@ -3,7 +3,7 @@ layout: post
 title: Alibaba PolarDB
 date: 2022-01-09
 Author: levy5307
-tags: [论文]
+tags: [论文, NewSQL]
 comments: true
 toc: true
 ---

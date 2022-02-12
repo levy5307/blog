@@ -3,7 +3,7 @@ layout: post
 title: Microsoft Socrates
 date: 2021-08-17
 Author: levy5307
-tags: [论文]
+tags: [论文, NewSQL]
 comments: true
 toc: true
 ---
