@@ -174,7 +174,7 @@ Redis相对来说其实就很简单了，它就是一个缓存系统，对于丢
 
 Redis采用的也是弱一致性系统，主要原因是其采用了异步复制技术。如下图所示：
 
-![](../images/images/redis-async.png)
+![](../images/redis-async.png)
 
 当写入master成功后，就返回给客户端写入成功。随后master再异步的将写入同步到slave中。这样可以获取更低的写入延时，但是损失的是强一致性。即当sentinel发现当前master失联之后，会选取一个slave做为新的master，此时没有同步到该slave的数据就丢失了。尽管选取新master的过程会尽量选取一个包含更多数据的slave，但是总归是和master之间有数据没同步完的，只是多少的问题。
 
