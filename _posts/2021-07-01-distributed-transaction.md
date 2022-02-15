@@ -6,6 +6,7 @@ Author: levy5307
 tags: [分布式事务]
 comments: true
 toc: true
+pinned: true
 ---
 
 ## 事务的属性

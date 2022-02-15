@@ -6,6 +6,7 @@ Author: levy5307
 tags: []
 comments: true
 toc: true
+pinned: true
 ---
 
 之前抽时间研究了下当前比较火热的两款表格存储，BigTable和Cassandra。这篇文章主要对两者做一个对比概括。

@@ -6,6 +6,7 @@ Author: levy5307
 tags: []
 comments: true
 toc: true
+pinned: true
 ---
 
 之前专门花时间调研过各种[强一致性的分布式协议](https://levy5307.github.io/blog/consensus-protocol-summary/)，却并未对弱一致性进行过深入研究，然而前段时间学习论文时候发现，其实很多存储系统还是采用的弱一致性，以获取较高的性能或者可用性。所以这里决定研究一下弱一致性。
