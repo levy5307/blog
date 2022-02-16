@@ -6,7 +6,6 @@ Author: Levy5307
 tags: [一致性协议]
 comments: true
 toc: true
-pinned: true
 ---
 
 ## 链式复制(Chain Replication)
