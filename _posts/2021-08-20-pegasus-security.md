@@ -13,7 +13,17 @@ toc: true
 
 ## 身份认证
 
-Pegasus的身份认证功能是基于Kerberos实现的。Kerberos是由MIT提出的一种身份验证协议，通过使用密钥加密技术为客户端/服务器应用程序提供强身份验证。但是它的缺点在于接口很琐碎，对用户不是十分友好。针对这个问题，我们采用了SASL+Kerberos的方式，Kerberos提供安全认证机制，而SASL在Kerberos上层提供一个更为通用的标准接口。
+Pegasus的身份认证功能是基于Kerberos实现的。Kerberos是由MIT提出的一种身份验证协议，通过使用密钥加密技术为客户端/服务器应用程序提供强身份验证。
+
+它的缺点在于接口很琐碎，对用户不是十分友好。针对这个问题，我们采用了SASL+Kerberos的方式，Kerberos提供安全认证机制，而SASL在Kerberos上层提供一个更为通用的标准接口。
+
+另外，kerberos也有如下几个优点：
+
+- 较高的Performance
+
+- 支持双向认证：client可以对server身份执行认证
+
+- 影响力大、是一个广泛接受的标准
 
 ![](../images/security-auth-arch.svg)
 
