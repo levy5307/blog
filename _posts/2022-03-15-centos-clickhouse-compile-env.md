@@ -69,13 +69,17 @@ rm python
 ln -s /root/env/ldb_toolchain/bin/ldb-python3 python
 ```
 
-可能会导致yum无法使用，需要修改yum文件
+该步骤可能会导致yum无法使用，需要修改yum文件
 
 ```
 vim /usr/bin/yum
+```
 
+```
 #! /usr/bin/python
+```
 ===>
+```
 #! /usr/bin/python2.6
 ```
 
