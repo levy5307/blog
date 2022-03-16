@@ -8,7 +8,7 @@ comments: true
 toc: true
 ---
 
-当前ClickHouse的官方文档中只有Ubuntu的编译环境搭建，没有Centos相关文档。这里根据个人的实际搭建经验，将Centos上搭建ClickHouse编译环境的步骤进行罗列。
+当前ClickHouse的官方文档中只有Ubuntu的编译环境搭建，没有Centos相关文档。这里根据个人的实际搭建经验，将Centos上搭建ClickHouse编译环境的步骤进行讲解（该教程在centos6和centos7.3上分别进行过实践验证）
 
 ### 更新yum源
 
@@ -87,3 +87,6 @@ mkdir build && cd build
 cmake ..
 ninja
 ```
+
+整个编译过程会比较久，大约需要2-3个小时，请耐心等待。
+
