@@ -37,6 +37,8 @@ export PATH=$PATH:/root/env/ldb_toolchain/bin
 
 ### 安装ccache
 
+其实ccache不是必要的，只是会让后续的编译过程更快一些。
+
 ```
 cd /root/env/ldb_toolchain/bin
 wget https://github.com/levy5307/ldb_toolchain_gen/raw/main/ccache
