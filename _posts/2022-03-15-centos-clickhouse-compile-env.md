@@ -118,3 +118,13 @@ cd build
 cpack -G RPM
 ```
 
+## Dockerfile
+
+如果你不想自己动手搭建环境，这里也有一个现有的[Dockerfile](https://github.com/levy5307/ClickHouse-Docker)可以使用，clone下来后执行：
+
+```
+docker build -t clickhouse-buildenv .
+```
+
+即可生成镜像。
+
