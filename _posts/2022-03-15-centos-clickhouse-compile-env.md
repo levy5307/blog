@@ -126,5 +126,5 @@ cpack -G RPM
 docker build -t clickhouse-buildenv .
 ```
 
-即可生成镜像。
+即可生成Docker镜像。
 
