@@ -93,7 +93,7 @@ vim /usr/bin/yum
 ```
 cd /root/ClickHouse
 mkdir build && cd build
-cmake ..
+cmake .. -DENABLE_JEMALLOC=1
 ninja
 ```
 
