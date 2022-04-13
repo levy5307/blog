@@ -69,3 +69,5 @@ meta_service持有一个greedy_load_balancer对象，无需关心使用哪个pol
 
 ![](../images/load-balancer-final.svg)
 
+另外，在load balance的执行过程中，包括primary copy和secondary copy操作，这两个的操作流程大体是相同的，只有部分细节的差异，可以使用模板方法模式来实现，具体可以参考[模板方法模式在Pegasus load balance中的应用](https://levy5307.github.io/blog/code-refactor/#%E6%A8%A1%E6%9D%BF%E6%96%B9%E6%B3%95%E6%A8%A1%E5%BC%8F)
+
