@@ -94,7 +94,7 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 对于redo log的apply，Aurora采用叫做lazy materialization的处理方式：redo log来到之后，不会直接apply生成data page。只有当某个page修改过多、或者读取该page时，才会去apply对应的redo log。这样做有两个好处：
 
-1. 每个事务的IO减少了。并为每个redo log都apply生成data page，大幅减少了IO
+1. 每个事务的IO减少了。不为每个redo log都apply生成data page，大幅减少了IO
 
 2. 故障恢复更快了。在故障恢复的时候，并不需要将所有的redo log都apply完才能提供服务，而是可以立即提供服务，当读取的时候进行lazy apply
 
