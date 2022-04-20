@@ -40,7 +40,7 @@ toc: true
 
 在如下代码中，主要介绍了如何通过flink向clickhouse sink中写入数据，source部分可以稍加修改变成kafka等其他服务
 
-```
+```Java
 public class SinkClickHouse {
     private static final String CLICKHOUSE_URL = "jdbc:ch://{host}:{port}/{database}";
     private static final String CLICKHOUSE_JDBC_DRIVER = "com.clickhouse.jdbc.ClickHouseDriver";
