@@ -101,7 +101,28 @@ ninja
 
 ## 打包
 
-ClickHouse内部支持了CPack打包，只需要简单的配置就可以使用。
+ClickHouse内部没有支持CPack打包，需要对`CMakeLists.txt`和`git_status.cmake`文件做适当的修改。
+
+`git_status.cmake`中添加:
+
+```
+execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE CLICKHOUSE_TAG
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+else()
+```
+
+`CMakeLists.txt`中添加: 
+
+```
+set(CPACK_PACKAGE_VERSION ${CLICKHOUSE_TAG})
+set(CPACK_PACKAGE_VENDOR "Xiaomi")
+install(PROGRAMS pack-bin/clickhouse_exporter DESTINATION ${CMAKE_INSTALL_BINDIR}) 	## 将clickhouse_exporter打包进去
+install(PROGRAMS pack-bin/node_exporter DESTINATION ${CMAKE_INSTALL_BINDIR}) 		## 将node_exporter打包进去
+include(CPack)
+```
 
 ### 打包成TGZ包
 
