@@ -10,13 +10,13 @@ toc: true
 
 ## 说明
 
-当前使用的flinkd-connector-jdbc仅支持Flink DataStream API的方式向ClickHouse导入数据，TableAPI和FlinkSQL尚不支持。
+当前使用的flinkd-connector-jdbc仅支持Flink DataStreamAPI的方式向ClickHouse导入数据，TableAPI和FlinkSQL尚不支持。
 
 ## 依赖
 
 需要在pom.xml中添加如下依赖，分别为flink connector和clickhouse jdbc驱动
 
-```
+```xml
 <dependency>
   <groupId>org.apache.flink</groupId>
   <artifactId>flink-connector-jdbc_2.11</artifactId>
@@ -40,7 +40,7 @@ toc: true
 
 在如下代码中，主要介绍了如何通过flink向clickhouse sink中写入数据，source部分可以稍加修改变成kafka等其他服务
 
-```Java
+```java
 public class SinkClickHouse {
     private static final String CLICKHOUSE_URL = "jdbc:ch://{host}:{port}/{database}";
     private static final String CLICKHOUSE_JDBC_DRIVER = "com.clickhouse.jdbc.ClickHouseDriver";
