@@ -15,7 +15,7 @@ toc: true
 
 ### 更新yum源
 
-```
+```shell
 cd /etc/yum.repos.d/
 sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
 sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repo s.d/CentOS-*
@@ -24,13 +24,13 @@ yum update -y
 
 ### 安装wget
 
-```
+```shell
 yum install wget -y
 ```
 
 ### 获取ldb-toolchain
 
-```
+```shell
 mkdir env && cd env
 wget https://github.com/amosbird/ldb_toolchain_gen/releases/download/v0.9.1/ldb_toolchain_gen.sh
 sh ldb_toolchain_gen.sh /root/env/ldb_toolchain
@@ -42,7 +42,7 @@ export PATH=$PATH:/root/env/ldb_toolchain/bin
 
 其实ccache不是必要的，只是会让后续的编译过程更快一些。
 
-```
+```shell
 cd /root/env/ldb_toolchain/bin
 wget https://github.com/levy5307/ldb_toolchain_gen/raw/main/ccache
 chmod +x ccache
@@ -50,25 +50,25 @@ chmod +x ccache
 
 ### 配置CC和CXX
 
-```
+```shell
 export CC=clang CXX=clang++
 ```
 
 ### 安装perl
 
-```
+```shell
 yum install perl -y
 ```
 
 ### 安装git
 
-```
+```shell
 yum install git -y
 ```
 
 ### 配置使用Python3
 
-```
+```shell
 cd /usr/bin
 rm python
 ln -s /root/env/ldb_toolchain/bin/ldb-python3 python
@@ -76,21 +76,21 @@ ln -s /root/env/ldb_toolchain/bin/ldb-python3 python
 
 该步骤可能会导致yum无法使用，需要修改yum文件
 
-```
+```shell
 vim /usr/bin/yum
 ```
 
-```
+```bash
 #! /usr/bin/python
 ```
 ===>
-```
+```bash
 #! /usr/bin/python2.6
 ```
 
 ### build源码
 
-```
+```shell
 cd /root/ClickHouse
 mkdir build && cd build
 cmake .. -DENABLE_JEMALLOC=1
@@ -101,18 +101,39 @@ ninja
 
 ## 打包
 
-ClickHouse内部支持了CPack打包，只需要简单的配置就可以使用。
+ClickHouse内部没有支持CPack打包，需要对`CMakeLists.txt`和`git_status.cmake`文件做适当的修改。
+
+`git_status.cmake`中添加:
+
+```cmake
+execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE CLICKHOUSE_TAG
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+else()
+```
+
+`CMakeLists.txt`中添加: 
+
+```cmake
+set(CPACK_PACKAGE_VERSION ${CLICKHOUSE_TAG})
+set(CPACK_PACKAGE_VENDOR "Xiaomi")
+install(PROGRAMS pack-bin/clickhouse_exporter DESTINATION ${CMAKE_INSTALL_BINDIR}) 	## 将clickhouse_exporter打包进去
+install(PROGRAMS pack-bin/node_exporter DESTINATION ${CMAKE_INSTALL_BINDIR}) 		## 将node_exporter打包进去
+include(CPack)
+```
 
 ### 打包成TGZ包
 
-```
+```shell
 cd build
 cpack -G TGZ
 ```
 
 ### 打包成RPM包
 
-```
+```shell
 yum install -y rpm-build
 cd build
 cpack -G RPM
@@ -122,7 +143,7 @@ cpack -G RPM
 
 如果你不想自己动手搭建环境，这里也有一个现有的[Dockerfile](https://github.com/levy5307/ClickHouse-Docker)可以使用，clone下来后执行：
 
-```
+```shell
 docker build -t clickhouse-buildenv .
 ```
 
