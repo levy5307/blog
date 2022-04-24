@@ -149,7 +149,9 @@ log是OLTP数据库系统的一个潜在性能瓶颈，每一个事务在提交�
 
 2. 将log组件与其他组件分离，使得读取和传输log records更加灵活和可伸缩。Scorates利用了日志访问的不对称性，即：最新创建的log records的访问需求比较高、而老的log records仅仅在一些异常情况下才需要访问（例如abort或者redo一个长时间运行的事务）。因此，Socrates将最近的log保存在内存中、并将其以一种可伸缩的方式进行分布（通常是分布到数百台机器）。老的log records将会转储，并仅在需要的时候获取。
 
-3. 将log分离使得我们可以站在巨人的肩膀上，这样可以使用外部的存储服务来实现log组件。这已经其了作用：Socrates可以利用Azure storage的最新的创新，而无需修改Socrates的架构。这使得Socrates可以在无需实现log shipping、gossip quorum protocol、log storage system的情况下实现较低的commit延迟。
+3. 将log分离使得我们可以站在巨人的肩膀上，这样可以使用外部的存储服务来实现log组件。这已经其了作用：Socrates可以利用Azure storage的最新的创新，而无需修改Socrates的架构。
+
+Separation of Log使得Socrates可以在***无需实现log shipping、gossip quorum protocol、log storage system的情况下实现较低的commit延迟。***
 
 - Pushdown Storage Functions
 
@@ -161,7 +163,7 @@ SQL Server具体有很丰富的生态系统，具有很多工具、库和应用�
 
 ### Architecture Overview
 
-![](../images/socrate-architecture.jpg)
+![](../images/socrates-architecture.jpg)
 
 上图展示了Socrates的架构图，Socrates遵循了如下设计原则：
 
