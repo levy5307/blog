@@ -260,7 +260,7 @@ XLOG进程也实现了一些其它的分布式DBaaS系统的通用功能：日�
 ```
 getPage(pageId, LSN)
 ```
-pageId唯一地标识Primary需要读取的页，LSN代表page log sequence number，其值至少要与该page中的的最大PageLSN相同。page server返回已应用此LSN或者更新的page version。
+pageId唯一地标识Primary需要读取的页，LSN代表page log sequence number，page server返回已应用此LSN或者更新的page version。
 
 为了理解这种机制，考虑如下场景：
 
