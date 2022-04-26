@@ -298,9 +298,9 @@ pageId唯一地标识Primary需要读取的页，LSN代表page log sequence numb
 
 - 对GetPage请求，Secondary对其先注册
 
-- 对后续过来的log records，将其挂载在相应的GetPage注册entry下
+- 对后续过来的log records，如果发现有GetPage注册了，则将其挂载在相应的GetPage注册entry下；否则将这些log records忽略。
 
-- 当GetPage请求返回之后，对这些log records进行apply
+- 当GetPage请求返回之后，对挂载的log records进行apply
 
 这样可以保证Secondary获取GetPage期间同步过来的log records更新也可以apply上，使得Secondary中的page尽可能新。
 
