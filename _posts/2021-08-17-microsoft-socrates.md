@@ -294,7 +294,7 @@ pageId唯一地标识Primary需要读取的页，LSN代表page log sequence numb
 
 1. 一个可能的策略是从底层fetch page并且应用log，这种方式下，Secondary与Primary的缓存大致保持一致。当failover并导致Secondary晋升发生时，其性能可以更加稳定。
 
-2. 令一个策略是当前SQL DB Hyperscale当前采用的，即简单忽略掉不在cache中的pages。这个策略会导致一个问题，Secondary处理只读事务时的GetPage请求与判断page是否存在于cache中存在并发性问题。为了解决这个冲突，Secondary必须在实际调用之前先注册GetPage请求，Secondary的apply-log线程将GetPage请求相关的log records进行排队。当所有的page被加载进来之后，才进行实际的调用。
+2. 令一个策略是当前SQL DB Hyperscale当前采用的，即简单忽略掉不在cache中的pages。这个策略会导致一个问题，Secondary处理只读事务时的GetPage请求与判断page是否存在于cache中存在race condition。
 
 另一个问题出现在Secondary执行B树遍历来处理只读事务时。Secondary使用与Primary相同的GetPage协议，但是在同一时刻Secondary的LSN可能会比Primary中最新写入的LSN小，这会带来不一致问题。考虑下面B-Tree遍历的部分场景：
 
