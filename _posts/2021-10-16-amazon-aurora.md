@@ -183,3 +183,5 @@ Aurora的计算节点和存储节点分离，分别位于不同的VPC（Virtual 
 
 ![](../images/aurora-arch.jpg)
 
+总结：通篇论文读下来，发现Aurora其实是没有distribution的，数据没有分成多个shard，本质上还是一个单机的。因此其不需要分布式事务。同时其所能支持的数据量也不会很大，其主要实现的是对Mysql的扩展，更多的像云上Mysql的感觉，适合云上的中小用户使用。
+
