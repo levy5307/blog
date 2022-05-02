@@ -158,5 +158,25 @@ Snowflake中一致的hash是lazy的。当工作节点由于节点故障或VW大�
 
 #### Execution Engine
 
+虽然可伸缩性是首要的，但每个节点的效率同样重要。Snowflake希望给用户提供市场上任何数据库服务产品中最好的性价比，因此我们决定实现我们自己的SQL执行引擎。Snowflake构建的引擎是列式的、向量化的和基于push的
 
+***Columnar***
+
+列存在分析场景的优势是更高效地使用CPU cache、SIMD，有更多机会使用（轻量）压缩。
+
+***Vectorized***
+
+Snowflake不会物化中间结果，而是流水线处理，每次批量处理列存格式的数千行数据，节省了I/O，还显著提升了cache效率。
+
+***Push-based***
+
+上游算子会将它的结果直接推给下游，而不是等着下游来拉（传统的Volcano模型）。这种方式能提升cache效率，因为它从密集循环中移除了控制流逻辑，也允许更高效地处理DAG形状的执行计划
+
+同时Snowflake中也没有传统引擎会有的一些开销，如:
+
+- query过程面对的是一组固定的不可变文件（S3中的文件不可修改），因此不需要事务管理，也不需要buffer pool。
+
+- Snowflake允许所有主要算子（join/group by/sort）溢写到磁盘上。纯内存引擎虽然更精简、也许更快，但是限制性太强，无法处理所有的查询情况，毕竟分析型workload有时候会有大量的join或aggregation
+
+### Cloud Services
 
