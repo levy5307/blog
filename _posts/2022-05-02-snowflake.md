@@ -1,7 +1,7 @@
 ---
 layout: post
 title: snowflake
-date: 2022-05-03
+date: 2022-05-02
 Author: levy5307
 tags: [论文]
 comments: true
@@ -89,3 +89,42 @@ Shared-nothing结构已经成为高性能数据仓库的主流体系结构，主
 我们称这种新的体系结构为multi-cluster、 shared-data结构。
 
 ## Architecture
+
+Snowflake的目标是成为企业级的服务，除了易用性和相互操作性之外，还需要有高可用性。整个Snowflake分为三层：
+
+- Data Storage
+
+该层使用Amazon S3来存储table data和query result
+
+- Virtual Warehouses
+
+系统的“肌肉”。该层通过弹性的虚拟集群（称为virtual warehouse），执行查询
+
+- Cloud Services
+
+系统的“大脑”。这一层是管理virtual warehouse、查询、事务和围绕virtual warehouse的所有元数据的服务的集合，包含数据库元信息、访问控制信息、加密密钥、使用情况统计等。
+
+![](../images/snowflake-arch.jpg)
+
+### Data Storage
+
+AWS被选为Snowflake的初始平台主要有两个原因。首先，AWS是云平台市场上最成熟的产品。其次（与第一点相关），AWS提供了最大的潜在用户资源。
+
+在S3或者使用HDFS等类似技术开发自己的存储服务的选择中，Snowflake发现S3虽然性能不太稳定，但它的易用性、高可用、强数据可靠性都是很难被替代的。因此Snowflake没有开发自己的存储服务，转而将精力花在了VW层的本地cache和弹性处理倾斜的技术上了。
+
+S3有如下特点：
+
+- 相对local storage，延迟高，并且有比较高的CPU负载，尤其在使用HTTPS时。
+
+- 文件只能覆盖写，不能追加写
+
+- GET支持读部分文件
+
+这些属性对Snowflake的table file format和并发控制方案有很大的影响。表被水平地划分成大的、不可变的文件，这些文件相当于传统数据库系统中的block或page。在每个文件中，每个属性或列的值都被分组在一起并进行了大量压缩。每个表文件都有一个表头，其中包含文件中每列的偏移量，以及其他元数据。因为S3允许对部分文件执行GET请求，所以查询只需要下载文件头和它们需要的列。
+
+snowflake不仅在表数据上使用S3。当本地磁盘空间耗尽时，它还使用S3存储由查询（例如，大量连接）生成的临时数据，以及大型查询结果。将temp数据溢出到S3，系统可以计算任意大的查询，而不会出现内存不足或磁盘不足的错误。将查询结果存储在S3中，实现了客户端交互新方式并简化查询处理，因为不再需要像传统数据库那样在server端维护query的游标了。
+
+元数据，例如catalog信息，由S3文件、统计信息、锁、事务日志等组成，存储在可伸缩的事务KV存储中，这也是云服务的一部分。
+
+### Virtual Warehouse
+
