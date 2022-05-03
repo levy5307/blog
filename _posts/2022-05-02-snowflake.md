@@ -218,4 +218,28 @@ Snowflake的query优化器基于典型的Cascades风格，采用了自上而下�
 
 ### Continuous Availability
 
+Snowflake提供了满足期望的continuous availability，其两个主要技术是Fault Resilience和 Online Upgrade。
+
+#### Fault Resilience
+
+S3本身是多AZ(DataCenter)的，保证了99.99%的可用性和99.999999999%（9个9）的可靠性。Snowflake的元数据本身也是多副本、多AZ的。云服务层的其它stateless的服务也是跨AZ的，保证了一个节点到一个zone宕机都不会造成严重后果。
+
+相对地，出于性能原因，VW不是跨AZ的。如果query过程中有节点出错，整个query会无感知地重试。如果节点没有马上恢复，Snowflake还有一个备用节点池。
+
+如果整个AZ不可用，用户需要在别的zone再创建一个VW
+
+![](../images/snowflake-fault-resilience.jpg)
+
+#### Online Upgrade
+
+Snowflake被设计为允许系统中同时存在多种版本的服务，这主要得益于所有服务都相当于stateless的，且所有状态都维护在一个事务性的KV store中，通过一个感知元数据版本和schema演化的映射层来访问。每次元数据schema版本变化都会保证向后兼容。
+
+在软件升级时，Snowflake会保留旧服务的同时部署新服务，用户请求按账号迁移到新服务上，但已经进行中的query会在旧服务上完成。一旦所有用户都迁移完了，旧服务就会停止下线。
+
+所有版本的云服务层都会共享相同的元数据。更进一步，不同版本的VW可以共享相同的节点和上面的cache，这样升级后cache仍然保持有效，不会有任何性能损失。
+
+![](../images/snowflake-online-upgrade.jpg)
+
+### Semi-Structured and Schema-Less Data
+
 
