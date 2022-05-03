@@ -192,7 +192,7 @@ Snowflake的query优化器基于典型的Cascades风格，采用了自上而下�
 
 #### Concurrency Control
 
-并发控制完全由云服务层来实现。Snowflake提供了snapshot isolation的ACID事务。因为S3内存储的文件不可修改，因此MVCC是一个很自然的选择。表上的write operations（insert、update、delete、merge）通过添加和删除相对于上一个表版本的整个文件来生成新版本的表，并通过元数据的MVCC来实现数据本身的MVCC。
+并发控制完全由云服务层来实现。Snowflake提供了snapshot isolation的ACID事务。因为S3内存储的文件不可修改，因此MVCC是一个很自然的选择。表上的write operations（insert、update、delete、merge）通过添加和删除相对于上一个表版本的整个文件来生成新版本的表，并通过***元数据的MVCC来实现数据本身的MVCC***。
 
 #### Pruning
 
@@ -202,11 +202,20 @@ Snowflake的query优化器基于典型的Cascades风格，采用了自上而下�
 
 - 维护索引显著增加了数据量和数据加载时间
 
-- 用户需要显示地创建索引，这与Snowflake的pure service方式不一样。即使在调优人员的建议，维护索引也可能是一个复杂、昂贵有风险的过程
+- 用户需要显示地创建索引，这与Snowflake的pure service方式不一样。即使有调优人员的建议，维护索引也可能是一个复杂、昂贵有风险的过程
 
 另一种技术最近在大规模数据处理中得到了广泛应用：min-max based purning。也称为small materialized aggregates, zone maps, data skipping：系统维护给定数据块(set of records, file, block etc.)的数据分布信息，特别是块内的最小值和最大值。根据查询谓词的不同，这些值可用于确定给定的查询可能不需要某数据块。例如，假设文件f1和f2在某个列x中分别包含值3..5和4..6。然后，如果查询有一个谓词，其中x>=6，我们就知道只需要访问f2。与传统索引不同，这种元数据通常比实际数据小几个数量级，因此存储开销小、访问速度快。
 
 剪枝优化很好地符合Snowflake的设计原则：它不依赖于用户输入；它可以很好地扩展；并且易于维护。更重要的是，它可以很好地对大数据块进行顺序访问，并且在加载、查询优化和查询执行时间方面增加的开销很小。
 
-除了静态剪枝，Snowflake还会运行期动态剪枝。例如在hash join时，Snowflake会在构建端统计join key的分布，再传到探测端用来过滤数据，甚至有机会跳过整个文件。
+除了静态剪枝，Snowflake还会运行期动态剪枝。例如在hash join时，Snowflake会在构建端(build side)统计join key的分布，再传到探测端(probe side)用来过滤数据，甚至有机会跳过整个文件。
+
+## Feature Highlights
+
+### Pure Software-as-a-Service Experience
+
+用户可以通过web页面访问和管理Snowflake。
+
+### Continuous Availability
+
 
