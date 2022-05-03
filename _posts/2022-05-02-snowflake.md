@@ -242,4 +242,13 @@ Snowflake被设计为允许系统中同时存在多种版本的服务，这主�
 
 ### Semi-Structured and Schema-Less Data
 
+Snowflake支持三种半结构化数据类型：VARIANT、ARRAY和OBJECT，其中：
+
+- VARIANT可以存储任意SQL类型、任意长度的Array、类似JavaScript中的OBJECTs、string到VARIANT的map。
+
+- ARRAY和OBJECT是类型VARIANT类型的严格形式，其内部表现与VARIANT是相同的：自描述、紧凑二进制序列，支持快速的key-value查找，以及高效的类型测试、比较和hash。因此VARIANT类型的列可以像其他列一样用作join keys、grouping keys和ordering keys
+
+VARIANT类型允许Snowflake以ELT（Extract-Load-Transform）方式使用，而不是以传统的ETL（Extract-Transform-Load）方式使用。不需要指定数据的schema或在加载时进行转换。用户可以将JSON、Avro或XML格式的输入数据直接加载到变量列中，Snowflake处理解析和类型推断。这种方法称为“schema later”。
+
+ELT和Snowflake的另一个优点是，如果需要转换，可以使用并行SQL数据库的full power来执行转换，包括连接、排序、聚合、复杂谓词等操作，这些操作在传统的ETL工具链中通常缺失或效率低下。另外，Snowflake还具有自定义函数（udf），支持完整的JavaScript语法，并与VARIANT数据类型集成
 
