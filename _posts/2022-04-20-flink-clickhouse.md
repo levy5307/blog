@@ -10,7 +10,7 @@ toc: true
 
 ## 说明
 
-当前使用的flinkd-connector-jdbc仅支持Flink DataStreamAPI的方式向ClickHouse导入数据，TableAPI和FlinkSQL尚不支持。
+当前使用的flink-connector-jdbc仅支持Flink DataStreamAPI的方式向ClickHouse导入数据，TableAPI和FlinkSQL尚不支持。
 
 ## 依赖
 
