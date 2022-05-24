@@ -117,6 +117,7 @@ else()
 `CMakeLists.txt`中添加: 
 
 ```cmake
+set(CPACK_PACKAGE_NAME "clickhouse")
 set(CPACK_PACKAGE_VERSION ${CLICKHOUSE_TAG})
 set(CPACK_PACKAGE_VENDOR "Xiaomi")
 install(PROGRAMS pack-bin/clickhouse_exporter DESTINATION ${CMAKE_INSTALL_BINDIR}) 	## 将clickhouse_exporter打包进去
