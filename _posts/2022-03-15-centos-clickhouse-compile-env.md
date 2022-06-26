@@ -93,7 +93,7 @@ vim /usr/bin/yum
 ```shell
 cd /root/ClickHouse
 mkdir build && cd build
-cmake .. -DENABLE_JEMALLOC=1
+cmake .. -DENABLE_JEMALLOC=1 -DCMAKE_BUILD_TYPE=Release
 ninja
 ```
 
