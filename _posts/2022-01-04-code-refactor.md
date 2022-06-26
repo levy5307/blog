@@ -529,9 +529,11 @@ sunwukong->chantScriptures();
 
 1. 唐僧就是一个和尚，就是念经用的，一个和尚打打杀杀像什么话。（单一职责）
 
-2. 如果唐僧去完真经，李世民没玩够，又派了唐僧2号再去取一遍，那唐僧2号是不是也要修习杀妖怪的本领？显然这就是重复实现了。Decorator可以将一些功能独立抽象出来。
+2. 如果唐僧取完真经，李世民没玩够，又派了唐僧2号再去取一遍，那唐僧2号是不是也要修习杀妖怪的本领？显然这就是重复实现了。Decorator可以将一些功能独立抽象出来。
 
 另外，我在设计[重构Pegasus负载均衡时](https://levy5307.github.io/blog/load-balance-refactor/)，也考虑过使用Decorator模式。
+
+最近在开发ClickHouse，发现其存储引擎中的Replicated，便相当于其他MergeTree的Decorator。
 
 ### 代理模式
 
