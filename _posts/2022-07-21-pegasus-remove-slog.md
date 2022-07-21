@@ -40,7 +40,7 @@ copy parent时使用private log，只是在child写入时需要同时写入plog�
 
 - 升级
 
-true data应该是在slog里的，在升级时的启动过程，log回放还是需要从slog中获取。因此slog相关代码还需要保留，只是不再写入。
+true data应该是在slog里的，在升级时的启动过程，log回放还是需要从slog中获取。```因此slog相关代码还需要保留，只是不再写入。```
 
 - 回退
 
@@ -74,7 +74,7 @@ true data应该是在slog里的，在升级时的启动过程，log回放还是�
 
 ### slog gc
 
-gc逻辑主要是匹配所有slog文件的max_decree与min {plog_durable_decree，app_durable_decree}。如果小于则该文件可以删除；否则需要保留。
+gc逻辑主要是匹配所有slog文件的```max_decree```与min{```plog_durable_decree```，```app_durable_decree```}。如果小于则该文件可以删除；否则需要保留。
 
 ***所以即使有回退等情况导致的slog空洞，理论上也不影响数据的正确性***，只要slog文件中的mutation的decree是有序的即可。
 
@@ -82,7 +82,7 @@ Note: 升级之后，系统会逐渐gc掉slog文件，直到还剩最后一个�
 
 ### 其他
 
-replica_init_info保存了有每个replica在slog中的起始地址。主要包括如下几个方面：
+```replica_init_info```保存了有每个replica在slog中的起始地址。主要包括如下几个方面：
 
 - 持久化到.info文件中
 
@@ -159,6 +159,8 @@ replica_init_info保存了有每个replica在slog中的起始地址。主要包�
 
 ***plog in data(remove slog) v.s. master分支（保留slog）***
 
+以mater分支为基准：
+
 - 吞吐提高约20%
 
 利用了ssd的并行性，符合理论预期
@@ -173,7 +175,7 @@ replica_init_info保存了有每个replica在slog中的起始地址。主要包�
 
 ***plog in home v.s. plog in data***
 
-以plog in data为基准
+以plog in data为基准：
 
 - 吞吐下降约10%
 
@@ -183,7 +185,7 @@ replica_init_info保存了有每个replica在slog中的起始地址。主要包�
 
 ***plog in home（remove slog） v.s. master（保留slog）***
 
-以master分支为基准
+以master分支为基准：
 
 - 吞吐提高约7%
 
