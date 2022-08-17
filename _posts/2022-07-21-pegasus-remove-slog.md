@@ -1,6 +1,6 @@
 ---
 layout: post
-title: pegasus remove slog
+title: pegasus dual-WAL架构优化
 date: 2022-07-21
 Author: levy5307
 tags: []
