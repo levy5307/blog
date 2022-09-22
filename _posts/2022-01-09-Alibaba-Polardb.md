@@ -16,7 +16,7 @@ PolarDB是一款云原生OLTP数据库，采用存储计算分离的架构。其
 
 - 为存储节点装备处理table scan的专用硬件，例如FPGA、GPU等。一个普遍的做法是采用集中式异构体系结构。如下图所示：
 
-![](../images/polardb-centralized.jpg)
+![](../images/polardb-centralized.png)
 
 但是这样有两个问题：
 
@@ -30,5 +30,5 @@ PolarDB是一款云原生OLTP数据库，采用存储计算分离的架构。其
 
 因此，PolarDB采用一种分布式异构架构。通过将table scan操作分布到每个storage drive，可以消除上述大量数据传输，避免热点的出现。
 
-![](../images/polardb-distributed.jpg)
+![](../images/polardb-distributed.png)
 
