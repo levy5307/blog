@@ -26,7 +26,7 @@ toc: true
 
 Ref: <https://levy5307.github.io/blog/chain-replication/>
 
-## CRCQ（Chain Replication with Apportioned Queries）
+## CRAQ（Chain Replication with Apportioned Queries）
 
 针对于CR的优化，读取操作可以发往任意的server、而非只能发往tail节点。为实现该功能，对每个key维护一个version和clean标记
 写入则与CR相同，都是由head节点发起。写入流程：
@@ -55,7 +55,7 @@ Ref: <https://levy5307.github.io/blog/object-storage-on-CRAQ/>
 
 ***优点：*** 任意节点都可以发起读取和写入，性能比较高，对负载均衡也更友好。
 
-***缺点：*** 类似于CRCQ，每个key都需要维护一些数据（比如key的状态），更适合内存型数据库
+***缺点：*** 类似于CRAQ，每个key都需要维护一些数据（比如key的状态），更适合内存型数据库
 
 Ref: <https://levy5307.github.io/blog/Hermes/>
 
