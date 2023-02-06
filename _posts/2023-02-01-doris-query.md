@@ -12,7 +12,11 @@ toc: true
 
 ## 查询接收
 
+在Doris中，`AcceptListener`负责监听mysql连接。当一个新连接到来时`AcceptListener`会创建一个`ConnectProcessor`类型对象。`ConnectProcessor`周期性的获取该连接上的请求，针对不同的command执行不同的操作，包括use database操作（COM_INIT_DB）、查询操作（COM_QUERY）、quit（COM_QUIT）等
+
 ## Parse
+
+`ConnectProcessor::handleQuery`主要处理查询操作，随后使用Java CUP Parser对输入的字符串进行词法和语法分析。词法分析主要将输入的字符串解析成一系列token（例如select、from等），而语法分析则根据词法分析生成的token，生成一颗抽象语法树（Abstract Syntax Tree）
 
 ## Analyze
 
