@@ -16,7 +16,51 @@ toc: true
 
 ## Parse
 
-`ConnectProcessor::handleQuery`主要处理查询操作，随后使用Java CUP Parser对输入的字符串进行词法和语法分析。词法分析主要将输入的字符串解析成一系列token（例如select、from等），而语法分析则根据词法分析生成的token，生成一颗抽象语法树（Abstract Syntax Tree）
+`ConnectProcessor::handleQuery`主要处理查询操作，随后使用[Java CUP Parser](http://www2.cs.tum.edu/projects/cup/)对输入的字符串进行词法和语法分析。词法分析主要将输入的字符串解析成一系列token（例如select、from等），而语法分析则根据词法分析生成的token，生成一颗抽象语法树（Abstract Syntax Tree），在Doris中用类`StatementBase`表示。`StatementBase`是一个虚类，它有多个不同的子类，例如`SelectStmt`、`InsertStmt`等，分别表示查询请求、写入请求等等。
+
+其中，`SelectStmt`类中包含selectList、fromClause、groupByClause、havingClause等等，具体如下所示：
+
+```
+public class SelectStmt extends QueryStmt {
+    protected SelectList selectList;
+    private final ArrayList<String> colLabels; // lower case column labels
+    protected final FromClause fromClause;
+    protected GroupByClause groupByClause;
+    private List<Expr> originalExpr;
+    private Expr havingClause;  // original having clause
+    protected Expr whereClause;
+    // havingClause with aliases and agg output resolved
+    private Expr havingPred;
+
+    // set if we have any kind of aggregation operation, include SELECT DISTINCT
+    private AggregateInfo aggInfo;
+    // set if we have analytic function
+    private AnalyticInfo analyticInfo;
+    // substitutes all exprs in this select block to reference base tables
+    // directly
+    private ExprSubstitutionMap baseTblSmap = new ExprSubstitutionMap();
+
+    private ValueList valueList;
+
+    // if we have grouping extensions like cube or rollup or grouping sets
+    private GroupingInfo groupingInfo;
+
+    // having clause which has been analyzed
+    // For example: select k1, sum(k2) a from t group by k1 having a>1;
+    // this parameter: sum(t.k2) > 1
+    private Expr havingClauseAfterAnaylzed;
+
+    // SQL string of this SelectStmt before inline-view expression substitution.
+    // Set in analyze().
+    protected String sqlString;
+
+    // Table alias generator used during query rewriting.
+    private TableAliasGenerator tableAliasGenerator = null;
+
+    // Members that need to be reset to origin
+    private SelectList originSelectList;
+}
+```
 
 ## Analyze
 
