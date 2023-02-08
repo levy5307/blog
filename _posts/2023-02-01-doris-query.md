@@ -66,7 +66,7 @@ public class SelectStmt extends QueryStmt {
 
 当通过Parse阶段得到AST后，随后会根据`parsedStmt`创建一个`StmtExecutor`。该`StmtExecutor`首先为该查询分配一个queryId，并通过`analyzeVariablesInStmt`函数获取select查询中的[Optimizer Hints](https://github.com/apache/doris/pull/4504)。随后便通过`Analyzer`来进行语义分析。注意这里的`Analyzer`类其实并不是语义解析器，正确的名字应该叫AnalyzerContext，其保存的是语义解析所需要的各种上下文及状态信息。真正的语义解析是在具体的StatementBase子类里的，最终通过多态来获取不同执行语句的不同语义分析实现。
 
-语义分析解决所做的主要工作有：
+语义分析阶段所做的主要工作有：
 
 
 ## Rewrite
