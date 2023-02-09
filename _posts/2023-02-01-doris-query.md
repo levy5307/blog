@@ -74,7 +74,7 @@ public class SelectStmt extends QueryStmt {
 
   - 当offset大于0且不含有order by时报错。
 
-  - 当limit = 0时，设置`hasEmptyResultSet`为true，表示该查询结果一定返回空
+  - 当limit = 0时，设置`hasEmptyResultSet`为true，该变量表示该查询结果一定返回空
 
 - 对于含有with的查询，依次analyze该查询中的所有的view
 
