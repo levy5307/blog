@@ -76,21 +76,13 @@ public class SelectStmt extends QueryStmt {
 
   - 当limit = 0时，设置`hasEmptyResultSet`为true，该变量表示该查询结果一定返回空
 
-- 对于含有with的查询，依次analyze该查询中的所有的view
+- 对于含有with的查询，依次analyze该查询中的所有的view（即子查询）
 
-- 对于analyze from从句：
-
-  - 检查从句中的所有表，如果该表没有指定database，则指定为默认database。
-
-  - Analyze the join clause，该操作只有left表analyze之后才会执行
-
-  - analyze sort hint
-
-  - analyze hint，当前仅支持PREAGGOPEN
+- 对于analyze from从句，依次analyze从句中的所有表（包括BaseTable、[LateralView](https://www.bookstack.cn/read/doris-1.0-zh/737eaa4bfec68762.md)、LocalView）。对于BaseTable，如果该表没有指定database，则指定为默认database。
 
 - 对于select list：
 
-  - 如果是select *，则将*扩展成所有列
+  - 如果是`select *`，则将`*`扩展成所有列
 
   -
 
