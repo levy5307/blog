@@ -84,7 +84,7 @@ public class SelectStmt extends QueryStmt {
 
 - 对于select list：
 
-  - 如果是`select *`，则将`*`扩展成所有列
+  - 如果是select `*`，则将`*`扩展成所有列
 
   - 判断select从句中是否包含子查询，如果是则抛出异常
 
