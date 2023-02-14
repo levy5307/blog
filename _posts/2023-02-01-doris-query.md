@@ -76,6 +76,8 @@ public class SelectStmt extends QueryStmt {
 
   - 当limit = 0时，设置`hasEmptyResultSet`为true，该变量表示该查询结果一定返回空
 
+  - ...
+
 - 对于含有with的查询，依次analyze该查询中的所有的view（即子查询）
 
 - 对于analyze from从句，依次analyze从句中的所有表（包括BaseTable、[LateralView](https://www.bookstack.cn/read/doris-1.0-zh/737eaa4bfec68762.md)、LocalView）。对于BaseTable，如果该表没有指定database，则指定为默认database。
@@ -84,7 +86,23 @@ public class SelectStmt extends QueryStmt {
 
   - 如果是`select *`，则将`*`扩展成所有列
 
-  -
+  - 判断select从句中是否包含子查询，如果是则抛出异常
+
+  - 依次解析select list中的所有expr及其child expr（如果有）
+
+  - ...
+
+- 对于where从句：
+
+  - 查看where从句中是否有group操作，如果有则抛出异常
+
+  - 查看where从句中是否有聚合操作，如果有则抛出异常
+
+  - 检查where从句是否返回bool类型或者null，否则抛异常
+
+  - 依次解析where从句中的所有child expr（如果有）
+
+  - ...
 
 ## Rewrite
 
