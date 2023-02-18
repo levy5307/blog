@@ -70,6 +70,8 @@ public class SelectStmt extends QueryStmt {
 
 - 检查cluster name是否为空，若是则抛出AnalysisException异常
 
+- 对于含有order by但是order by字段为空的查询，将order by移除掉。
+
 - 对于含有limit的查询：
 
   - 当offset大于0且不含有order by时报错。
@@ -105,6 +107,14 @@ public class SelectStmt extends QueryStmt {
   - ...
 
 ## Rewrite
+
+当执行完词法分析后，要根据具体的`ExprRewriteRule`进行查询重写，例如：
+
+- `FoldConstantsRule`，通过对expr求值并进行替换：` * 1 + 1 + 1 --> 3`，`toupper('abc') --> 'ABC'`、`cast('2016-11-09' as timestamp) --> TIMESTAMP '2016-11-09 00:00:00'`。
+
+- `NormalizeBinaryPredicatesRule`，规范化二进制谓词，使`slot`位于左侧，例如：`5 > id` --> `id < 5`
+
+- `BetweenPredicates`，将`between`谓词转换成`conjunctive`/`disjunctive`谓词，例如： `BETWEEN X AND Y` --> `A >= X AND A <= Y`、 `NOT BETWEEN X AND Y` --> `A < X OR A > Y`
 
 ## 逻辑计划生成
 
