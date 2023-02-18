@@ -116,6 +116,8 @@ public class SelectStmt extends QueryStmt {
 
 - `BetweenPredicates`，将`between`谓词转换成`conjunctive`/`disjunctive`谓词，例如： `BETWEEN X AND Y` --> `A >= X AND A <= Y`、 `NOT BETWEEN X AND Y` --> `A < X OR A > Y`
 
+另外对于存在子查询的查询，会依次进行from从句子查询重写、where从句子查询重写（`rewriteWhereClauseSubqueries`）以及have从句中子查询重写（`rewriteHavingClauseSubqueries`）。例如，对于have从句子查询的重写，会先将having子句用where进行等价重写，再将where子句等价重写（例如使用in重写）
+
 当某些重写发生时，需要重新执行语法、词法及语义分析。
 
 ## 逻辑计划生成
