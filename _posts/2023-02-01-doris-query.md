@@ -116,6 +116,8 @@ public class SelectStmt extends QueryStmt {
 
 - `BetweenPredicates`，将`between`谓词转换成`conjunctive`/`disjunctive`谓词，例如： `BETWEEN X AND Y` --> `A >= X AND A <= Y`、 `NOT BETWEEN X AND Y` --> `A < X OR A > Y`
 
+当某些重写发生时，需要重新执行语法、词法及语义分析。
+
 ## 逻辑计划生成
 
 ## 物理计划生成
