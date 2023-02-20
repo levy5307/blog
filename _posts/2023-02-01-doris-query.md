@@ -110,7 +110,7 @@ public class SelectStmt extends QueryStmt {
 
 当执行完词法分析后，要根据具体的`ExprRewriteRule`进行查询重写，例如：
 
-- `FoldConstantsRule`，通过对expr求值并进行替换：` * 1 + 1 + 1 --> 3`，`toupper('abc') --> 'ABC'`、`cast('2016-11-09' as timestamp) --> TIMESTAMP '2016-11-09 00:00:00'`。
+- `FoldConstantsRule`，通过对expr求值并进行替换：` * 1 + 1 + 1` --> `3`，`toupper('abc')` --> `'ABC'`、`cast('2016-11-09' as timestamp)` --> `TIMESTAMP '2016-11-09 00:00:00'`。
 
 - `NormalizeBinaryPredicatesRule`，规范化二进制谓词，使`slot`位于左侧，例如：`5 > id` --> `id < 5`
 
