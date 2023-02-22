@@ -122,6 +122,8 @@ public class SelectStmt extends QueryStmt {
 
 ## 逻辑计划生成
 
+逻辑计划生成和物理计划生成都是由`planner`来完成的。Doris一共实现了两个planner，分别是`OriginalPlanner`和`NereidsPlanner`（另外还有个`UpdatePlanner`，主要用于update stmt），这里主要讲解`OriginalPlanner`。
+
 ## 物理计划生成
 
 ## Schedule
