@@ -16,7 +16,7 @@ toc: true
 
 ## Parse
 
-`ConnectProcessor::handleQuery`主要处理查询操作，随后使用[Java CUP Parser](http://www2.cs.tum.edu/projects/cup/)对输入的字符串进行词法和语法分析。词法分析主要将输入的字符串解析成一系列token（例如select、from等），而语法分析则根据词法分析生成的token，生成一颗抽象语法树（Abstract Syntax Tree），在Doris中用类`StatementBase`表示。`StatementBase`是一个虚类，它有多个不同的子类，例如`SelectStmt`、`InsertStmt`等，分别用于表示查询请求、写入请求等等。
+`ConnectProcessor::handleQuery`主要处理查询操作，随后使用[Java CUP Parser](http://www2.cs.tum.edu/projects/cup/)对输入的字符串进行词法和语法分析。词法分析主要将输入的字符串解析成一系列token（例如select、from等），而语法分析则根据词法分析生成的token，生成一颗抽象语法树（Abstract Syntax Tree）。在Doris中抽象语法树用类`StatementBase`表示，`StatementBase`是一个虚类，它有多个不同的子类，例如`SelectStmt`、`InsertStmt`等，分别用于表示查询请求、写入请求等等。
 
 其中，`SelectStmt`类中包含`selectList`、`fromClause`、`groupByClause`、`havingClause`等等，具体如下所示：
 
