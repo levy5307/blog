@@ -122,11 +122,23 @@ public class SelectStmt extends QueryStmt {
 
 当某些重写发生时，需要重新执行语义分析。
 
-## 逻辑计划生成
+## 单节点执行计划
 
-逻辑计划生成和物理计划生成都是由`planner`来完成的。Doris一共实现了两个planner，分别是`OriginalPlanner`和`NereidsPlanner`（另外还有个`UpdatePlanner`，主要用于update stmt），这里主要讲解`OriginalPlanner`。
+逻辑计划生成和物理计划生成都是由`Planner`来完成的。在`Planner`中，`SingleNodePlanner`通过AST生成单节点执行计划（`PlanNode`）。
 
-## 物理计划生成
+在生成单节点执行计划时，主要做了以下优化：
+
+- Slot物化。slot物化是指标记出哪些列在表达式中涉及到，即哪些列需要被读取以及计算。
+
+- 谓词下推。将谓词下推到Scan节点
+
+- 当没有开启排序落盘时（[enable_spilling](https://cloud.tencent.com/document/product/1387/70771)=true），将sort+limit修改成top n
+
+- 投影下推。保证在Scan时只读取必须的列
+
+## 分布式计划生成
+
+在`Planner`中，通过`DistributedPlanner`执行生成单节点执行计划。
 
 ## Schedule
 
