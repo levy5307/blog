@@ -132,13 +132,8 @@ from A join B
 where A.a = B.b
 `
 生成的算子树如下：
-```
-	projection
-	   join
-   scan		   scan
 
-```
-
+![](../images/single-node-planner.jpg)
 
 在生成单节点执行计划时，主要做了以下优化：
 
