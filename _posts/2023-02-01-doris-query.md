@@ -112,7 +112,7 @@ public class SelectStmt extends QueryStmt {
 
 当执行完词法分析后，要根据具体的`ExprRewriteRule`进行查询重写，例如：
 
-- `FoldConstantsRule`，通过对expr求值并进行替换：` * 1 + 1 + 1` --> `3`，`toupper('abc')` --> `'ABC'`、`cast('2016-11-09' as timestamp)` --> `TIMESTAMP '2016-11-09 00:00:00'`。
+- `FoldConstantsRule`，通过对expr求值并进行替换：`1 + 1 + 1` --> `3`，`toupper('abc')` --> `'ABC'`、`cast('2016-11-09' as timestamp)` --> `TIMESTAMP '2016-11-09 00:00:00'`。
 
 - `NormalizeBinaryPredicatesRule`，规范化二进制谓词，使`slot`位于左侧，例如：`5 > id` --> `id < 5`
 
@@ -120,7 +120,7 @@ public class SelectStmt extends QueryStmt {
 
 另外对于存在子查询的查询，会依次进行from从句子查询重写、where从句子查询重写（`rewriteWhereClauseSubqueries`）以及have从句中子查询重写（`rewriteHavingClauseSubqueries`）。例如，对于have从句子查询的重写，会先将having子句用where进行等价重写，再将where子句等价重写（例如使用in重写）
 
-当某些重写发生时，需要重新执行语法、词法及语义分析。
+当某些重写发生时，需要重新执行语义分析。
 
 ## 逻辑计划生成
 
