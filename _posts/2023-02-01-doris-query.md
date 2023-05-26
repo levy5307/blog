@@ -124,7 +124,21 @@ public class SelectStmt extends QueryStmt {
 
 ## 单节点执行计划
 
-逻辑计划生成和物理计划生成都是由`Planner`来完成的。在`Planner`中，`SingleNodePlanner`通过AST生成单节点执行计划（`PlanNode`）。
+逻辑计划生成和物理计划生成都是由`Planner`来完成的。在`Planner`中，`SingleNodePlanner`通过AST生成单节点执行计划（`PlanNode`构成的算子树）。例如：
+
+`
+select A.a, B.b
+from A join B
+where A.a = B.b
+`
+生成的算子树如下：
+```
+	projection
+	   join
+   scan		   scan
+
+```
+
 
 在生成单节点执行计划时，主要做了以下优化：
 
