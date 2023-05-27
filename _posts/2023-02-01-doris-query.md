@@ -139,11 +139,17 @@ where A.a = B.b
 
 - Slot物化。slot物化是指标记出哪些列在表达式中涉及到，即哪些列需要被读取以及计算。
 
-- 谓词下推。将谓词下推到Scan节点
+- 谓词下推。将谓词下推到Scan节点。
 
-- 当没有开启排序落盘时（[enable_spilling](https://cloud.tencent.com/document/product/1387/70771)=true），将sort+limit修改成top n
+- 当没有开启排序落盘时（[enable_spilling](https://cloud.tencent.com/document/product/1387/70771)=true），将sort+limit修改成top n。
 
-- 投影下推。保证在Scan时只读取必须的列
+- 投影下推。保证在Scan时只读取必须的列。
+
+- Join reorder。对于 Inner Join, Doris 会根据行数调整表的顺序，将大表放在前面。
+
+- 分区，分桶裁剪：根据过滤条件中的信息，确定需要扫描哪些分区，哪些桶的tablet。
+
+- MaterializedView选择：会根据查询需要的列，过滤，排序和Join的列，行数，列数等因素选择最佳的物化视图。
 
 ## 分布式计划生成
 
