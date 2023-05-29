@@ -159,11 +159,13 @@ where A.a = B.b
 
 这一步主要采用自底向上的方法来遍历整个PlanNode树（通过`createPlanFragments`函数递归实现）。如上述例子中：
 
-- 对于`ScanNode`，则直接创建一个对应的`PlanFragment`
+- 对于`ScanNode`，则直接创建一个对应的`PlanFragment`。上述例子中一共有两个`ScanNode`，则创建两个`PlanFragment`。
 
-- 对于`HashJoinNode`，则和left child组成同一个`PlanFragment`，在该`PlanFragment`中，对right child使用`ExchangeNode`来代替。同时对于right child，创建一个`DataSinkNode`，将数据sink到前述`ExchangeNode`。
+- 对于`HashJoinNode`，则和left child组成同一个`PlanFragment`（不单独创建新的，只是和上一条中为left child创建的`PlanFragment`组成同一个），在该`PlanFragment`中，对right child使用`ExchangeNode`来代替。同时对于right child，创建一个`DataSinkNode`，将数据sink到前述`ExchangeNode`。
 
 - 对于`SelectNode`，同样创建一个对应的`PlanFragment`
+
+此三个`PlanFragment`则对应上图中的三个虚线框中的Fragment。
 
 ## Schedule
 
