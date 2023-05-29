@@ -177,6 +177,14 @@ where A.a = B.b
 
 ## Schedule
 
+这一步是根据分布式逻辑计划，创建分布式物理计划。主要解决以下问题：
+
+- 哪个BE执行哪个PlanFragment
+
+- 每个Tablet选择哪个副本去查询
+
+- 如何进行多实例并发
+
 ## 查询计划执行
 
 查询计划是由BE负责执行的，其执行引擎采用Batch模式的Volcano模型，相对于Tuple模式的Volcano，执行效率更高。
