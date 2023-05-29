@@ -161,7 +161,15 @@ where A.a = B.b
 
 - 对于`ScanNode`，则直接创建一个对应的`PlanFragment`。上述例子中一共有两个`ScanNode`，则创建两个`PlanFragment`。
 
-- 对于`HashJoinNode`，则和left child组成同一个`PlanFragment`（不单独创建新的，只是和上一条中为left child创建的`PlanFragment`组成同一个），在该`PlanFragment`中，对right child使用`ExchangeNode`来代替。同时对于right child，创建一个`DataSinkNode`，将数据sink到前述`ExchangeNode`。
+- 对于`HashJoinNode`，需要决定Hash Join的分布式执行策略，即Shuffle Join，Broadcast Join，Colocate Join: 
+
+   - 如果使用colocate join，由于join操作都在本地，就不需要拆分。设置`HashJoinNode`与leftFragment共用一个PlanFragment，并删除掉rightFragment。
+
+   - 如果使用bucket shuffle join，需要将右表的数据发送给左表。则和left child组成同一个`PlanFragment`（不单独创建新的，只是和上一条中为left child创建的`PlanFragment`组成同一个），在该`PlanFragment`中，对right child使用`ExchangeNode`来代替。同时对于right child，创建一个`DataSinkNode`，将数据sink到前述`ExchangeNode`。
+
+   - 如果使用broadcast join，需要将右表的数据发送给左表。具体逻辑同上。
+
+   - 如果使用hash partition join，左表和右边的数据都要切分，需要将左右节点都拆分出去，分别创建left ExchangeNode, right ExchangeNode，`HashJoinNode`指定左右节点为left ExchangeNode和right ExchangeNode。需要为`HashJoinNode`单独创建一个`PlanFragment`，指定`RootPlanNode`为这个`HashJoinNode`。最后指定leftFragment, rightFragment的数据发送目的地为left ExchangeNode, right ExchangeNode。
 
 - 对于`SelectNode`，同样创建一个对应的`PlanFragment`
 
