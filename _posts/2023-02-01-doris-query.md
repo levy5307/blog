@@ -153,7 +153,9 @@ where A.a = B.b
 
 ## 分布式计划生成
 
-在`Planner`中，通过`DistributedPlanner`执行生成单节点执行计划。
+在`Planner`中，通过`DistributedPlanner`执行生成单节点执行计划。这里需要根据分布式环境，将单机的PlanNode树拆分成分布式`PlanFragment`树。该步骤的主要目标是最大化并行度和数据本地化。主要方法是将能够并行执行的节点拆分出去单独建立一个`PlanFragment`，用`ExchangeNode`代替被拆分出去的节点，用来接收数据。拆分出去的节点增加一个`DataSinkNode`，用来将计算之后的数据传送到`ExchangeNode`中，做进一步的处理。
+
+![](../images/distribute-planner.jpg)
 
 ## Schedule
 
