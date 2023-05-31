@@ -185,6 +185,8 @@ where A.a = B.b
 
 - 如何进行多实例并发
 
+Doris根据ScanNode所对应的表，经过分区分桶裁剪之后，可以得到需要访问的Tablet列表。对于Tablet列表，Doris会过滤掉版本不匹配、不健康、以及所在的BE状态异常的副本。然后通过Round-Robin的方式在be节点中选择各个副本。以保证BE之间的负载均衡。
+
 ## 查询计划执行
 
 查询计划是由BE负责执行的，其执行引擎采用Batch模式的Volcano模型，相对于Tuple模式的Volcano，执行效率更高。
