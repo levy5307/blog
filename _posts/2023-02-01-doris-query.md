@@ -147,7 +147,7 @@ where A.a = B.b
 
 - Join reorder。对于 Inner Join, Doris 会根据行数调整表的顺序，将大表放在前面。
 
-- 分区，分桶裁剪：根据过滤条件中的信息，确定需要扫描哪些分区，哪些桶的tablet。
+- 分区，分桶裁剪：根据过滤条件中的信息，确定需要扫描哪些分区，哪些桶的tablet。（在OlapScanNode::init时做分区裁剪，OlapScanNode::finalize做分桶裁剪）
 
 - MaterializedView选择：会根据查询需要的列，过滤，排序和Join的列，行数，列数等因素选择最佳的物化视图。
 
