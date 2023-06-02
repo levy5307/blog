@@ -187,6 +187,12 @@ where A.a = B.b
 
 Doris根据ScanNode所对应的表，经过分区分桶裁剪之后，可以得到需要访问的Tablet列表。对于Tablet列表，Doris会过滤掉版本不匹配、不健康、以及所在的BE状态异常的副本。然后通过Round-Robin的方式在be节点中选择各个副本。以保证BE之间的负载均衡。
 
+另外，需要处理实例的并发问题。当`leftMostNode`是`ScanNode`时，则需要根据fragment的并发度来设置并发（`parallelExecNum`）。假如需要scan 10个tablet，并行度设置为5的话，那么Scan所在的 PlanFragment，每个BE上可以生成5个执行实例，每个执行实例会分别Scan 2个tablet。当该节点不是`ScanNode`时，则其肯定是`ExchangeNode`，则需要根据`exchangeInstanceParallel`设置并发度。
+
+`FInstanceExecParam`创建完成后，会分配一个唯一的instancdID，方便追踪信息。如果`FragmentExecParams`中包含有`ExchangeNode`，需要计算有多少senders，以便知道需要接受多少个发送方的数据。最后`FragmentExecParams`确定destinations，并把目的地址填充上去。
+
+最后，获取第一个fragment，由执行该fragment的节点作为Receiver，接收查询结果。并将这些fragment发送给BE执行。
+
 ## 查询计划执行
 
 查询计划是由BE负责执行的，其执行引擎采用Batch模式的Volcano模型，相对于Tuple模式的Volcano，执行效率更高。
