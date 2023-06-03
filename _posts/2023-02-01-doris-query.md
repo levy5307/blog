@@ -197,4 +197,7 @@ Doris根据ScanNode所对应的表，经过分区分桶裁剪之后，可以得�
 
 查询计划是由BE负责执行的，其执行引擎采用Batch模式的Volcano模型，相对于Tuple模式的Volcano，执行效率更高。
 
-## 查询结果返回
+be中的`FragmentMgr`提供了rpc接口，用于处理这些fragment(`FragmentMgr::exec_plan_fragment`)，在接收到请求后，会先通过查询计划生成对应的算子树（`PlanFragmentExecutor::_plan`），并对所有算子执行init操作（`ExecNode::create_tree`）及prepare操作（`_plan->prepare`）。
+
+随后，创建一个线程用户执行查询计划(`FragmentMgr::_exec_actual`)。该线程中，先对算子树执行open操作，然后通过`PlanFragmentExecutor::get_next_internal`驱动整个算子树的执行。该方法自顶向下调用每个算子的`get_next`方法。最终数据会从`ScanNode`节点产生，向上层节点传递，每个节点都会按照自己的逻辑处理RowBatch。 `PlanFragmentExecutor`在拿到每个RowBatch后，如果是中间结果，就会将数据传输给其他BE节点，如果是最终结果，就会将数据传输给FE节点（通过`DataSink::send`多态实现）
+
