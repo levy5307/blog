@@ -179,13 +179,13 @@ where A.a = B.b
 
 这一步是根据分布式逻辑计划，创建分布式物理计划。主要解决以下问题：
 
-- 哪个BE执行哪个PlanFragment
+- 哪个BE执行哪个`PlanFragment`
 
 - 每个Tablet选择哪个副本去查询
 
 - 如何进行多实例并发
 
-Doris根据ScanNode所对应的表，经过分区分桶裁剪之后，可以得到需要访问的Tablet列表。对于Tablet列表，Doris会过滤掉版本不匹配、不健康、以及所在的BE状态异常的副本。然后通过Round-Robin的方式在be节点中选择各个副本。以保证BE之间的负载均衡。
+Doris根据`ScanNode`所对应的表，经过分区分桶裁剪之后，可以得到需要访问的Tablet列表。对于Tablet列表，Doris会过滤掉版本不匹配、不健康、以及所在的BE状态异常的副本。然后通过Round-Robin的方式在be节点中选择各个副本。以保证BE之间的负载均衡。
 
 另外，需要处理实例的并发问题。当`leftMostNode`是`ScanNode`时，则需要根据fragment的并发度来设置并发（`parallelExecNum`）。假如需要scan 10个tablet，并行度设置为5的话，那么Scan所在的 PlanFragment，每个BE上可以生成5个执行实例，每个执行实例会分别Scan 2个tablet。当该节点不是`ScanNode`时，则其肯定是`ExchangeNode`，则需要根据`exchangeInstanceParallel`设置并发度。
 
@@ -195,9 +195,9 @@ Doris根据ScanNode所对应的表，经过分区分桶裁剪之后，可以得�
 
 ## 查询计划执行
 
-查询计划是由BE负责执行的，其执行引擎采用Batch模式的Volcano模型，相对于Tuple模式的Volcano，执行效率更高。
+查询计划由BE负责执行，其执行引擎采用Batch模式的Volcano模型，相对于Tuple模式的Volcano，执行效率更高。
 
-be中的`FragmentMgr`提供了rpc接口，用于处理这些fragment(`FragmentMgr::exec_plan_fragment`)，在接收到请求后，会先通过查询计划生成对应的算子树（`PlanFragmentExecutor::_plan`），并对所有算子执行init操作（`ExecNode::create_tree`）及prepare操作（`_plan->prepare`）。
+be中的`FragmentMgr`提供了rpc接口，用于处理这些fragment（`FragmentMgr::exec_plan_fragment`），在接收到请求后，会先通过查询计划生成对应的算子树（`PlanFragmentExecutor::_plan`），并对所有算子执行init操作（`ExecNode::create_tree`）及prepare操作（`_plan->prepare`）。
 
-随后，创建一个线程用户执行查询计划(`FragmentMgr::_exec_actual`)。该线程中，先对算子树执行open操作，然后通过`PlanFragmentExecutor::get_next_internal`驱动整个算子树的执行。该方法自顶向下调用每个算子的`get_next`方法。最终数据会从`ScanNode`节点产生，向上层节点传递，每个节点都会按照自己的逻辑处理RowBatch。 `PlanFragmentExecutor`在拿到每个RowBatch后，如果是中间结果，就会将数据传输给其他BE节点，如果是最终结果，就会将数据传输给FE节点（通过`DataSink::send`多态实现）
+随后，创建一个线程用户执行查询计划(`FragmentMgr::_exec_actual`)。该线程中，先对算子树执行open操作，然后通过`PlanFragmentExecutor::get_next_internal`驱动整个算子树的执行。该方法自顶向下调用每个算子的`get_next`方法。最终数据会从`ScanNode`节点产生，向上层节点传递，每个节点都会按照自己的逻辑处理RowBatch。`PlanFragmentExecutor`在拿到每个RowBatch后，如果是中间结果，就会将数据传输给其他BE节点，如果是最终结果，就会将数据传输给FE节点（通过`DataSink::send`多态实现）
 
