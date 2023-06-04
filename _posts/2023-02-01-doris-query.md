@@ -201,3 +201,11 @@ be中的`FragmentMgr`提供了rpc接口，用于处理这些fragment（`Fragment
 
 随后，创建一个线程用户执行查询计划(`FragmentMgr::_exec_actual`)。该线程中，先对算子树执行open操作，然后通过`PlanFragmentExecutor::get_next_internal`驱动整个算子树的执行。该方法自顶向下调用每个算子的`get_next`方法。最终数据会从`ScanNode`节点产生，向上层节点传递，每个节点都会按照自己的逻辑处理RowBatch。`PlanFragmentExecutor`在拿到每个RowBatch后，如果是中间结果，就会将数据传输给其他BE节点，如果是最终结果，就会将数据传输给FE节点（通过`DataSink::send`多态实现）
 
+## 参考文档
+
+https://doris.apache.org/zh-CN/blog/principle-of-Doris-SQL-parsing/#23-%E9%80%BB%E8%BE%91%E8%AE%A1%E5%88%92
+
+https://blog.bcmeng.com/post/apache-doris-query.html#doris-query-%E6%89%A7%E8%A1%8C
+
+https://www.oomspot.com/post/apachedorischaxunyuanlijiexi
+
