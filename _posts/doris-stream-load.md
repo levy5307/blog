@@ -11,4 +11,4 @@
 
 - fe对http请求进行解析，然后进行鉴权。鉴权通过后，根据策略选取一台be作为coordinator，并将stream load请求转发给coordinator be
 
-- 
+- be在接到请求后，首先对其header信息进行校验。包括body长度、format类型等 
