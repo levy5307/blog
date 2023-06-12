@@ -9,6 +9,12 @@
 
 - 用户提交stream load请求到fe
 
-- fe对http请求进行解析，然后进行鉴权。鉴权通过后，根据策略选取一台be作为coordinator，并将stream load请求转发给coordinator be
+- fe对http请求进行解析，然后进行鉴权。鉴权通过后，根据策略选取一台be作为coordinator，并将stream load请求转发给coordinator be（`StreamLoadAction::on_header`）
 
-- be在接到请求后，首先对其header信息进行校验。包括body长度、format类型等 
+- coordinator be在接到请求后，会对其header信息进行校验，包括body长度、format类型等。
+
+- coordinator be向fe发送begin transaction的请求，fe在接收到该请求时会开启一个事务，并向coordinator be返回事务id
+
+- coordinator be向fe发送`TStreamLoadPutRequest`请求，fe在接收到该请求时，会产生导入执行计划，并向coordinator be返回。
+
+- 
