@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Doris streamload
+title: Doris stream load
 date: 2023-02-01
 Author: levy5307
 tags: []
