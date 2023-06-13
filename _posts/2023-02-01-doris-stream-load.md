@@ -12,7 +12,6 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ## 执行过程
 
-
 用户执行stream load主要有两种方式：
 
 - 将请求直接提交给be，并由该节点作为本次stream load任务的coordinator。
@@ -31,6 +30,6 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - coordinator be向fe发送`TStreamLoadPutRequest`请求，fe在接收到该请求时，会产生导入执行计划，并向coordinator be返回。该执行计划非常简单，由`OlapTableSink`和`StreamLoadScanNode`两个算子组成，且只有一个`PlanFragment`
 
-[](../images/streamload-plan.jpg)
+![](../images/streamload-plan.jpg)
 
 - coordinator be在接收到导入计划之后，开始执行导入计划。
