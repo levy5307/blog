@@ -1,3 +1,17 @@
+---
+layout: post
+title: Doris streamload
+date: 2023-02-01
+Author: levy5307
+tags: []
+comments: true
+toc: true
+---
+
+Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问的方式批量地将CSV或者JSON数据导入Doris，并返回数据导入的结果。用户可以直接通过Http请求的返回体判断数据导入是否成功，也可以通过在客户端执行查询SQL来查询历史任务的结果。Stream Load是是最常用的一种导入方式，在小米内部占了约80%以上场景。 
+
+## 执行过程
+
 
 用户执行stream load主要有两种方式：
 
