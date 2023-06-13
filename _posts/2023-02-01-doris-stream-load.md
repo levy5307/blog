@@ -33,3 +33,6 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 ![](../images/streamload-plan.jpg)
 
 - coordinator be在接收到导入计划之后，开始执行导入计划。
+
+![](../images/stream-load-process.png)
+
