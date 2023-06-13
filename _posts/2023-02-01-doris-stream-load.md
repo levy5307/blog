@@ -27,8 +27,10 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - coordinator be在接到请求后，会对其header信息进行校验，包括body长度、format类型等。
 
-- coordinator be向fe发送begin transaction的请求，fe在接收到该请求时会开启一个事务，并向coordinator be返回事务id
+- coordinator be向fe发送`begin transaction的请求`，fe在接收到该请求时会开启一个事务，并向coordinator be返回事务id
 
-- coordinator be向fe发送`TStreamLoadPutRequest`请求，fe在接收到该请求时，会产生导入执行计划，并向coordinator be返回。
+- coordinator be向fe发送`TStreamLoadPutRequest`请求，fe在接收到该请求时，会产生导入执行计划，并向coordinator be返回。该执行计划非常简单，由`OlapTableSink`和`StreamLoadScanNode`两个算子组成，且只有一个`PlanFragment`
 
-- 
+[](../images/streamload-plan.jpg)
+
+- coordinator be在接收到导入计划之后，开始执行导入计划。
