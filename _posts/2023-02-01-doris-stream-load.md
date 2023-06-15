@@ -32,7 +32,7 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ![](../images/streamload-plan.jpg)
 
-- coordinator be在接收到导入计划之后，开始执行导入计划。`OlapTableSink`会根据数据选取对应的tablet，并将其发送过去。
+- coordinator be在接收到导入计划之后，开始执行导入计划。`OlapTableSink`会根据数据选取对应的tablet，并将其发送到对应的be。
 
 - 在导入完之后，会根据导入执行状态，决定是commit或者rollback transaction
 
