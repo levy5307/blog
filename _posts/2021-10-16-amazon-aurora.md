@@ -3,7 +3,7 @@ layout: post
 title: Amazon Aurora
 date: 2021-10-16
 Author: levy5307
-tags: [论文, NewSQL]
+tags: [论文]
 comments: true
 toc: true
 ---
