@@ -3,7 +3,7 @@ layout: post
 title: Pegasus Data Version v3
 date: 2022-02-10
 Author: levy5307
-tags: []
+tags: [pegasus]
 comments: true
 toc: true
 ---
