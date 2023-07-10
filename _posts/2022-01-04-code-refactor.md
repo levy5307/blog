@@ -3204,7 +3204,7 @@ private:
 };
 ```
 
-在House类的实现中，只需要持有一个指向virtual class的指针即可，这样变可以利用C++的多态：
+在House类的实现中，只需要持有一个指向virtual class的指针即可，这样便可以利用C++的多态：
 
 ```
 class House {
@@ -3259,7 +3259,6 @@ void printOwing(const std::string &name) {
 
 ```
 void printDetails(const std::string &name, uint32_t outstanding) {
-    // print details
     std::cout << "name: " << name << std::endl;
     std::cout << "amount: " << outsanding << std::endl;
 }
