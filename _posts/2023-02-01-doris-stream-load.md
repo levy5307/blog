@@ -56,3 +56,5 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ### `OlapTableSink`算子
 
+当执行完`BrokerScanNode`算子的`get_next`获取到row_batch之后，会将改row_batch通过`OlapTableSink`写入表中。
+
