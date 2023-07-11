@@ -72,4 +72,4 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - 通过上述`IndexChannel::add_row`，首先获取tablet对应的`NodeChannel`，并逐行地将数据添加到其对应的`NodeChannel::_cur_batch`中。
 
-在`OlapTableSink::close`中，将`NodeChannel::_cur_batch`中的数据放入`_pending_batches`中。
+在`OlapTableSink::close`中，将`NodeChannel::_cur_batch`中的数据放入`_pending_batches`中。后续这些数据则会通过上述open阶段创建的线程发送出去。
