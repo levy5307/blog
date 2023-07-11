@@ -52,7 +52,7 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - `BrokerScanNode`算子在`open`时，会启动一个线程从streaming或者本地文件中读取数据，存入`BrokerScanNode`的`_batch_queue`中。
 
-- `BrokerScanNode`算子在`get_next`时，从`_batch_queue`中获取一个数据batch。
+- 如[《Doris查询计划》](https://levy5307.github.io/blog/doris-query/)中所讲，查询计划在执行过程中，会自顶向下调用算子的`get_next`函数。`BrokerScanNode`算子在`get_next`时，从`_batch_queue`中获取一个数据batch。
 
 ### `OlapTableSink`算子
 
