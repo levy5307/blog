@@ -42,9 +42,17 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 当doris接收到用户提交的stream load请求，通过`StreamLoadAction::on_chunk_data`接收http请求中的数据，并将数据append到该stream load对应的body_sink中。其中：
 
-- 对于大部分数据格式，都支持使用use_streaming的方式，则将body_sink指定为`StreamLoadPipe`，该class主要是将数据缓存起来；
+- 对于大部分数据格式，都支持使用use_streaming的方式，则将body_sink指定为`StreamLoadPipe`，该class主要是将数据缓存起来。
 
 - 对于少部分不支持streaming的数据格式，则将body_sink指定为`MessageBodyFileSink`，该class主要将数据存储在本地文件中。
 
-同时，`BrokerScanNode`算子在open时，会启动一个线程从body_sink中读取数据。
+## 数据导入
+
+### `BrokerScanNode`算子
+
+- `BrokerScanNode`算子在`open`时，会启动一个线程从streaming或者本地文件中读取数据，存入`BrokerScanNode`的`_batch_queue`中。
+
+- `BrokerScanNode`算子在`get_next`时，从`_batch_queue`中获取一个数据batch。
+
+### `OlapTableSink`算子
 
