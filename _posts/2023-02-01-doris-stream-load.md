@@ -56,7 +56,16 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - 如[《Doris查询计划》](https://levy5307.github.io/blog/doris-query/)中所讲，查询计划在执行过程中，会自顶向下调用算子的`get_next`函数。`BrokerScanNode`算子在`get_next`时，从`_batch_queue`中获取一个数据batch。
 
-### `OlapTableSink`算子
-
 当执行完`BrokerScanNode`算子的`get_next`获取到row_batch之后，会将改row_batch通过`OlapTableSink`写入表中。
 
+### `OlapTableSink`算子
+
+`OlapTableSink`算子在prepare阶段，会对每个rollup（包括base table）建立对应的`IndexChannel`。在`IndexChannel`中，获取到其所有tablets对应的node信息（每个tablet的所有副本都需要找到对应的node），建立对应的`NodeChannel`，在`NodeChannel`中，会根据该node的地址以及brpc port，获取一个brpc stub，用于发送信息至该node。
+
+`OlapTableSink::sink`的处理逻辑如下：
+
+- 如果存在表达式，则根据表达式将`input_batch`进行转换。
+
+- 对上述row_batch进行校验，对row_batch的每个row中的每个slot，分别根据类型进行校验，筛选出不符合要求的数据。
+
+- 通过上述`IndexChannel::add_row`，首先获取tablet对应的`NodeChannel`，并将数据添加到这些`NodeChannel`中。
