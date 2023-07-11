@@ -40,4 +40,4 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ## 数据接收
 
-当doris接收到用户提交的stream load请求，通过`StreamLoadAction::on_chunk_data`接收http请求中的数据，并将数据append到该stream load对应的StreamLoadPipe中（`StreamLoadPipe::append`），将数据缓存起来，以供`BrokerScanNode`算子读取。
+当doris接收到用户提交的stream load请求，通过`StreamLoadAction::on_chunk_data`接收http请求中的数据，并将数据append到该stream load对应的`StreamLoadPipe`中（`StreamLoadPipe::append`），将数据缓存起来，以供`BrokerScanNode`算子读取。
