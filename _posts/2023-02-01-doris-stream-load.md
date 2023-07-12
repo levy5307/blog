@@ -75,3 +75,19 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 在`OlapTableSink::close`中，将`NodeChannel::_cur_batch`中的剩余的数据放入`_pending_batches`中。后续这些数据则会通过上述open阶段创建的线程发送出去。
 
 ### row batch写入
+
+对于每个Stream load，在其对应的`StreamLoadContext`中随机生成一个`load_id`。
+
+- 当`NodeChannel`执行`open`操作时，会向对应的be节点发送`PTabletWriterOpenRequest`请求，与be node打开写入通道。
+
+- be节点接收到请求后，根据request中的`load_id`获取（或创建）一个`LoadChannel`并执行`open`操作。
+
+- `LoadChannel::open`则根据`index_id`获取（或创建）一个`TabletsChannel`并执行`open`操作。
+
+- `TabletsChannel::open`操作中，会为每个tablet创建一个`DeltaWriter`，并执行`open`操作。 
+
+其对应关系如下图：
+
+![](../images/doris-write-open.jpg)
+
+
