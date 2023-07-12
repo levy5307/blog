@@ -76,11 +76,11 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ### row batch写入
 
-对于每个Stream load，在其对应的`StreamLoadContext`中随机生成一个`load_id`。
+当`NodeChannel`执行`open`操作时：
 
-- 当`NodeChannel`执行`open`操作时，会向对应的be节点发送`PTabletWriterOpenRequest`请求，与be node打开写入通道。
+- 向对应的be node发送`PTabletWriterOpenRequest`请求，与be node打开写入通道。
 
-- be节点接收到请求后，根据request中的`load_id`获取（或创建）一个`LoadChannel`并执行`open`操作。
+- be节点接收到请求后，根据request中的`load_id`获取（或创建）一个`LoadChannel`并执行`open`操作。对于每个Stream load，都会在其对应的`StreamLoadContext`中随机生成一个`load_id`。
 
 - `LoadChannel::open`则根据`index_id`获取（或创建）一个`TabletsChannel`并执行`open`操作。
 
