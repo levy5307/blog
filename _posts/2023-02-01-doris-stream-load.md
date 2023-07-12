@@ -62,7 +62,7 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 `OlapTableSink`算子在prepare阶段，会对每个rollup（包括base table）建立对应的`IndexChannel`。在`IndexChannel`中，获取到其所有tablets对应的node信息（每个tablet的所有副本都需要找到对应的node），建立对应的`NodeChannel`，在`NodeChannel`中，会根据该node的地址以及brpc port，获取一个brpc stub，用于发送信息至该node。
 
-`OlapTableSink`算子在open阶段，会创建一个后台线程，依次对`IndexChannel`及其内部的`NodeChannel`中的`_pending_batches`，通过`PTabletWriterAddBatchRequest`请求发送到对应的node。
+`OlapTableSink`算子在open阶段，会创建一个后台线程，依次对`IndexChannel`及其内部的`NodeChannel`中的`_pending_batches`，通过`PTabletWriterAddBatchRequest`请求发送到对应的be node。
 
 `OlapTableSink::send`的处理逻辑如下：
 
@@ -70,7 +70,8 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - 对上述row_batch进行校验，对row_batch的每个row中的每个slot，分别根据类型进行校验，筛选出不符合要求的数据。
 
-- 通过上述`IndexChannel::add_row`，首先获取tablet对应的`NodeChannel`，并逐行地将数据添加到其对应的`NodeChannel::_cur_batch`中，当`_cur_batch`中的数据大于`BATCH_SIZE_FOR_SEND`时，则将`_cur_batch`中数据存入`_pending_batches`中。
+- 通过上述`IndexChannel::add_row`，首先获取tablet对应的`NodeChannel`，并逐行地将数据添加到其对应的`NodeChannel::_cur_batch`中，当`_cur_batch`中的数据大于`BATCH_SIZE_FOR_SEND`（2MB）时，则将`_cur_batch`中数据存入`_pending_batches`中。上述open阶段创建的线程，会从`_pending_batches`中依次取出batch，发送至对应的be node
 
 在`OlapTableSink::close`中，将`NodeChannel::_cur_batch`中的剩余的数据放入`_pending_batches`中。后续这些数据则会通过上述open阶段创建的线程发送出去。
 
+### row batch写入
