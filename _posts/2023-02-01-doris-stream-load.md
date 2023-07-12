@@ -78,9 +78,11 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 当`NodeChannel`执行`open`操作时：
 
-- 向对应的be node发送`PTabletWriterOpenRequest`请求，与be node打开写入通道。
+- 向对应的be node发送`PTabletWriterOpenRequest`请求，be node打开写入通道。
 
-- be节点接收到请求后，根据request中的`load_id`获取（或创建）一个`LoadChannel`并执行`open`操作。对于每个Stream load，都会在其对应的`StreamLoadContext`中随机生成一个`load_id`。
+- be节点的`PInternalServiceImpl`在接收到请求时，将请求转发给`LoadChannelManager`
+
+- `LoadChannelManager`根据request中的`load_id`获取（或创建）一个`LoadChannel`并执行`open`操作。对于每个Stream load，都会在其对应的`StreamLoadContext`中随机生成一个`load_id`。
 
 - `LoadChannel::open`则根据`index_id`获取（或创建）一个`TabletsChannel`并执行`open`操作。
 
@@ -90,4 +92,15 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ![](../images/doris-write-open.jpg)
 
+当be node接收到`PTabletWriterAddBatchRequest`时，开始执行写入操作：
+
+- `PInternalServiceImpl`在接收到请求时，将请求转发给`LoadChannelManager`
+
+- `LoadChannelManager`在接收到请求时，首先根据`load_id`找到对应的`LoadChannel`，将请求转发给该`LoadChannel`
+
+- `LoadChannel`在接收到请求时，首先根据`index_id`找到对应的`TabletsChannel`，将请求转发给该`TabletsChannel`
+
+- `PTabletWriterAddBatchRequest`中记录了每个row对应的tablet id，`TabletsChannel`根据tablet id，将请求转发给对应的`DeltaWriter`
+
+- `DeltaWriter::write`将属于该tablet的所有row写入到mem table中，当memtable大小超过200MB（可配置值）时，则启动一个后台线程执行flush操作。
 
