@@ -110,3 +110,6 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - 当memtable大小超过200MB（可配置值）时，则启动一个后台线程执行flush操作，同时生成一个新的Memtable继续接收新数据的写入。
 
+![](../images/doris-batchrow-insert.png)
+
+
