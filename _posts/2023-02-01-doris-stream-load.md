@@ -40,6 +40,8 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ![](../images/stream-load-process.png)
 
+![](../images/stream-load.png)
+
 ## 数据接收
 
 当doris接收到用户提交的stream load请求，通过`StreamLoadAction::on_chunk_data`接收http请求中的数据，并将数据append到该stream load对应的body_sink中。其中：
@@ -127,4 +129,10 @@ memtable flush操作流程：
 整体的写入流程如下图：
 
 ![](../images/doris-append-row.png)
+
+## 事务管理
+
+## 参考文档
+
+[Doris Stream Load原理解析](https://doris.apache.org/zh-CN/blog/principle-of-Doris-Stream-Load/)
 
