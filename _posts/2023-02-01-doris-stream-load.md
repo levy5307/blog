@@ -122,5 +122,9 @@ memtable flush操作流程：
 
 - `SegmentWriter`中会为每个column根据其类型创建一个`ColumnWriter`，在`ColumnWriter`中，创建`page_builder`，对nullable的列创建null bitmap，以及按需创建各类索引builder（包括一级索引、zone map索引、bloom filter索引、bitmap索引）。当写入数据row时，以此调用所有的`ColumnWriter`写入该row的所有cell，`ColumnWriter`将数据写入`PageBuilder`，并对各类索引builder进行更新。当`PageBuilder`中的数据超过`PageBuilderOptions.data_page_size`（默认1MB）时，则生成根据当前`PageBuilder`中的数据生成一个page，放入一个双向链表里。
 
-- 当SegmentWriter中写入的数据量大于256MB时，则通过`SegmentWriter::finalize`按照Doris特定的文件格式进行落盘。具体文件格式可以[参考](https://mp.weixin.qq.com/s?__biz=Mzg5MDEyODc1OA==&mid=2247484201&idx=1&sn=f3ffed25b688636b9d2181b08afee47c&chksm=cfe01330f8979a2600304595daaa1233ad163faab7f3e44559c5d0c09012ed3ff617a3fc8b48&scene=21#wechat_redirect)
+- 当SegmentWriter中写入的数据量大于256MB时，则通过`SegmentWriter::finalize`通过所有的`ColumnWriter::finalize`，按照Doris特定的文件格式进行落盘。具体文件格式可以[参考](https://mp.weixin.qq.com/s?__biz=Mzg5MDEyODc1OA==&mid=2247484201&idx=1&sn=f3ffed25b688636b9d2181b08afee47c&chksm=cfe01330f8979a2600304595daaa1233ad163faab7f3e44559c5d0c09012ed3ff617a3fc8b48&scene=21#wechat_redirect)
+
+整体的写入流程如下图：
+
+![](../images/doris-append-row.png)
 
