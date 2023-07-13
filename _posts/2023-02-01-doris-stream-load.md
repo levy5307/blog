@@ -114,4 +114,12 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ![](../images/doris-batchrow-insert.png)
 
+memtable flush操作流程：
+
+- 后台线程，通过`MemTable::flush`执行memtable的flush操作。该函数主要通过调用`DeltaWriter`中传递过来的`RowsetWriter`的`flush_single_memtable`来执行flush操作。由于Doris存在两种数据格式，这里主要讲解`BetaRowsetWriter`
+
+- `BetaRowsetWriter::flush_single_memtable`首先创建一个`SegmentWriter`，并将row batch中的数据逐行通过`SegmentWriter`写入。当SegmentWriter中写入的数据量大于256MB时，则通过`SegmentWriter::finalize`进行落盘。
+
+- `SegmentWriter`中会为每个column根据其类型创建一个`ColumnWriter`，在`ColumnWriter`中，创建`page_builder`，对nullable的列创建null bitmap，以及按需创建各类索引builder（包括一级索引、zone map索引、bloom filter索引、bitmap索引）
+
 
