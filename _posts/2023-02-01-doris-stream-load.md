@@ -88,6 +88,8 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 - `TabletsChannel::open`操作中，会为每个tablet创建一个`DeltaWriter`，并执行`open`操作。 
 
+- 对于每一个`DeltaWriter`，其内部都包含一个memtable和`RowsetWriter`。当`DeltaWriter::write`第一次写入时，会执行init操作，在init时会分别对memtable和`RowsetWriter`进行创建。
+
 其对应关系如下图：
 
 ![](../images/doris-write-open.jpg)
