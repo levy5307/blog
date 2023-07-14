@@ -144,7 +144,13 @@ memtable flush操作流程：
 
 - 当fe接收到该txn所有be的response时，在元数据中设置该版本可见。此后，该数据版本将可以被用户查询。
 
-另外，对于每个tablet对应的`DeltaWriter`，也会开启一个本地的txn，用于记录该txn的状态，具体流程是类似的，只是fe并不参与其中。
+另外，对于每个tablet对应的`DeltaWriter`，也会开启一个本地的txn，用于记录该txn的状态，具体流程是类似的，只是fe并不参与其中，具体流程如下：
+
+- 在`DeltaWriter::init`时，通过prepare_txn开启一个事务，`TxnManager::prepare_txn`会在内部的txn信息里添加一条记录。
+
+- 当写入完成后，`DeltaWriter::close`时，会执行`TxnManager::commit_txn`，主要在txn信息里添加上rowset相关信息。
+
+- 当接收到fe发来的publish请求时，be会启动task完成publish动作。当该task运行时，便会执行`TxnManager::publish_txn`设置该rowset状态为`VISIBLE`，随后便将该rowset添加到对应的tablet里。此时，从be的角度来看，该版本数据已经对用户可见。
 
 ## 参考文档
 
