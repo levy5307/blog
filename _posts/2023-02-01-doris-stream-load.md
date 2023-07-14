@@ -132,6 +132,18 @@ memtable flush操作流程：
 
 ## 事务管理
 
+下面介绍stream load过程中的事务管理：
+
+- 如前文说述，当coordinator接收到http请求时，会向fe发送`begin_txn`请求，开启一个事务，并获取`txn_id`
+
+- 当导入完成之后，根据导入状态，决定向fe发送`commit_txn`或者`rollback_txn`请求。
+
+- 当fe接收到`commit_txn`时，则会记录该txn，后台publish线程则异步地对txn涉及到的所有be发送publish请求。
+
+- 当be接收到publish请求时，则设置tablet的该rowset版本为可见，并向fe发送response
+
+- 当fe接收到该txn所有be的response时，在元数据中设置该版本可见。此后，该数据版本将可以被用户查询。
+
 ## 参考文档
 
 [Doris Stream Load原理解析](https://doris.apache.org/zh-CN/blog/principle-of-Doris-Stream-Load/)
