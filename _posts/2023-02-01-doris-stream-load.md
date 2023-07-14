@@ -144,6 +144,8 @@ memtable flush操作流程：
 
 - 当fe接收到该txn所有be的response时，在元数据中设置该版本可见。此后，该数据版本将可以被用户查询。
 
+![](../images/stream-load-transaction.jpg)
+
 另外，对于每个tablet对应的`DeltaWriter`，也会开启一个本地的txn，用于记录该txn的状态，具体流程是类似的，只是fe并不参与其中，具体流程如下：
 
 - 在`DeltaWriter::init`时，通过prepare_txn开启一个事务，`TxnManager::prepare_txn`会在内部的txn信息里添加一条记录。
