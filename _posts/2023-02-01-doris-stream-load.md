@@ -144,6 +144,8 @@ memtable flush操作流程：
 
 - 当fe接收到该txn所有be的response时，在元数据中设置该版本可见。此后，该数据版本将可以被用户查询。
 
+另外，对于每个tablet对应的`DeltaWriter`，也会开启一个本地的txn，用于记录该txn的状态，具体流程是类似的，只是fe并不参与其中。
+
 ## 参考文档
 
 [Doris Stream Load原理解析](https://doris.apache.org/zh-CN/blog/principle-of-Doris-Stream-Load/)
