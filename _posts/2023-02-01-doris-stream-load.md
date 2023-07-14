@@ -136,7 +136,7 @@ memtable flush操作流程：
 
 - 如前文说述，当coordinator接收到http请求时，会向fe发送`begin_txn`请求，开启一个事务，并获取`txn_id`
 
-- 当导入完成之后，根据导入状态，决定向fe发送`commit_txn`或者`rollback_txn`请求。
+- 当导入完成之后，根据导入状态（`OlapTableSink`中会根据每个be完成数据导入的状态来判断导入状态，当所有导入都成功时，该次导入状态则为成功），coordinator be决定向fe发送`commit_txn`或者`rollback_txn`请求。
 
 - 当fe接收到`commit_txn`时，则会记录该txn，后台publish线程则异步地对txn涉及到的所有be发送publish请求。
 
