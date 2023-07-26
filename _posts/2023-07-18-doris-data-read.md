@@ -26,5 +26,9 @@ Doris的底层数据读取是通过`OlapScanNode`发起的。当调用`OlapScanN
 
 - 对新创建出来的`OlapScanner`，分别执行prepare。在prepare中，获取tablet reader，并根据fe传递过来的数据version，获取[0, version]之间的所有rowset的reader
 
-- 然后，创建一个线程，执行t`ransfer_thread`，该线程在后台异步的scan底层数据。
+- 然后，创建一个线程，执行`transfer_thread`，该线程在后台异步的scan底层数据。
+
+- 在`transfer_thread`中，首先根据`_max_materialized_row_batches`（最大物化batch数） / `config::doris_scanner_row_num`（一次read最多读取的行数） / `state->batch_size()`（一个batch的大小）得到执行scan的最大线程数量。然后在确保不超过前述最大线程数的前提下，给`OlapScanner`分配一个线程执行`OlapScanNode::scanner_thread`。
+
+- 当`transfer_thread`中创建完`scanner_thread`后，等待`_scan_row_batches`中有row batch时，将row batch放入到`_materialized_row_batches`中，供`OlapScanNode::get_next`消费。
 
