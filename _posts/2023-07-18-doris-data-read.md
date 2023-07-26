@@ -20,5 +20,11 @@ Doris的底层数据读取是通过`OlapScanNode`发起的。当调用`OlapScanN
 
 - 根据conjuncts构建`ColumnValueRange`、olap filter以及scan keys 
 
+我们把过滤条件按照最外层的AND拆分之后的单元叫做conjunction，比如`((A & B) | C) & D & E`就是由`((A & B) | C)`，`D`，`E`三个conjunction组成的。之所以这么定义是因为，conjunction是是否下推到存储的最小单元。一个conjunction里面的条件要么都下推，要么都不下推。
+
 - 根据一系列参数获取`ranges_per_scanner`，并根据`ranges_per_scanner`以及scan ranges，构建一些`OlapScanner`，每个`OlapScanner`负责某一确定的tablet的部分ranges
+
+- 对新创建出来的`OlapScanner`，分别执行prepare。在prepare中，获取tablet reader，并根据fe传递过来的数据version，获取[0, version]之间的所有rowset的reader
+
+- 然后，创建一个线程，执行t`ransfer_thread`，该线程在后台异步的scan底层数据。
 
