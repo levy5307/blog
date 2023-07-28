@@ -50,7 +50,11 @@ columnName可以是一个column family中的指定的column、一个column famil
 
 该篇论文主要集中讲述Cassandra中应用的核心的分布式技术：partitioning, replication, membership, failure handling and scaling，所有这些模块协同起来处理读写请求。
 
-一个对于key的读/写请求被路由到Cassandra中的节点。对于写入，系统将该请求路由到所有的副本，并且等待quorum数量的副本写入完成的ack。对于读取，根据client需要的一致性保证，系统可能会将请求路由到最近的副本，或者路由到所有的副本，等待quorum数量的response。
+一个对于key的读/写请求被路由到Cassandra中的节点。
+
+- 对于写入，系统将该请求路由到所有的副本，并且等待quorum数量的副本写入完成的ack。
+
+- 对于读取，根据client需要的一致性保证，系统可能会将请求路由到最近的副本，或者路由到所有的副本，等待quorum数量的response。
 
 ### Partitioning
 
@@ -84,7 +88,7 @@ Cassandra使用Replication来实现高可用以及持久性。每个数据都被
 
 - Rack Aware和Datacenter Aware。这两种情况稍微复杂。Cassandra在集群中通过zookeeper选择一个leader节点出来，该leader节点告诉一个节点其需要作为副本的环上的range。并且leader会保证每个节点不会为超过N-1个range作副本。关于一个节点负责作为副本的range的meta信息会缓存在本地，并且持久化在zk上，这样当一个节点重启的时候可以从zk拉取该信息。我们借用了Dynamo的说法，将负责一个指定range的节点叫做preference list。需要说明的一点是，Rack Aware和Datacenter aware的区别在于前者的副本在同一个data center，而后者需要跨data center。
 
-如上一节所述，每一个节点都知道系统中的所有其他节点，以及其负责的range。通过放宽quorum要求，即使在节点发生故障或者发生网络分区的情况下，Cassandra仍然可以提供持久化保证。Cassandra可以通过配置，让每一个row都复制到跨越多个data center，本质上，一个key的preference list是有跨越多个datacenter的存储节点构成的，这些datacenter通过高速网络连接，这种设计让我们可以在整个data center都挂掉的时候仍然可以正常提供服务。
+如上一节所述，每一个节点都知道系统中的所有其他节点，以及其负责的range。通过放宽quorum要求，即使在节点发生故障或者发生网络分区的情况下，Cassandra仍然可以提供持久化保证。Cassandra可以通过配置，让每一个row都复制到多个data center，本质上，一个key的preference list是有跨越多个datacenter的存储节点构成的，这些datacenter通过高速网络连接，这种设计让Cassandra可以在整个data center都挂掉的时候仍然可以正常提供服务。
 
 在Cassandra中，并没有使用一致性协议来进行replication，***所以Cassandra是一个最终一致性的系统***。
 
