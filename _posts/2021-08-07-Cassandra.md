@@ -156,19 +156,27 @@ failure detection是一个节点用来判断其他节点up或者down的机制，
 
 ### Implementation Details
 
-单台机器上的Cassandra主要包括如下几个模块：partitioning module, the cluster membership and failure detection module and the storage engine module。所有这些模块依赖一个事件驱动模块，其将消息处理pipeline和task pipeline划分成了多个阶段。另外，该事件驱动模块是按照SEDA实现的。the cluster membership and failure detection module建立在非阻塞IO的网络层之上。所有的系统控制信息都依赖于基于UDP协议的消息传输，而用于replication和request routing等应用相关的消息则依赖于TCP协议传输。请求路由模块的实现使用了一个状态机，当集群的任一节点收到请求时，状态机都会在一下几种状态之间切换：
+单台机器上的Cassandra主要包括如下几个模块：partitioning module, the cluster membership and failure detection module and the storage engine module。所有这些模块依赖一个事件驱动模块，其将消息处理pipeline和task pipeline划分成了多个阶段。另外，该事件驱动模块是按照SEDA实现的。
 
-1. 定位拥有这个key的节点
+Cassandra内部使用了TCP和UDP两种网络协议，其中：
 
-2. 将请求路由到此节点并等待响应到达
+- 所有的系统控制信息都依赖于基于UDP协议的消息传输，
 
-3. 如果response没有在配置的超时时间内到达，则将此请求设置为失败并返回给客户端
+- 用于replication和request routing等应用相关的消息则依赖于TCP协议传输。
 
-4. 根据时间戳计算出最新的response
+请求路由模块的实现使用了一个状态机，当集群的任一节点收到请求时，状态机都会在一下几种状态之间切换：
 
-5. 为任何数据不是最新的副本安排数据修复。
+- 定位拥有这个key的节点
 
-为了论述起见，我们再这里不讨论故障的详细情况。系统可以被配置为同步写入或者异步写入。对于特定的需要高吞吐的系统，我们会选择异步replication。对于使用同步的情况，我们需要等待quorum数量的response返回后才会返回结果给客户端。
+- 将请求路由到此节点并等待响应到达
+
+- 如果response没有在配置的超时时间内到达，则将此请求设置为失败并返回给客户端
+
+- 根据时间戳计算出最新的response
+
+- 为任何数据不是最新的副本安排数据修复。
+
+为了论述起见，这里不讨论故障的详细情况。系统可以被配置为同步写入或者异步写入。对于特定的需要高吞吐的系统，我们会选择异步replication。对于使用同步的情况，我们需要等待quorum数量的response返回后才会返回结果给客户端。
 
 任何的日志系统都存在一个清除commit log的机制。在Cassandra中我们使用一种滚动的提交日志，在一个旧的提交日志超过一个特定的可配置大小后，就推出一个新的提交日志。我们发现在我们的线上生产环境中，128MB的大小运行的特别好。每个commit log都有一个header，该header是一个固定大小的bit vector，其大小大于可能的column family数量。每个commit log都有一个bit vector并且会在内存中维护。对该bit vector有如下几个操作：
 
