@@ -48,11 +48,13 @@ columnName可以是一个column family中的指定的column、一个column famil
 
 ## System Architecture
 
-该篇论文主要集中讲述Cassandra中应用的核心的分布式技术： partitioning, replication, membership, failure handling and scaling。所有这些模块协同起来处理读写请求。一个对于key的读/写请求被路由到Cassandra中的节点，该节点决定该key所在的副本。对于写入，系统将该请求路由到所有的副本，并且等待quorum数量的副本的写入完成的ack。对于读取，根据client需要的一致性保证，系统可能会将请求路由到最近的副本，或者路由到所有的副本，等待quorum数量的response。
+该篇论文主要集中讲述Cassandra中应用的核心的分布式技术：partitioning, replication, membership, failure handling and scaling，所有这些模块协同起来处理读写请求。
+
+一个对于key的读/写请求被路由到Cassandra中的节点。对于写入，系统将该请求路由到所有的副本，并且等待quorum数量的副本写入完成的ack。对于读取，根据client需要的一致性保证，系统可能会将请求路由到最近的副本，或者路由到所有的副本，等待quorum数量的response。
 
 ### Partitioning
 
-Cassandra的一个关键特性是其拥有逐渐扩展的能力，这就需要能够动态的为数据在集群的一系列的节点上分区的能力。Cassandra使用一致性hash来对数据进行分区，该hash函数使用了保序hash函数。一致性hash的细节在这里就不细说了，可以参考文章[数据分片](https://levy5307.github.io/blog/thinking-about-partition/)。
+Cassandra的一个关键特性是其拥有逐渐扩展的能力，这就需要能够动态的为数据在集群的一系列的节点上分区的能力。Cassandra使用一致性hash来对数据进行分区，该hash函数使用了保序hash函数。一致性hash的细节可以参考我以前写的文章[数据分片](https://levy5307.github.io/blog/thinking-about-partition/)。
 
 基础的一致性hash有几个挑战：
 
@@ -66,15 +68,19 @@ Cassandra的一个关键特性是其拥有逐渐扩展的能力，这就需要�
 
 2. 分析环上的负载情况，然后具有轻负载的节点从环上向前移动，用以减轻高负载节点的负载
 
-Cassandra选择第二种方法，因为它的设计和实现更容易驾驭，并且可以帮助负载均衡作出更加确定的选择。
+Cassandra选择第二种方法，主要基于一下两点考虑：
+
+1. 它的设计和实现更容易驾驭
+
+2. 可以帮助负载均衡作出更加确定的选择
 
 另外需要说明，每一个节点都知道系统中的所有其他节点以及其负责的数据range。
 
 ### Replication
 
-Cassandra使用Replication来实现高可用以及持久性。每个数据都被复制到N个节点上，其中N是每个Cassandra自己的replication配置。如Partitioning一节所述，每个key都会被分配到一个coordinator节点（该coordinator负责一个range的key，该key刚好落入该range内）。除了将数据在本地持久化以外，coordinator还需要将数据复制到环上的N-1个节点之上。Cassandra为客户端提供了数据复制的多种不同选择，包括：Rack Unaware, Rack ware, Datacenter aware，前两者在一个data center，后者跨越多个data center。根据客户端选择的replication policy来选择副本:
+Cassandra使用Replication来实现高可用以及持久性。每个数据都被复制到N个节点上，其中N是每个Cassandra自己的replication配置。如Partitioning一节所述，每个key都会被分配到一个coordinator节点，除了将数据在本地持久化以外，coordinator还需要将数据复制到环上的N-1个节点之上。Cassandra为客户端提供了数据复制的多种不同选择，包括：Rack Unaware, Rack ware, Datacenter aware，前两者在一个data center，后者跨越多个data center。根据客户端选择的replication policy来选择副本:
 
-- Rack Unaware。如果客户端选择了Rack Unware，那么选择coordinator在环上的下游的N-1个节点作为non-coordinator副本。
+- Rack Unaware。如果客户端选择了Rack Unware，那么选择coordinator在环下游的N-1个节点作为non-coordinator副本。
 
 - Rack Aware和Datacenter Aware。这两种情况稍微复杂。Cassandra在集群中通过zookeeper选择一个leader节点出来，该leader节点告诉一个节点其需要作为副本的环上的range。并且leader会保证每个节点不会为超过N-1个range作副本。关于一个节点负责作为副本的range的meta信息会缓存在本地，并且持久化在zk上，这样当一个节点重启的时候可以从zk拉取该信息。我们借用了Dynamo的说法，将负责一个指定range的节点叫做preference list。需要说明的一点是，Rack Aware和Datacenter aware的区别在于前者的副本在同一个data center，而后者需要跨data center。
 
