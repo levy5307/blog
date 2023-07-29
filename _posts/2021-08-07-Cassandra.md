@@ -190,6 +190,8 @@ Cassandra内部使用了TCP和UDP两种网络协议，其中：
 
 每次滚动提交日志时，都会检查其bit vector，并检查之前滚动的提交日志的所有bit vector。如果发现所有的column family都持久化到了磁盘上，那么该commit log就可以清除了。
 
+***问题：既然每个column family都有独立的data file，为什么对于commit log要等所有的column family都持久化完成再清除？能否以column family为粒度进行清理？***
+
 ***写入到commit log的操作可以分为normal模式和fast sync模式两种***。在fast sync模式中，写入commit log的数据会被缓存起来。这意味着当机器宕机时，是有可能数据丢失的。在这种模式下，in-memory数据结构被持久化到磁盘时，也是会进行缓存的。
 
 #### 写操作
