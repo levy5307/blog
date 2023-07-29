@@ -178,7 +178,9 @@ Cassandra内部使用了TCP和UDP两种网络协议，其中：
 
 为了论述起见，这里不讨论故障的详细情况。系统可以被配置为同步写入或者异步写入。对于特定的需要高吞吐的系统，我们会选择异步replication。对于使用同步的情况，我们需要等待quorum数量的response返回后才会返回结果给客户端。
 
-任何的日志系统都存在一个清除commit log的机制。在Cassandra中我们使用一种滚动的提交日志，在一个旧的提交日志超过一个特定的可配置大小后，就推出一个新的提交日志。在Facebook线上生产环境中，128MB的大小运行的特别好。每个commit log都有一个header，该header是一个固定大小的bit vector，其大小大于可能的column family数量。每个commit log都有一个bit vector并且会在内存中维护。对该bit vector有如下几个操作：
+#### commit log
+
+任何的日志系统都存在一个清除commit log的机制。在Cassandra中使用一种滚动的提交日志，在一个旧的提交日志超过一个特定的可配置大小后，就推出一个新的提交日志。在Facebook线上生产环境中，128MB的大小运行的特别好。每个commit log都有一个header，该header是一个固定大小的bit vector，其大小大于可能的column family数量。每个commit log都有一个bit vector并且会在内存中维护。对该bit vector有如下几个操作：
 
 - 修改
 
@@ -190,9 +192,17 @@ Cassandra内部使用了TCP和UDP两种网络协议，其中：
 
 ***写入到commit log的操作可以分为normal模式和fast sync模式两种***。在fast sync模式中，写入commit log的数据会被缓存起来。这意味着当机器宕机时，是有可能数据丢失的。在这种模式下，in-memory数据结构被持久化到磁盘时，也是会进行缓存的。
 
-传统的数据库并不是设计用来处理高写入吞吐的，在Cassandra中，所有向磁盘的写入都是顺序的，以最大化磁盘写吞吐。由于文件dump到磁盘后不会再修改了，所以在读取时无需进行加锁。Cassandra的服务实例的读写操作实际上都是无锁操作，因此我们并不需要应付基于B-Tree的数据库实现中存在的并发问题。
+#### 写操作
+
+传统的数据库并不是设计用来处理高写入吞吐的，在Cassandra中，所有向磁盘的写入都是顺序的，以最大化磁盘写吞吐。由于文件dump到磁盘后不会再修改了，所以在读取时无需进行加锁。Cassandra的服务实例的读写操作实际上都是无锁操作，因此并不需要应付基于B-Tree的数据库实现中存在的并发问题。
 
 Cassandra是通过primary key来索引数据的。磁盘上的data file会被分成一系列的block。每个block最多包含128个key，并根据block index进行区分。block index记录block内key的相对偏移及其数据的大小。当in-memory数据结构被dump到磁盘上时，一个block index将会生成。为了快速存取，该block index同样会在内存中维护。
 
-读操作同样会先查询in-memory数据结构，如果找到则返回给客户端，因为该in-memory数据结构肯定会包含最新的数据。如果没有找到则会以反向时间顺序去依次查找磁盘，因为这样先去查询最新的文件，一旦找到数据便可以返回给客户端。随着时间，磁盘上的数据文件数量将会增多，我们会运行一个非常类似于Bigtable系统的Compaction进程，通过它将多个文件合并成一个。merge操作是在一系列排好序的文件进行合并，系统总会对大小相近的两个文件进行compaction。例如，永远不会出现一个100GB的文件和一个50GB的文件进行compaction的情况。每隔一段时间，一个major compaction将会执行，将所有相关的文件合并成一个大的文件。compaction是一个IO密集型操作，需要对此进行大量的优化以做到不影响后续的读请求。
+#### 读操作
+
+读操作同样会先查询in-memory数据结构，如果找到则返回给客户端，因为该in-memory数据结构肯定会包含最新的数据。如果没有找到则会以反向时间顺序去依次查找磁盘，因为这样先去查询最新的文件，一旦找到数据便可以返回给客户端。
+
+#### compaction
+
+随着时间，磁盘上的数据文件数量将会增多，Cassandra会运行一个非常类似于Bigtable系统的Compaction进程，通过它将多个文件合并成一个。merge操作是在一系列排好序的文件进行合并，系统总会对大小相近的两个文件进行compaction。例如，永远不会出现一个100GB的文件和一个50GB的文件进行compaction的情况。每隔一段时间，一个major compaction将会执行，将所有相关的文件合并成一个大的文件。compaction是一个IO密集型操作，需要对此进行大量的优化以做到不影响后续的读请求。
 
