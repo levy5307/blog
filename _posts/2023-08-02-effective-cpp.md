@@ -99,5 +99,5 @@ inline T callWithMax(const T& a, const T& b) {
 }
 ```
 
-另外书中还讲到，当编译期不允许static整数型class常量的in class初值设定时（例如`GamePlayer例子中的static class常量`），可以使用`the enum hack`做法来实现。但是当前主流的编译器都支持了，所以这里不再讲解。
+另外书中还讲到，当编译期不允许static整数型class常量的in class初值设定时（例如`GamePlayer`例子中的static class常量），可以使用the enum hack做法来实现。但是当前主流的编译器都支持了，所以这里不再讲解。
 
