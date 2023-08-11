@@ -31,6 +31,7 @@ Ref: <https://levy5307.github.io/blog/chain-replication/>
 ## CRAQ（Chain Replication with Apportioned Queries）
 
 针对于CR的优化，读取操作可以发往任意的server、而非只能发往tail节点。为实现该功能，对每个key维护一个version和clean标记
+
 写入则与CR相同，都是由head节点发起。写入流程：
 
 ![](../images/CRCQ.svg)
