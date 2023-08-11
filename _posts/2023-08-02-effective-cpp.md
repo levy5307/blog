@@ -8,7 +8,7 @@ comments: true
 toc: true
 ---
 
-## 条款一：视C++为一个语言联邦
+## 条款01：视C++为一个语言联邦
 
 C++主要由4个次语言组成：
 
@@ -30,7 +30,7 @@ C++主要由4个次语言组成：
 
 - STL部分，迭代器和函数对象都是在C指针上构造出来的，则使用pass-by-value会更高效。
 
-## 条款二：尽量以`const`, `enum`, `inline`替换`#define`
+## 条款02：尽量以`const`, `enum`, `inline`替换`#define`
 
 这个条款或许可以称为“宁可以编译期替换预处理器”。
 
@@ -69,7 +69,7 @@ MULTIPLY(1+2, 3+4)
 
 其最后获取的结果是：`1+2*3+4`
 
-因此宏的定义通常需要为红肿的所有参数加上小括号：
+因此宏的定义通常需要为宏中的所有参数加上小括号：
 
 ```cpp
 #define MULTIPLY(a, b) (a)*(b);
@@ -100,4 +100,41 @@ inline T callWithMax(const T& a, const T& b) {
 ```
 
 另外书中还讲到，当编译期不允许static整数型class常量的in class初值设定时（例如`GamePlayer`例子中的static class常量），可以使用the enum hack做法来实现。但是当前主流的编译器都支持了，所以这里不再讲解。
+
+## 条款03：尽可能使用const
+
+- const指针
+
+通过const可以指定指针自身、指针所指物为const。具体含义可以将*翻译成point to，并从后向前读，例如：
+
+`const char* p`表示p point to const char，即non-const pointer, const data
+
+`char* const p`表示const p point to char，即const pointer non-const data
+
+- const返回值
+
+考虑有理数的operator*声明式：
+
+```
+class Rational { ... };
+const Rational operator* (const Rational &lhs, const Rational &rhs);
+```
+
+operator*函数的返回值是const对象，这样的情况主要是为了避免如下这种误操作：
+
+```
+Rational a, b, c;
+...
+if (a * b = c)
+```
+
+本身代码是想做比较操作，但是误写成了赋值。如果函数返回值是const对象，编译器将会报错，这一点对于内置类型也是这样的。因此引申出了一个规则：良好的用户自定义类型的特征是避免和内置类型不兼容 。
+
+- const成员函数
+
+const实施于成员函数主要有两个理由：
+
+- 它们使class接口比较容易被理解。添加了const的函数就可以比较明显的告诉用户，该函数不会更改对象的内容。
+
+- 他们使操作const对象成为可能。非const成员函数无法被const对象调用，因为该函数有可能会更改对象内容。
 
