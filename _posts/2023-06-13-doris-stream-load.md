@@ -12,6 +12,8 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 
 ## 执行过程
 
+![](../images/stream-load-process.png)
+
 用户执行stream load主要有两种方式：
 
 - 将请求直接提交给be，并由该节点作为本次stream load任务的coordinator。
@@ -37,8 +39,6 @@ Stream Load是Doris的一种同步的导入方式, 允许用户通过Http访问�
 - 在导入完之后，会根据导入执行状态，决定是commit或者rollback transaction
 
 整体执行流程如下图所示：
-
-![](../images/stream-load-process.png)
 
 ![](../images/stream-load.png)
 
