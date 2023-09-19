@@ -144,7 +144,7 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 - CPLs: Consistency Point LSN, 表示mini事务产生的最后一条log record LSN。每个mini事务对应一个CPL。一个事务由多个mini事务组成，每个mini事务可有多个日志，同一个事务的日志未必相邻。但是每个mini事务的最后一个日志的LSN就是一个CPL。
 
-如下表所示，T1-min-t1是LSN3，表示T1事务的第一个min事务的一致性点。
+如下表所示，T1-min-t1是LSN3，表示T1事务的第一个min事务的Consistency Point。
 
 ![](../images/aurora-mini-tran.png)
 
@@ -152,7 +152,7 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 - VDL: Volume Complete LSN，比VCL小的最大CPL。commit LSN小于VDL的事务都可以认为是完成的
 
-- SCL: Segment Complete LSN, 每一个存储节点对应的最大连续LSN，利用SCN与其它节点Gossip交互，填补丢失的日志记录。每个存储节点都会有其自己的SCL，如下图中所示，S1的SCL是LSN8，S4的SCL则是LSN7
+- SCL: Segment Complete LSN, 每一个存储节点对应的最大连续LSN，利用SCN与其它节点Gossip交互，填补丢失的日志记录。每个存储节点都会有其自己的SCL，如下图中所示，S1的SCL是LSN8，S4的SCL则是LSN5
 
 ![](../images/aurora-lsn.png)
 
