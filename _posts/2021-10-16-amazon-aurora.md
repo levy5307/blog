@@ -132,9 +132,9 @@ MySQL中的两个问题，Aurora采用了针对性的方法来解决：
 
 6. 周期性将log和data page备份到S3
 
-7. 周期性对old version数据进行garbage
+7. 周期性对old version data page数据进行garbage
 
-8. 周期性进行CRC验证
+8. 周期性对data page进行CRC验证
 
 为了降低前台操作的延迟，Aurora的storage service将大部分操作放在后台操作。如上图所示，只要在1和2执行完之后就可以返回，其他的操作全部在后台进行。
 
