@@ -187,7 +187,7 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 第三层是存储层，该层是由Page Server实现的。每个Page Server保存数据库一个分片的数据拷贝。Page Server扮演两个重要角色：
 
-1. 向计算节点提供pages。每个计算节点都可以向Page Server请求pages。我们当前正在Page Server实现bulk operations（例如：bulk loading、index creation、DB reorgs、deep page repair和table scan）来为计算节点减负。
+1. 向计算节点提供pages。每个计算节点都可以向Page Server请求pages。当前Socrates正在Page Server实现bulk operations（例如：bulk loading、index creation、DB reorgs、deep page repair和table scan）来为计算节点减负。
 
 2. 在XStore中checkpoint data pages以及创建备份。
 
@@ -203,7 +203,7 @@ Socrates架构的第二层是XLOG service。这一层遵循“log独立”的原
 
 上图显示了XLOG服务的内部实现。从图中的左上角开启，Primary计算节点向landing zone(LZ)中写入log blocks，LZ是一个快速的持久化存储服务，其提供了很强的数据完整性、弹性和一致性保证。
 
-landing zone是由Azure Premium Storage服务（XIO）来实现的。XIO为所有数据维护了三个副本来保证持久性。对每个存储服务，有performance、cost、availability和durability之间的tradeoff。
+landing zone是由Azure Premium Storage服务（XIO）来实现的。XIO为所有数据维护了***三个副本***来保证持久性。对每个存储服务，有performance、cost、availability和durability之间的tradeoff。
 
 为了尽可能的达到最低的提交延迟，Primary直接同步地向LZ写入log blocks。***LZ是小而快的（有可能比较贵）***。LZ组织成一个环形缓冲，并且日志格式采用的与（所有Microsoft SQL服务和产品中使用的）传统SQL Server日志格式向后兼容扩展的形式。这里遵从了两条设计原则：不重复造轮子、以及保持Socrates与其他SQL Server产品间的兼容性。该日志的一个关键能力是它允许在写存在时可以并发读，并且通过读取可以获取一致性的信息，而且不需要任何的同步(beyond wraparound protection)。最小化同步使得系统更具伸缩性和弹性。
 
