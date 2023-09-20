@@ -695,11 +695,11 @@ Pegasus原本有app级别的load balance功能，其认为，只要每个表在�
 
 图中的`greedy_load_balancer`就是class Context，其向上层屏蔽了具体的policy细节，并通过配置来切换使用`app_balance_policy`或者`cluster_balance_policy`
 
-关于load balance重构，可以参考[Pegasus load balance重构](levy5307.github.io/blog/load-balance-refactor)
+关于load balance重构，可以参考[Pegasus load balance重构](https://levy5307.github.io/blog/load-balance-refactor/#strategy)
 
 ### 命令模式
 
-很多资料中都会讲到，命令模式是一种将命令的请求和命令的执行解耦的模式，并列举出一些例子。很多没有实际工程经验的人，看完其实理解的并不深刻。其实这也是设计模式所面临的问题：学生时期有大把的时间学习、确没有实际经验相结合的精力；工作了以后，很多岗位对代码质量要求也不高，也就很少有人再去深入研究了。
+很多资料中都会讲到，命令模式是一种将命令的请求和命令的执行解耦的模式，并列举出一些例子。很多没有实际工程经验的人，看完其实理解的并不深刻。其实这也是设计模式所面临的问题：学生时期有大把的时间学习、却没有实际经验相结合的经历；工作了以后，很多岗位对代码质量要求也不高，也就很少有人再去深入研究了。
 
 这里希望能够通过逐步分析，帮助了解命令模式最终形态的演进过程。
 
