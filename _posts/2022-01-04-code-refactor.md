@@ -691,11 +691,11 @@ class BurdenSheetFacade {
 
 Pegasus原本有app级别的load balance功能，其认为，只要每个表在集群中负载均衡，那整个集群就是负载均衡的。然而实际线上运维中，我们发现现实情况往往不是这样。因此想要开发集群级别负载均衡功能。最终通过设计选型，我将这部分功能实现如下：
 
-![](../images/images/balancer-strategy-model.jpg)
+![](../images/images/load-balancer-strategy.svg)
 
 图中的`greedy_load_balancer`就是class Context，其向上层屏蔽了具体的policy细节，并通过配置来切换使用`app_balance_policy`或者`cluster_balance_policy`
 
-关于load balance重构，可以参考[Pegasus load balance重构](levy5307.github.io/blog/load-balance-refactor/#strategy)
+关于load balance重构，可以参考[Pegasus load balance重构](levy5307.github.io/blog/load-balance-refactor)
 
 ### 命令模式
 
