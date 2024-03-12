@@ -1,6 +1,6 @@
 ---
 layout: post
-title: postgres valena和toast机制
+title: postgres varlena和toast机制
 date: 2024-03-12
 Author: levy5307
 tags: [postgres]
@@ -9,6 +9,14 @@ toc: true
 ---
 
 ## varlena
+
+### 通用结构
+
+### varattrib_1b
+
+### varattrib_4b
+
+### varattrib_1b_e
 
 ## toast
 
