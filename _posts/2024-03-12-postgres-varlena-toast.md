@@ -30,7 +30,7 @@ postgres使用varlena来表示变长的数据类型，通过语句`SELECT typnam
 
 ### 通用结构
 
-varlena有一个通用的格式：
+varlena有一个通用的格式，其定义在`c.h`中：
 
 ```c
 struct varlena
@@ -40,7 +40,7 @@ struct varlena
 };
 ```
 
-可以将其理解为一个接口，实际上varlena细分为很多格式：`varattrib_1b`/`varattrib_4b`/`varattrib_1b_e`：
+可以将其理解为一个接口，实际上varlena细分为很多具体的格式：`varattrib_1b`/`varattrib_4b`/`varattrib_1b_e`：
 
 - 当第一个字节的最高位为1，并且第一个字节不为`1000 0000`时，那么就是`varattrib_1b`。
 
